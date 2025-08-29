@@ -4,6 +4,7 @@ import jsPDF from "jspdf"
 import "jspdf-autotable"
 ;
 
+
 import type React from "react"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -260,6 +261,7 @@ function ReportSection({
     </div>
   )
 }
+
 
 export function ReportsOverview() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null)
