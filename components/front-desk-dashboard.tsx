@@ -28,6 +28,7 @@ import {
   Mail,
   MapPin,
   Wrench,
+  ClipboardList,
 } from "lucide-react"
 
 // Mock data for ready for pickup tasks
@@ -340,9 +341,134 @@ export function FrontDeskDashboard() {
     <div className="flex-1 space-y-6 p-6">
       {/* Header Section */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Front Desk Dashboard</h1>
-        <p className="text-gray-600 mt-2">Customer service hub for task management and customer interactions</p>
+        <h2 className="text-3xl font-bold tracking-tight">Front Desk Dashboard</h2>
+        <p className="text-muted-foreground">Customer service and task coordination center.</p>
       </div>
+
+      {/* Daily Stats */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Walk-ins Today</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-muted-foreground">+3 from yesterday</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">New Tasks</CardTitle>
+            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8</div>
+            <p className="text-xs text-muted-foreground">Created today</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Phone Calls</CardTitle>
+            <Phone className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">24</div>
+            <p className="text-xs text-muted-foreground">Handled today</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Appointments</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">6</div>
+            <p className="text-xs text-muted-foreground">Scheduled today</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Create New Task
+            </CardTitle>
+            <CardDescription>Register a new repair task for a customer.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <a href="/dashboard/tasks/new">New Task</a>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Customer Lookup
+            </CardTitle>
+            <CardDescription>Search for existing customers and their history.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <a href="/dashboard/customers">Find Customer</a>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Task Status
+            </CardTitle>
+            <CardDescription>Check the status of current repair tasks.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <a href="/dashboard/tasks">View Tasks</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today's Schedule */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Today's Schedule</CardTitle>
+          <CardDescription>Upcoming appointments and important tasks.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div>
+                <p className="font-medium">John Smith - MacBook Screen Repair</p>
+                <p className="text-sm text-muted-foreground">Appointment at 10:00 AM</p>
+              </div>
+              <span className="text-sm text-blue-600 font-medium">Upcoming</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div>
+                <p className="font-medium">Sarah Johnson - Dell Laptop Pickup</p>
+                <p className="text-sm text-muted-foreground">Scheduled for 2:00 PM</p>
+              </div>
+              <span className="text-sm text-green-600 font-medium">Ready</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+              <div>
+                <p className="font-medium">Mike Davis - HP Laptop Diagnosis</p>
+                <p className="text-sm text-muted-foreground">Walk-in at 3:30 PM</p>
+              </div>
+              <span className="text-sm text-amber-600 font-medium">Waiting</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
@@ -516,7 +642,11 @@ export function FrontDeskDashboard() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-500">{interaction.time}</p>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                      >
                         View Details
                       </Button>
                     </div>

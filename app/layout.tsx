@@ -3,13 +3,17 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
+import { NotificationProvider } from "@/lib/notification-context"
+import { WebSocketProvider } from "@/lib/websocket-context"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "A+ Express - Laptop Repair Management",
-  description: "Professional laptop repair shop management system",
-    generator: 'v0.dev'
+  title: "A+ Express - Computer Repair Management",
+  description: "Professional computer repair shop management system",
+    generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -20,7 +24,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <WebSocketProvider>
+                {children}
+                <Toaster />
+              </WebSocketProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

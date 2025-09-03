@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { TechnicianDashboard } from "@/components/technician-dashboard"
+import { TechnicianTasksPage } from "@/components/technician-tasks-page"
 
 export default function TechnicianPage() {
   const { isAuthenticated, user } = useAuth()
@@ -13,7 +13,7 @@ export default function TechnicianPage() {
 
   return (
     <DashboardLayout>
-      <TechnicianDashboard />
+      <TechnicianTasksPage />
     </DashboardLayout>
   )
 }

@@ -3,11 +3,28 @@
 import { useAuth } from "@/lib/auth-context"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { ManagerDashboard } from "@/components/manager-dashboard"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export default function ManagerPage() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, isLoading } = useAuth()
+  const router = useRouter()
 
-  if (!isAuthenticated) {
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/")
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || !user) {
     return null
   }
 

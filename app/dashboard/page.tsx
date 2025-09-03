@@ -1,61 +1,50 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { DashboardPage } from "@/components/dashboard-page"
+import { AdminDashboard } from "@/components/admin-dashboard"
+import { ManagerDashboard } from "@/components/manager-dashboard"
+import { TechnicianDashboard } from "@/components/technician-dashboard"
+import { FrontDeskDashboard } from "@/components/front-desk-dashboard"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
-export default function Dashboard() {
+export default function DashboardPage() {
   const { isAuthenticated, user, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push("/")
-      return
     }
-
-    if (user) {
-      // Role-based redirects
-      if (user.role === "Technician") {
-        router.push("/dashboard/technician")
-        return
-      }
-      if (user.role === "Front Desk") {
-        router.push("/dashboard/front-desk")
-        return
-      }
-    }
-  }, [isAuthenticated, user, isLoading, router])
+  }, [isAuthenticated, isLoading, router])
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-bold mb-2">
-            <span className="text-red-600">A</span>
-            <sup className="text-gray-500 text-sm font-medium">+</sup>
-            <span className="text-gray-900 ml-1">express</span>
-          </div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
       </div>
     )
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return null
   }
 
-  // Only show main dashboard for Admin and Manager roles
-  if (user?.role === "Administrator" || user?.role === "Manager") {
-    return (
-      <DashboardLayout>
-        <DashboardPage />
-      </DashboardLayout>
-    )
+  const renderDashboard = () => {
+    switch (user.role) {
+      case "Administrator":
+        return <AdminDashboard />
+      case "Manager":
+        return <ManagerDashboard />
+      case "Technician":
+        return <TechnicianDashboard />
+      case "Front Desk":
+        return <FrontDeskDashboard />
+      default:
+        return <div>Unknown role</div>
+    }
   }
 
-  return null
+  return <DashboardLayout>{renderDashboard()}</DashboardLayout>
 }

@@ -1,153 +1,327 @@
 "use client"
 
+import type * as React from "react"
 import {
+  Building2,
+  Calendar,
+  ChevronUp,
   CreditCard,
+  FileText,
   Home,
   Settings,
-  Users,
-  ClipboardList,
-  FileText,
-  UserCheck,
-  Wrench,
-  BarChart3,
   User,
+  Users,
+  Wrench,
+  ClipboardList,
+  Database,
+  Shield,
+  Activity,
+  UserCog,
 } from "lucide-react"
-import { usePathname } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { useAuth } from "@/lib/auth-context"
+import Link from "next/link"
 
-// Role-based navigation items
-const getNavigationItems = (userRole: string) => {
-  const baseItems = [
+// Navigation items for different roles
+const navigationItems = {
+  Administrator: [
     {
       title: "Dashboard",
       url: "/dashboard",
       icon: Home,
-      roles: ["Administrator", "Manager", "Technician", "Front Desk"],
     },
     {
-      title: "Profile",
-      url: "/dashboard/profile",
-      icon: User,
-      roles: ["Administrator", "Manager", "Technician", "Front Desk"],
-    },
-  ]
-
-  const roleSpecificItems = [
-    // Admin and Manager items
-    {
-      title: "Manager Dashboard",
-      url: "/dashboard/manager",
-      icon: BarChart3,
-      roles: ["Administrator", "Manager"],
+      title: "User Management",
+      url: "/dashboard/admin/users",
+      icon: Users,
     },
     {
-      title: "All Tasks",
-      url: "/dashboard/tasks",
-      icon: ClipboardList,
-      roles: ["Administrator", "Manager"],
+      title: "System Settings",
+      url: "/dashboard/admin/settings",
+      icon: Settings,
+    },
+    {
+      title: "Database Management",
+      url: "/dashboard/admin/database",
+      icon: Database,
+    },
+    {
+      title: "System Logs",
+      url: "/dashboard/admin/logs",
+      icon: Activity,
     },
     {
       title: "Customers",
       url: "/dashboard/customers",
-      icon: Users,
-      roles: ["Administrator", "Manager"],
+      icon: Building2,
     },
     {
-      title: "Reports",
-      url: "/dashboard/reports",
-      icon: FileText,
-      roles: ["Administrator", "Manager"],
+      title: "Tasks",
+      url: "/dashboard/tasks",
+      icon: Wrench,
     },
     {
       title: "Payments",
       url: "/dashboard/payments",
       icon: CreditCard,
-      roles: ["Administrator", "Manager"],
     },
     {
-      title: "Settings",
-      url: "/dashboard/settings",
-      icon: Settings,
-      roles: ["Administrator"],
+      title: "Reports",
+      url: "/dashboard/reports",
+      icon: FileText,
     },
-
-    // Technician specific items
+    {
+      title: "Profile",
+      url: "/dashboard/profile",
+      icon: User,
+    },
+  ],
+  Manager: [
+    {
+      title: "Dashboard",
+      url: "/dashboard/manager",
+      icon: Home,
+    },
+    {
+      title: "User Management",
+      url: "/dashboard/manager/users",
+      icon: UserCog,
+    },
+    {
+      title: "Customers",
+      url: "/dashboard/customers",
+      icon: Building2,
+    },
+    {
+      title: "Tasks",
+      url: "/dashboard/tasks",
+      icon: Wrench,
+    },
+    {
+      title: "Payments",
+      url: "/dashboard/payments",
+      icon: CreditCard,
+    },
+    {
+      title: "Reports",
+      url: "/dashboard/reports",
+      icon: FileText,
+    },
+    {
+      title: "Profile",
+      url: "/dashboard/profile",
+      icon: User,
+    },
+  ],
+  Technician: [
+    {
+      title: "Dashboard",
+      url: "/dashboard/technician",
+      icon: Home,
+    },
     {
       title: "My Tasks",
-      url: "/dashboard/technician",
-      icon: Wrench,
-      roles: ["Technician"],
+      url: "/dashboard/tasks",
+      icon: ClipboardList,
     },
-
-    // Front Desk specific items
+    {
+      title: "Customers",
+      url: "/dashboard/customers",
+      icon: Building2,
+    },
+    {
+      title: "Profile",
+      url: "/dashboard/profile",
+      icon: User,
+    },
+  ],
+  "Front Desk": [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: Home,
+    },
     {
       title: "Front Desk",
       url: "/dashboard/front-desk",
-      icon: UserCheck,
-      roles: ["Front Desk"],
+      icon: Calendar,
     },
-  ]
-
-  const allItems = [...baseItems, ...roleSpecificItems]
-  return allItems.filter((item) => item.roles.includes(userRole))
+    {
+      title: "Customers",
+      url: "/dashboard/customers",
+      icon: Building2,
+    },
+    {
+      title: "Tasks",
+      url: "/dashboard/tasks",
+      icon: Wrench,
+    },
+    {
+      title: "Payments",
+      url: "/dashboard/payments",
+      icon: CreditCard,
+    },
+    {
+      title: "Profile",
+      url: "/dashboard/profile",
+      icon: User,
+    },
+  ],
 }
 
-export function AppSidebar() {
-  const pathname = usePathname()
-  const { user } = useAuth()
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, logout } = useAuth()
 
   if (!user) return null
 
-  const navigationItems = getNavigationItems(user.role)
+  const items = navigationItems[user.role as keyof typeof navigationItems] || []
+
+  const getDashboardUrl = () => {
+    switch (user.role) {
+      case "Administrator":
+        return "/dashboard"
+      case "Manager":
+        return "/dashboard/manager"
+      case "Technician":
+        return "/dashboard/technician"
+      case "Front Desk":
+        return "/dashboard"
+      default:
+        return "/dashboard"
+    }
+  }
 
   return (
-    <Sidebar className="border-r border-gray-200">
-      <SidebarHeader className="border-b border-gray-200 p-6">
-        <div className="text-2xl font-bold">
-          <span className="text-red-600">A</span>
-          <sup className="text-gray-500 text-sm font-medium">+</sup>
-          <span className="text-gray-900 ml-1">express</span>
-        </div>
-        <div className="text-sm text-gray-500 mt-1">{user.role} Portal</div>
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link href={getDashboardUrl()}>
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <Shield className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">A+ Express</span>
+                  <span className="truncate text-xs">Computer Repair</span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => {
-                const isActive = pathname === item.url || (item.url !== "/dashboard" && pathname.startsWith(item.url))
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <a
-                        href={item.url}
-                        className={`flex items-center gap-3 px-3 py-2 font-medium transition-colors ${
-                          isActive ? "text-red-600 bg-red-50" : "text-gray-700 hover:text-red-600 hover:bg-red-50"
-                        }`}
-                      >
-                        <item.icon className="h-5 w-5" />
-                        <span>{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src="/placeholder-user.jpg" alt={user.name} />
+                    <AvatarFallback className="rounded-lg">
+                      {user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{user.name}</span>
+                    <span className="truncate text-xs">{user.role}</span>
+                  </div>
+                  <ChevronUp className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                side="bottom"
+                align="end"
+                sideOffset={4}
+              >
+                <DropdownMenuLabel className="p-0 font-normal">
+                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarImage src="/placeholder-user.jpg" alt={user.name} />
+                      <AvatarFallback className="rounded-lg">
+                        {user.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">{user.name}</span>
+                      <span className="truncate text-xs">{user.role}</span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/profile">
+                      <User />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/settings">
+                      <Settings />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

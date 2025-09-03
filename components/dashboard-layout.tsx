@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { WebSocketProvider } from "@/lib/websocket-context"
+
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { DashboardHeader } from "@/components/dashboard-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -12,14 +12,12 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <WebSocketProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <DashboardHeader />
-          <main className="flex-1 bg-gray-50">{children}</main>
-        </SidebarInset>
-      </SidebarProvider>
-    </WebSocketProvider>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <DashboardHeader />
+        <main className="flex-1 overflow-auto">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

@@ -1,9 +1,6 @@
-"use client"
-
 import jsPDF from "jspdf"
 import "jspdf-autotable"
-;
-
+;("use client")
 
 import type React from "react"
 import { useState } from "react"
@@ -261,7 +258,6 @@ function ReportSection({
     </div>
   )
 }
-
 
 export function ReportsOverview() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<string | null>(null)

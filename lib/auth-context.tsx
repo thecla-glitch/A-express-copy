@@ -5,62 +5,61 @@ import { createContext, useContext, useState, useEffect } from "react"
 
 interface User {
   id: string
-  name: string
+  username: string
   email: string
-  role: string
+  role: "Administrator" | "Manager" | "Technician" | "Front Desk"
+  first_name: string
+  last_name: string
+  name: string
 }
 
 interface AuthContextType {
   user: User | null
+  isAuthenticated: boolean
   isLoading: boolean
   login: (username: string, password: string) => Promise<boolean>
   logout: () => void
-  isAuthenticated: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
-}
-
-// Mock user data with all roles
-const mockUsers = [
+// Demo users
+const demoUsers: User[] = [
   {
     id: "1",
     username: "admin",
-    password: "admin123",
-    name: "Admin User",
     email: "admin@aplusexpress.com",
     role: "Administrator",
+    first_name: "System",
+    last_name: "Administrator",
+    name: "System Administrator",
   },
   {
     id: "2",
     username: "manager",
-    password: "manager123",
-    name: "Shop Manager",
     email: "manager@aplusexpress.com",
     role: "Manager",
+    first_name: "John",
+    last_name: "Manager",
+    name: "John Manager",
   },
   {
     id: "3",
-    username: "technician",
-    password: "tech123",
-    name: "John Technician",
-    email: "john.tech@aplusexpress.com",
+    username: "tech1",
+    email: "tech1@aplusexpress.com",
     role: "Technician",
+    first_name: "Mike",
+    last_name: "Technician",
+    name: "Mike Technician",
   },
   {
     id: "4",
     username: "frontdesk",
-    password: "desk123",
-    name: "Sarah Receptionist",
-    email: "sarah.desk@aplusexpress.com",
+    email: "frontdesk@aplusexpress.com",
     role: "Front Desk",
+    first_name: "Sarah",
+    last_name: "Front Desk",
+    name: "Sarah Front Desk",
   },
 ]
 
@@ -68,60 +67,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Check for existing session on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem("aplus-user")
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (error) {
-        localStorage.removeItem("aplus-user")
-      }
+    // Check for stored auth data
+    const storedUser = localStorage.getItem("auth_user")
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
     }
     setIsLoading(false)
   }, [])
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    setIsLoading(true)
+    // Simple demo authentication
+    const foundUser = demoUsers.find((u) => u.username === username)
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const foundUser = mockUsers.find((u) => u.username === username && u.password === password)
-
-    if (foundUser) {
-      const userData = {
-        id: foundUser.id,
-        name: foundUser.name,
-        email: foundUser.email,
-        role: foundUser.role,
-      }
-      setUser(userData)
-      localStorage.setItem("aplus-user", JSON.stringify(userData))
-      setIsLoading(false)
+    if (foundUser && password === "password") {
+      setUser(foundUser)
+      localStorage.setItem("auth_user", JSON.stringify(foundUser))
       return true
     }
 
-    setIsLoading(false)
     return false
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem("aplus-user")
+    localStorage.removeItem("auth_user")
+    window.location.href = "/"
   }
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        login,
-        logout,
-        isAuthenticated: !!user,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    logout,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
 }
