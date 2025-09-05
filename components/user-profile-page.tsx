@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { ChangeEvent, useRef, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { getMediaUrl } from "@/lib/media-utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -31,23 +32,27 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
+import { useProfile } from "@/lib/use-profile"
+import { profile } from "console"
+import { create } from "domain"
+
 // Mock user data
-const mockUserData = {
-  profilePicture: "",
-  phone: "(555) 123-4567",
-  address: "123 Main St, Anytown, ST 12345",
-  bio: "Experienced professional dedicated to providing excellent service at A+ express.",
-  employeeId: "EMP-001",
-  department: "Management",
-  startDate: "2023-01-15",
-  lastLogin: "2024-01-15 09:30 AM",
-  twoFactorEnabled: false,
-  emailNotifications: true,
-  pushNotifications: true,
-  taskUpdates: true,
-  systemAlerts: true,
-  weeklyReports: false,
-}
+// const mockUserData = {
+//   profilePicture: "",
+//   phone: "(555) 123-4567",
+//   address: "123 Main St, Anytown, ST 12345",
+//   bio: "Experienced professional dedicated to providing excellent service at A+ express.",
+//   employeeId: "EMP-001",
+//   department: "Management",
+//   startDate: "2023-01-15",
+//   lastLogin: "2024-01-15 09:30 AM",
+//   twoFactorEnabled: false,
+//   emailNotifications: true,
+//   pushNotifications: true,
+//   taskUpdates: true,
+//   systemAlerts: true,
+//   weeklyReports: false,
+// }
 
 // Mock activity data
 const mockActivity = [
@@ -88,39 +93,123 @@ const mockActivity = [
   },
 ]
 
+
 export function UserProfilePage() {
   const { user } = useAuth()
+  const {
+    isLoading,
+    error,
+    success,
+    updateProfile,
+    changePassword,
+    uploadProfilePicture,
+    clearMessages
+  } = useProfile()
   const [isEditing, setIsEditing] = useState(false)
-  const [userData, setUserData] = useState(mockUserData)
+
+
+
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [formData, setFormData] = useState({
-    name: user?.name || "",
+    first_name: user?.first_name || "",
+    last_name: user?.last_name || "",
+    profile_picture: user?.profile_picture || "",
     email: user?.email || "",
-    phone: userData.phone,
-    address: userData.address,
-    bio: userData.bio,
+    lastlogin: user?.last_login || "",
+    created_at: user?.created_at || "",
+    phone: user?.phone || "",
+    address: user?.address || "",
+    bio: user?.bio || "",
   })
 
-  const handleSave = () => {
-    // In a real app, this would make an API call
-    setUserData({
-      ...userData,
-      phone: formData.phone,
-      address: formData.address,
-      bio: formData.bio,
-    })
+  const [passwordData, setPasswordData] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  })
+
+
+  
+
+  // Generate full name from first and last name
+  const fullName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim()
+
+
+
+const handleSave = async () => {
+  
+  const cleanData = {
+    first_name: formData.first_name,
+    last_name: formData.last_name,
+    email: formData.email,
+    phone: formData.phone,
+  }
+  
+  const success = await updateProfile(cleanData)
+  if (success) {
     setIsEditing(false)
   }
+}
 
   const handleCancel = () => {
     setFormData({
-      name: user?.name || "",
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      profile_picture: user?.profile_picture || "",
       email: user?.email || "",
-      phone: userData.phone,
-      address: userData.address,
-      bio: userData.bio,
+      lastlogin: user?.last_login || "",
+      created_at: user?.created_at || "",
+      phone: user?.phone || "",
+      address: user?.address || "",
+      bio: user?.bio || "",
     })
     setIsEditing(false)
+    clearMessages()
   }
+
+  const handlePasswordChange = async () => {
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      alert("New passwords don't match!")
+      return
+    }
+
+    const success = await changePassword(passwordData)
+    if (success) {
+      setIsChangingPassword(false)
+      setPasswordData({
+        current_password: "",
+        new_password: "",
+        confirm_password: "",
+      })
+    }
+  }
+
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      alert('File size must be less than 5MB')
+      return
+    }
+
+    await uploadProfilePicture(file)
+  }
+
+  const triggerFileInput = () => {
+    
+    fileInputRef.current?.click()
+  }
+
+
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -136,6 +225,33 @@ export function UserProfilePage() {
         return <Activity className="h-4 w-4 text-gray-600" />
     }
   }
+
+  const formatEmployeeId = (id: number): string => {
+    return `EMP-${id.toString().padStart(3, '0')}`
+  }
+
+
+  const getDepartmentFromRole = (role: string): string => {
+    switch (role) {
+      case "Administrator":
+        return "Administration"
+      case "Manager":
+        return "Management"
+      case "Technician":
+        return "Technical Services"
+      case "Front Desk":
+        return "Customer Service"
+      default:
+        return role
+    }
+  }
+
+  const profilePictureUrl = user?.profile_picture
+    ? getMediaUrl(user.profile_picture)
+    : "/placeholder-user.jpg"
+
+
+
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -182,21 +298,34 @@ export function UserProfilePage() {
               <CardContent className="space-y-4">
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={userData.profilePicture || "/placeholder.svg"} />
-                    <AvatarFallback className="text-lg bg-red-100 text-red-600">
-                      {user?.name
+                    <AvatarImage src={profilePictureUrl || "/placeholder.svg"} />
+
+                    {/* <AvatarFallback className="text-lg bg-red-100 text-red-600">
+                      {fullName
                         ?.split(" ")
                         .map((n) => n[0])
                         .join("")}
-                    </AvatarFallback>
+                    </AvatarFallback> */}
                   </Avatar>
                   <div className="text-center">
-                    <h3 className="font-semibold text-lg">{user?.name}</h3>
+                    <h3 className="font-semibold text-lg">{fullName}</h3>
                     <p className="text-gray-600">{user?.email}</p>
                     {getRoleBadge(user?.role || "")}
                   </div>
-                  <Button variant="outline" size="sm">
-                    Change Picture
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                   <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={triggerFileInput}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Uploading..." : "Change Picture"}
                   </Button>
                 </div>
               </CardContent>
@@ -231,15 +360,27 @@ export function UserProfilePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
+
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="first_name">First Name</Label>
                     <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      id="first_name"
+                      value={formData.first_name}
+                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                       disabled={!isEditing}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last_name">Last Name</Label>
+                    <Input
+                      id="last_name"
+                      value={formData.last_name}
+                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
                     <Input
@@ -261,23 +402,23 @@ export function UserProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
-                    <Input
+                    {/* <Input
                       id="address"
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       disabled={!isEditing}
-                    />
+                    /> */}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
-                  <Textarea
+                  {/* <Textarea
                     id="bio"
                     value={formData.bio}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     disabled={!isEditing}
                     rows={3}
-                  />
+                  /> */}
                 </div>
               </CardContent>
             </Card>
@@ -299,7 +440,7 @@ export function UserProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Employee ID</p>
-                    <p className="font-medium">{userData.employeeId}</p>
+                    {user?.id ? formatEmployeeId(user?.id) : "EMP-000"}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -308,7 +449,8 @@ export function UserProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Department</p>
-                    <p className="font-medium">{userData.department}</p>
+                    {user?.role ? getDepartmentFromRole(user.role) : "Not Assigned"}
+
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -317,7 +459,15 @@ export function UserProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Start Date</p>
-                    <p className="font-medium">{userData.startDate}</p>
+                    <p className="font-medium">
+                      {new Date(formData.created_at).toLocaleString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -326,7 +476,17 @@ export function UserProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Last Login</p>
-                    <p className="font-medium">{userData.lastLogin}</p>
+
+                    <p className="font-medium">
+                      {new Date(formData.lastlogin).toLocaleString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+
                   </div>
                 </div>
               </div>
@@ -353,7 +513,7 @@ export function UserProfilePage() {
                     <p className="font-medium">Two-Factor Authentication</p>
                     <p className="text-sm text-gray-600">Add an extra layer of security</p>
                   </div>
-                  <Switch checked={userData.twoFactorEnabled} />
+                  {/* <Switch checked={userData.twoFactorEnabled} /> */}
                 </div>
               </CardContent>
             </Card>
@@ -420,7 +580,7 @@ export function UserProfilePage() {
                     <p className="font-medium">Email Notifications</p>
                     <p className="text-sm text-gray-600">Receive notifications via email</p>
                   </div>
-                  <Switch checked={userData.emailNotifications} />
+                  {/* <Switch checked={userData.emailNotifications} /> */}
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -428,7 +588,7 @@ export function UserProfilePage() {
                     <p className="font-medium">Push Notifications</p>
                     <p className="text-sm text-gray-600">Receive push notifications in your browser</p>
                   </div>
-                  <Switch checked={userData.pushNotifications} />
+                  {/* <Switch checked={userData.pushNotifications} /> */}
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -436,7 +596,7 @@ export function UserProfilePage() {
                     <p className="font-medium">Task Updates</p>
                     <p className="text-sm text-gray-600">Get notified when tasks are assigned or updated</p>
                   </div>
-                  <Switch checked={userData.taskUpdates} />
+                  {/* <Switch checked={userData.taskUpdates} /> */}
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -444,7 +604,7 @@ export function UserProfilePage() {
                     <p className="font-medium">System Alerts</p>
                     <p className="text-sm text-gray-600">Important system notifications and maintenance alerts</p>
                   </div>
-                  <Switch checked={userData.systemAlerts} />
+                  {/* <Switch checked={userData.systemAlerts} /> */}
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -452,7 +612,7 @@ export function UserProfilePage() {
                     <p className="font-medium">Weekly Reports</p>
                     <p className="text-sm text-gray-600">Receive weekly performance and activity reports</p>
                   </div>
-                  <Switch checked={userData.weeklyReports} />
+                  {/* <Switch checked={userData.weeklyReports} /> */}
                 </div>
               </div>
             </CardContent>

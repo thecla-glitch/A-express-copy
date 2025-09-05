@@ -214,6 +214,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }
 
+    // Create a full name from first_name and last_name
+  const fullName = `${user.first_name} ${user.last_name}`.trim()
+  
+  // Generate initials for avatar fallback
+  const getInitials = () => {
+    if (user.first_name && user.last_name) {
+      return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+    } else if (user.first_name) {
+      return user.first_name[0].toUpperCase()
+    } else if (user.username) {
+      return user.username[0].toUpperCase()
+    }
+    return "U"
+  }
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -262,16 +277,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src="/placeholder-user.jpg" alt={user.name} />
+                    <AvatarImage src="/placeholder-user.jpg" alt={fullName} />
                     <AvatarFallback className="rounded-lg">
-                      {user.name
+                      {fullName
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user.name}</span>
+                    <span className="truncate font-semibold">{fullName}</span>
                     <span className="truncate text-xs">{user.role}</span>
                   </div>
                   <ChevronUp className="ml-auto size-4" />
@@ -286,16 +301,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src="/placeholder-user.jpg" alt={user.name} />
+                      <AvatarImage src="/placeholder-user.jpg" alt={fullName} />
                       <AvatarFallback className="rounded-lg">
-                        {user.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                        {fullName}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{user.name}</span>
+                       <span className="truncate font-semibold">{fullName}</span>
                       <span className="truncate text-xs">{user.role}</span>
                     </div>
                   </div>
