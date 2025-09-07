@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { NewTaskForm } from "@/components/new-task-form"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { NewTaskForm } from "@/components/tasks/new-task-form"
 
 export default function NewTaskPage() {
   const { isAuthenticated, user } = useAuth()

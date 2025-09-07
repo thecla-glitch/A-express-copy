@@ -5,8 +5,8 @@ import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 import { NotificationProvider } from "@/lib/notification-context"
 import { WebSocketProvider } from "@/lib/websocket-context"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import { ThemeProvider } from "@/components/provider/theme-provider"
+import { Toaster } from "@/components/ui/feedback/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 

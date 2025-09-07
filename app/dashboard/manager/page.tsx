@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { ManagerDashboard } from "@/components/manager-dashboard"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { ManagerDashboard } from "@/components/dashboard/overviews/manager-dashboard"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 

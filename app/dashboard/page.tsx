@@ -1,11 +1,11 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { AdminDashboard } from "@/components/admin-dashboard"
-import { ManagerDashboard } from "@/components/manager-dashboard"
-import { TechnicianDashboard } from "@/components/technician-dashboard"
-import { FrontDeskDashboard } from "@/components/front-desk-dashboard"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { AdminDashboard } from "@/components/dashboard/overviews/admin-dashboard"
+import { ManagerDashboard } from "@/components/dashboard/overviews/manager-dashboard"
+import { TechnicianDashboard } from "@/components/dashboard/overviews/technician-dashboard"
+import { FrontDeskDashboard } from "@/components/dashboard/overviews/front-desk-dashboard"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 

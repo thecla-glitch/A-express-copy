@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { TechnicianTaskDetails } from "@/components/technician-task-details"
-import { TaskDetailsPage } from "@/components/task-details-page"
+import { TechnicianTaskDetails } from "@/components/tasks/technician-task-details"
+import { TaskDetailsPage } from "@/components/tasks/task-details-page"
 
 interface TaskDetailsProps {
   params: {
