@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { TechnicianTasksPage } from "@/components/technician-tasks-page"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { TechnicianTasksPage } from "@/components/tasks/technician-tasks-page"
 
 export default function TechnicianPage() {
   const { isAuthenticated, user } = useAuth()

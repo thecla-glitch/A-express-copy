@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { ManagerUserManagement } from "@/components/manager-user-management"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { ManagerUserManagement } from "@/components/users/manager-user-management"
 
 export default function ManagerUsersPage() {
   const { isAuthenticated, user } = useAuth()

@@ -1,9 +1,21 @@
-# Django Backend Requirements
-Django==4.2.7
-djangorestframework==3.14.0
-django-cors-headers==4.3.1
-djangorestframework-simplejwt==5.3.0
-psycopg2-binary==2.9.7
+# Django Framework
+django==5.0.7
+
+# Django REST Framework for building APIs
+djangorestframework==3.15.2
+
+# MySQL/MariaDB Database Connector (for XAMPP)
+mysql-connector-python==8.4.0
+
+# JSON Web Token Authentication for DRF
+djangorestframework-simplejwt==5.3.1
+
+# CORS Headers for allowing cross-origin requests
+django-cors-headers==4.4.0
+
+# WSGI HTTP Server for production deployment
+gunicorn==22.0.0
+
+# Manages environment variables and .env files
 python-decouple==3.8
-Pillow==10.0.1
-django-filter==23.3
+python-dotenv==1.0.1

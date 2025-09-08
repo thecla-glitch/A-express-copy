@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { ReportsOverview } from "@/components/reports-overview"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { ReportsOverview } from "@/components/reports/reports-overview"
 
 export default function ReportsPage() {
   const { isAuthenticated, user } = useAuth()

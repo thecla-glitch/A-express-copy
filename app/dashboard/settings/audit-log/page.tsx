@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { SystemAuditLog } from "@/components/system-audit-log"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { SystemAuditLog } from "@/components/system/system-audit-log"
 
 export default function AuditLogPage() {
   const { isAuthenticated, user } = useAuth()

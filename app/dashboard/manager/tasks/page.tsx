@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { ManagerTasksPage } from "@/components/manager-tasks-page"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { ManagerTasksPage } from "@/components/tasks/manager-tasks-page"
 
 export default function ManagerTasksPageRoute() {
   const { isAuthenticated, user } = useAuth()

@@ -1,8 +1,8 @@
 "use client"
 
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
+import { Button } from "@/components/ui/core/button"
 import { ArrowLeft } from "lucide-react"
 
 export default function RevenueReportPage() {

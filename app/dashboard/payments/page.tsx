@@ -1,7 +1,12 @@
 "use client"
 
-import { PaymentsOverview } from "@/components/payments-overview"
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
+import { PaymentsOverview } from "@/components/payments/payments-overview"
 
 export default function PaymentsPage() {
-  return <PaymentsOverview />
+  return (
+    <DashboardLayout>
+      <PaymentsOverview />
+    </DashboardLayout>
+  )
 }

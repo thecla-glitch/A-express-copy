@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { LoginForm } from "@/components/login-form"
+import { LoginForm } from "@/components/auth/login-form"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 
