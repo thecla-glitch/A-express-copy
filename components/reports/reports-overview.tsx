@@ -1,6 +1,8 @@
+"use client"
+
 import jsPDF from "jspdf"
 import "jspdf-autotable"
-;("use client")
+
 
 import type React from "react"
 import { useState } from "react"
@@ -387,7 +389,7 @@ export function ReportsOverview() {
       }
 
       // Add footer
-      const pageCount = pdf.internal.getNumberOfPages()
+      const pageCount = pdf.getNumberOfPages()
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i)
         pdf.setFontSize(8)
