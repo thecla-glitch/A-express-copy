@@ -40,7 +40,7 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`
-    
+
     // Prepare headers
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
@@ -89,7 +89,7 @@ export class ApiClient {
     }
   }
 
-  // Auth methods
+
   async login(username: string, password: string) {
     return this.request('/auth/login/', {
       method: 'POST',
@@ -97,9 +97,9 @@ export class ApiClient {
     })
   }
 
-async getProfile(): Promise<ApiResponse<UserResponse>> {
-  return this.request<UserResponse>('/auth/profile/')
-}
+  async getProfile(): Promise<ApiResponse<UserResponse>> {
+    return this.request<UserResponse>('/auth/profile/')
+  }
 
   async registerUser(userData: any) {
     return this.request('/auth/register/', {
@@ -161,6 +161,42 @@ async getProfile(): Promise<ApiResponse<UserResponse>> {
       // Don't set headers here - the request method will handle it
     })
   }
+
+
+  async getUserDetail(userId: number): Promise<ApiResponse<UserResponse>> {
+    return this.request<UserResponse>(`/auth/users/${userId}/`);
+  }
+
+  async updateUser(userId: number, userData: any): Promise<ApiResponse<UserResponse>> {
+    return this.request<UserResponse>(`/auth/users/${userId}/update/`, {
+      method: 'PATCH',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async deleteUser(userId: number): Promise<ApiResponse> {
+    return this.request(`/auth/users/${userId}/delete/`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deactivateUser(userId: number): Promise<ApiResponse> {
+    return this.request(`/auth/users/${userId}/deactivate/`, {
+      method: 'POST',
+    });
+  }
+
+  async activateUser(userId: number): Promise<ApiResponse> {
+    return this.request(`/auth/users/${userId}/activate/`, {
+      method: 'POST',
+    });
+  }
+
+  async listUsersByRole(role: string): Promise<ApiResponse<UserResponse[]>> {
+    return this.request<UserResponse[]>(`/auth/users/role/${role}/`);
+  }
+
+
 }
 
 // Create a singleton instance

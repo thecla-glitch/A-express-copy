@@ -131,27 +131,27 @@ export function UserProfilePage() {
   })
 
 
-  
+
 
   // Generate full name from first and last name
   const fullName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim()
 
 
 
-const handleSave = async () => {
-  
-  const cleanData = {
-    first_name: formData.first_name,
-    last_name: formData.last_name,
-    email: formData.email,
-    phone: formData.phone,
+  const handleSave = async () => {
+
+    const cleanData = {
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      email: formData.email,
+      phone: formData.phone,
+    }
+
+    const success = await updateProfile(cleanData)
+    if (success) {
+      setIsEditing(false)
+    }
   }
-  
-  const success = await updateProfile(cleanData)
-  if (success) {
-    setIsEditing(false)
-  }
-}
 
   const handleCancel = () => {
     setFormData({
@@ -205,7 +205,7 @@ const handleSave = async () => {
   }
 
   const triggerFileInput = () => {
-    
+
     fileInputRef.current?.click()
   }
 
@@ -319,8 +319,8 @@ const handleSave = async () => {
                     accept="image/*"
                     className="hidden"
                   />
-                   <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={triggerFileInput}
                     disabled={isLoading}
@@ -506,7 +506,81 @@ const handleSave = async () => {
                 <CardDescription>Manage your password and security settings</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button className="w-full">Change Password</Button>
+                {!isChangingPassword ? (
+                  <Button className="w-full" onClick={() => setIsChangingPassword(true)}>
+                    Change Password
+                  </Button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="current_password">Current Password</Label>
+                      <Input
+                        id="current_password"
+                        type="password"
+                        value={passwordData.current_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                        placeholder="Enter current password"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="new_password">New Password</Label>
+                      <Input
+                        id="new_password"
+                        type="password"
+                        value={passwordData.new_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                        placeholder="Enter new password (min 8 characters)"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm_password">Confirm New Password</Label>
+                      <Input
+                        id="confirm_password"
+                        type="password"
+                        value={passwordData.confirm_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        onClick={handlePasswordChange}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Updating..." : "Update Password"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setIsChangingPassword(false)
+                          setPasswordData({
+                            current_password: "",
+                            new_password: "",
+                            confirm_password: "",
+                          })
+                          clearMessages()
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {success && (
+                  <div className="p-3 bg-green-100 text-green-700 rounded-md text-sm">
+                    {success}
+                  </div>
+                )}
+
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
