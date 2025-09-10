@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
-import { Button } from "@/components/ui/core/button"
-import { Input } from "@/components/ui/core/input"
-import { Label } from "@/components/ui/core/label"
-import { Badge } from "@/components/ui/core/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -28,80 +28,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/feedback/alert-dialog"
-import { Users, UserPlus, Search, Edit, Trash2, Shield, Activity, Clock } from "lucide-react"
+} from "@/components/ui/alert-dialog"
+import { Users, UserPlus, Search, Edit, Trash2, Shield, Activity, Clock, Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: "manager" | "technician" | "frontdesk"
-  status: "active" | "inactive"
-  lastLogin: string
-  createdAt: string
-}
-
-const initialUsers: User[] = [
-  {
-    id: "USR001",
-    name: "John Manager",
-    email: "john.manager@aplusexpress.com",
-    role: "manager",
-    status: "active",
-    lastLogin: "2024-01-15 09:30",
-    createdAt: "2023-06-15",
-  },
-  {
-    id: "USR002",
-    name: "Sarah Tech",
-    email: "sarah.tech@aplusexpress.com",
-    role: "technician",
-    status: "active",
-    lastLogin: "2024-01-15 08:45",
-    createdAt: "2023-08-20",
-  },
-  {
-    id: "USR003",
-    name: "Mike Frontdesk",
-    email: "mike.front@aplusexpress.com",
-    role: "frontdesk",
-    status: "active",
-    lastLogin: "2024-01-14 17:20",
-    createdAt: "2023-09-10",
-  },
-  {
-    id: "USR004",
-    name: "Lisa Tech",
-    email: "lisa.tech@aplusexpress.com",
-    role: "technician",
-    status: "inactive",
-    lastLogin: "2024-01-10 14:15",
-    createdAt: "2023-11-05",
-  },
-]
+import { useUserManagement } from "@/lib/use-user-management"
 
 export function ManagerUserManagement() {
-  const [users, setUsers] = useState<User[]>(initialUsers)
+  const { users, isLoading, createUser, updateUser, deleteUser, toggleUserStatus } = useUserManagement()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editingUser, setEditingUser] = useState<any>(null)
   const [newUser, setNewUser] = useState({
-    name: "",
+    username: "",
     email: "",
-    role: "technician" as const,
+    first_name: "",
+    last_name: "",
+    phone: "",
+    role: "Technician" as const,
     password: "",
   })
 
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.role.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddUser = () => {
-    if (!newUser.name || !newUser.email || !newUser.password) {
+  const handleAddUser = async () => {
+    if (!newUser.username || !newUser.email || !newUser.password || !newUser.first_name || !newUser.last_name) {
       toast({
         title: "Error",
         description: "Please fill in all required fields.",
@@ -110,70 +67,70 @@ export function ManagerUserManagement() {
       return
     }
 
-    const user: User = {
-      id: `USR${String(users.length + 1).padStart(3, "0")}`,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      status: "active",
-      lastLogin: "Never",
-      createdAt: new Date().toISOString().split("T")[0],
+    const success = await createUser(newUser)
+    if (success) {
+      setNewUser({
+        username: "",
+        email: "",
+        first_name: "",
+        last_name: "",
+        phone: "",
+        role: "Technician",
+        password: "",
+      })
+      setIsAddDialogOpen(false)
     }
-
-    setUsers([...users, user])
-    setNewUser({ name: "", email: "", role: "technician", password: "" })
-    setIsAddDialogOpen(false)
-
-    toast({
-      title: "Success",
-      description: `User ${user.name} has been added successfully.`,
-    })
   }
 
-  const handleEditUser = (user: User) => {
-    setEditingUser(user)
-  }
-
-  const handleUpdateUser = () => {
+  const handleUpdateUser = async () => {
     if (!editingUser) return
 
-    setUsers(users.map((user) => (user.id === editingUser.id ? editingUser : user)))
-    setEditingUser(null)
-
-    toast({
-      title: "Success",
-      description: `User ${editingUser.name} has been updated successfully.`,
+    const success = await updateUser(editingUser.id, {
+      first_name: editingUser.first_name,
+      last_name: editingUser.last_name,
+      email: editingUser.email,
+      phone: editingUser.phone,
+      role: editingUser.role,
     })
+
+    if (success) {
+      setEditingUser(null)
+    }
   }
 
-  const handleToggleStatus = (userId: string) => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId ? { ...user, status: user.status === "active" ? "inactive" : "active" } : user,
-      ),
+  const handleDeleteUser = async (userId: number) => {
+    const success = await deleteUser(userId)
+    if (success) {
+      // Success handled in the hook
+    }
+  }
+
+  const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
+    await toggleUserStatus(userId, !currentStatus)
+  }
+
+  const activeUsers = users.filter((user) => user.is_active).length
+  const totalUsers = users.length
+  const technicians = users.filter((user) => user.role === "Technician").length
+  const frontDesk = users.filter((user) => user.role === "Front Desk").length
+  const managers = users.filter((user) => user.role === "Manager").length
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString()
+  }
+
+  if (isLoading && users.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading users...</span>
+      </div>
     )
   }
-
-  const handleDeleteUser = (userId: string) => {
-    const user = users.find((u) => u.id === userId)
-    setUsers(users.filter((user) => user.id !== userId))
-
-    toast({
-      title: "Success",
-      description: `User ${user?.name} has been removed successfully.`,
-    })
-  }
-
-  const handleResetPassword = (userId: string) => {
-    const user = users.find((u) => u.id === userId)
-    toast({
-      title: "Password Reset",
-      description: `Password reset email sent to ${user?.email}.`,
-    })
-  }
-
-  const activeUsers = users.filter((user) => user.status === "active").length
-  const totalUsers = users.length
 
   return (
     <div className="space-y-6">
@@ -207,7 +164,7 @@ export function ManagerUserManagement() {
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users.filter((u) => u.role === "technician").length}</div>
+            <div className="text-2xl font-bold">{technicians}</div>
             <p className="text-xs text-muted-foreground">Technical staff</p>
           </CardContent>
         </Card>
@@ -218,7 +175,7 @@ export function ManagerUserManagement() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users.filter((u) => u.role === "frontdesk").length}</div>
+            <div className="text-2xl font-bold">{frontDesk}</div>
             <p className="text-xs text-muted-foreground">Customer service</p>
           </CardContent>
         </Card>
@@ -239,55 +196,91 @@ export function ManagerUserManagement() {
                   Add Team Member
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Add New Team Member</DialogTitle>
                   <DialogDescription>Create a new user account for your team member.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={newUser.name}
-                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                      placeholder="Enter full name"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="username">Username *</Label>
+                      <Input
+                        id="username"
+                        value={newUser.username}
+                        onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                        placeholder="Enter username"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newUser.email}
+                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                        placeholder="Enter email address"
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                      placeholder="Enter email address"
-                    />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="first_name">First Name *</Label>
+                      <Input
+                        id="first_name"
+                        value={newUser.first_name}
+                        onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })}
+                        placeholder="Enter first name"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="last_name">Last Name *</Label>
+                      <Input
+                        id="last_name"
+                        value={newUser.last_name}
+                        onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })}
+                        placeholder="Enter last name"
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select
-                      value={newUser.role}
-                      onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="manager">Manager</SelectItem>
-                        <SelectItem value="technician">Technician</SelectItem>
-                        <SelectItem value="frontdesk">Front Desk</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        value={newUser.phone}
+                        onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="role">Role *</Label>
+                      <Select
+                        value={newUser.role}
+                        onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Manager">Manager</SelectItem>
+                          <SelectItem value="Technician">Technician</SelectItem>
+                          <SelectItem value="Front Desk">Front Desk</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+
                   <div className="grid gap-2">
-                    <Label htmlFor="password">Temporary Password</Label>
+                    <Label htmlFor="password">Password *</Label>
                     <Input
                       id="password"
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      placeholder="Enter temporary password"
+                      placeholder="Enter password"
                     />
                   </div>
                 </div>
@@ -295,7 +288,9 @@ export function ManagerUserManagement() {
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleAddUser}>Add User</Button>
+                  <Button onClick={handleAddUser} disabled={isLoading}>
+                    {isLoading ? "Adding..." : "Add User"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -316,12 +311,14 @@ export function ManagerUserManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User ID</TableHead>
+                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Login</TableHead>
+                <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -329,51 +326,85 @@ export function ManagerUserManagement() {
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.id}</TableCell>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.first_name} {user.last_name}</TableCell>
+                  <TableCell>{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="capitalize">
+                    <Badge variant="outline" className={user.role === "Manager" ? "bg-blue-100 text-blue-800" : user.role === "Technician" ? "bg-green-100 text-green-800" : "bg-purple-100 text-purple-800"}>
                       {user.role}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Switch checked={user.status === "active"} onCheckedChange={() => handleToggleStatus(user.id)} />
-                      <Badge variant={user.status === "active" ? "default" : "secondary"}>{user.status}</Badge>
+                      <Switch 
+                        checked={user.is_active} 
+                        onCheckedChange={() => handleToggleStatus(user.id, user.is_active)}
+                        disabled={isLoading}
+                      />
+                      <Badge variant={user.is_active ? "default" : "secondary"}>
+                        {user.is_active ? "Active" : "Inactive"}
+                      </Badge>
                     </div>
                   </TableCell>
-                  <TableCell>{user.lastLogin}</TableCell>
+                  <TableCell>
+                    {user.last_login ? formatDateTime(user.last_login) : "Never"}
+                  </TableCell>
+                  <TableCell>
+                    {user.created_at ? formatDate(user.created_at) : "N/A"}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={() => handleEditUser(user)}>
+                          <Button variant="ghost" size="sm" onClick={() => setEditingUser(user)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-2xl">
                           <DialogHeader>
                             <DialogTitle>Edit User</DialogTitle>
                             <DialogDescription>Update user information and role.</DialogDescription>
                           </DialogHeader>
                           {editingUser && (
                             <div className="grid gap-4 py-4">
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-name">Full Name</Label>
-                                <Input
-                                  id="edit-name"
-                                  value={editingUser.name}
-                                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                                />
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-first_name">First Name</Label>
+                                  <Input
+                                    id="edit-first_name"
+                                    value={editingUser.first_name}
+                                    onChange={(e) => setEditingUser({ ...editingUser, first_name: e.target.value })}
+                                  />
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-last_name">Last Name</Label>
+                                  <Input
+                                    id="edit-last_name"
+                                    value={editingUser.last_name}
+                                    onChange={(e) => setEditingUser({ ...editingUser, last_name: e.target.value })}
+                                  />
+                                </div>
                               </div>
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-email">Email</Label>
-                                <Input
-                                  id="edit-email"
-                                  value={editingUser.email}
-                                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                                />
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-email">Email</Label>
+                                  <Input
+                                    id="edit-email"
+                                    value={editingUser.email}
+                                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                                  />
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-phone">Phone</Label>
+                                  <Input
+                                    id="edit-phone"
+                                    value={editingUser.phone || ""}
+                                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                                  />
+                                </div>
                               </div>
+
                               <div className="grid gap-2">
                                 <Label htmlFor="edit-role">Role</Label>
                                 <Select
@@ -384,9 +415,9 @@ export function ManagerUserManagement() {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="manager">Manager</SelectItem>
-                                    <SelectItem value="technician">Technician</SelectItem>
-                                    <SelectItem value="frontdesk">Front Desk</SelectItem>
+                                    <SelectItem value="Manager">Manager</SelectItem>
+                                    <SelectItem value="Technician">Technician</SelectItem>
+                                    <SelectItem value="Front Desk">Front Desk</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -396,14 +427,12 @@ export function ManagerUserManagement() {
                             <Button variant="outline" onClick={() => setEditingUser(null)}>
                               Cancel
                             </Button>
-                            <Button onClick={handleUpdateUser}>Update User</Button>
+                            <Button onClick={handleUpdateUser} disabled={isLoading}>
+                              {isLoading ? "Updating..." : "Update User"}
+                            </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
-
-                      <Button variant="ghost" size="sm" onClick={() => handleResetPassword(user.id)}>
-                        Reset Password
-                      </Button>
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -416,12 +445,14 @@ export function ManagerUserManagement() {
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
                               This action cannot be undone. This will permanently delete the user account for{" "}
-                              {user.name}.
+                              {user.first_name} {user.last_name}.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>Delete User</AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                              Delete User
+                            </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
