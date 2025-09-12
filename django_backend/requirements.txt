@@ -1,0 +1,24 @@
+# Django Framework
+django==5.0.7
+
+# Django REST Framework for building APIs
+djangorestframework
+
+# MySQL/MariaDB Database Connector (for XAMPP)
+mysqlclient
+
+# Pillow for image processing
+Pillow
+
+# JSON Web Token Authentication for DRF
+djangorestframework-simplejwt==5.3.1
+
+# CORS Headers for allowing cross-origin requests
+django-cors-headers==4.4.0
+
+# WSGI HTTP Server for production deployment
+gunicorn==22.0.0
+
+# Manages environment variables and .env files
+python-decouple==3.8
+python-dotenv==1.0.1
