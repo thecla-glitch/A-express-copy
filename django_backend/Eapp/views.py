@@ -1,4 +1,4 @@
-from rest_framework import status, permissions
+from rest_framework import status, permissions, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -6,11 +6,11 @@ from django.utils import timezone
 from django.db import models  # For Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Task, TaskActivity, Payment, CollaborationRequest
+from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location
 from .serializers import (
     ChangePasswordSerializer, UserProfileUpdateSerializer, UserSerializer, 
     UserRegistrationSerializer, LoginSerializer, TaskSerializer,
-    TaskActivitySerializer, PaymentSerializer, CollaborationRequestSerializer
+    TaskActivitySerializer, PaymentSerializer, CollaborationRequestSerializer, LocationSerializer
 )
 from django.shortcuts import get_object_or_404
 
@@ -492,3 +492,21 @@ def collaboration_request_detail(request, request_id):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LocationViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows locations to be viewed or edited.
+    """
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+    permission_classes = [IsAdminOrManager]
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_task_status_options(request):
+    return Response(Task.Status.choices)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_task_priority_options(request):
+    return Response(Task.Priority.choices)

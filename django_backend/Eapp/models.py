@@ -7,6 +7,8 @@ import os
 from uuid import uuid4
 from decimal import Decimal
 
+def get_current_date():
+    return timezone.now().date()
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, username, email, password=None, **extra_fields):
@@ -167,7 +169,7 @@ class Task(models.Model):
     )
     current_location = models.CharField(max_length=100)
     urgency = models.CharField(max_length=20, choices=Priority.choices, default=Priority.MEDIUM)
-    date_in = models.DateField(default=lambda: timezone.now().date())
+    date_in = models.DateField(default=get_current_date)
     approved_date = models.DateField(null=True, blank=True)
     paid_date = models.DateField(null=True, blank=True)
     date_out = models.DateField(null=True, blank=True)
@@ -235,7 +237,7 @@ class Payment(models.Model):
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateField(default=lambda: timezone.now().date())
+    date = models.DateField(default=get_current_date)
     method = models.CharField(max_length=20, choices=PaymentMethod.choices)
     reference = models.CharField(max_length=100, blank=True, null=True)
 
@@ -269,3 +271,12 @@ class CollaborationRequest(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class Location(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']

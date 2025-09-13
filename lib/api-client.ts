@@ -32,3 +32,6 @@ export const addTaskActivity = (taskId: string, data: any) => apiClient.post(`/t
 
 export const getTaskPayments = (taskId: string) => apiClient.get(`/tasks/${taskId}/payments/`);
 export const addTaskPayment = (taskId: string, data: any) => apiClient.post(`/tasks/${taskId}/add-payment/`, data);
+
+export const listTechnicians = () => apiClient.get('/technicians/');
+export const getLocations = () => apiClient.get('/locations/');

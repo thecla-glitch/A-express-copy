@@ -1,5 +1,9 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
+
+router = DefaultRouter()
+router.register(r'locations', views.LocationViewSet, basename='location')
 
 urlpatterns = [
     # Authentication endpoints
@@ -29,6 +33,9 @@ urlpatterns = [
     path('tasks/<int:task_id>/payments/', views.task_payments, name='task_payments'),
     path('tasks/<int:task_id>/add-payment/', views.add_task_payment, name='add_task_payment'),
     path('tasks/<int:task_id>/send-update/', views.send_customer_update, name='send_customer_update'),
+    path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
+    path('tasks/priority-options/', views.get_task_priority_options, name='get_task_priority_options'),
+
     
     # Technician endpoints
     path('technicians/', views.list_technicians, name='list_technicians'),
@@ -37,4 +44,5 @@ urlpatterns = [
     path('tasks/<int:task_id>/collaboration-requests/', views.create_collaboration_request, name='create_collaboration_request'),
     path('collaboration-requests/', views.list_collaboration_requests, name='list_collaboration_requests'),
     path('collaboration-requests/<int:request_id>/', views.collaboration_request_detail, name='collaboration_request_detail'),
+    path('', include(router.urls)),
 ]

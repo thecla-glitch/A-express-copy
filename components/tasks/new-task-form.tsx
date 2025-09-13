@@ -16,7 +16,13 @@ interface NewTaskFormProps {
   onClose: () => void
 }
 
+interface Location {
+  id: number;
+  name: string;
+}
+
 interface FormData {
+  title: string;
   customer_name: string
   customer_phone: string
   customer_email: string
@@ -39,21 +45,21 @@ const URGENCY_OPTIONS = [
   { value: 'High', label: 'High' },
 ]
 
-const LOCATION_OPTIONS = [
-  { value: 'Front Desk Intake', label: 'Front Desk Intake' },
-  { value: 'Diagnostic Station', label: 'Diagnostic Station' },
-  { value: 'Repair Bay 1', label: 'Repair Bay 1' },
-  { value: 'Repair Bay 2', label: 'Repair Bay 2' },
-  { value: 'Parts Storage', label: 'Parts Storage' },
-  { value: 'Quality Control', label: 'Quality Control' },
-]
+const generateTaskID = () => {
+    const prefix = "TASK";
+    const timestamp = Date.now().toString(36).slice(-4).toUpperCase();
+    const randomPart = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `${prefix}-${timestamp}-${randomPart}`;
+}
 
 export function NewTaskForm({ onClose }: NewTaskFormProps) {
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [technicians, setTechnicians] = useState<User[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const [formData, setFormData] = useState<FormData>({
+    title: '',
     customer_name: '',
     customer_phone: '',
     customer_email: '',
@@ -62,12 +68,14 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
     serial_number: '',
     description: '',
     urgency: 'Medium',
-    current_location: 'Front Desk Intake',
+    current_location: '',
     assigned_to: '',
   })
   const [errors, setErrors] = useState<FormErrors>({})
 
   useEffect(() => {
+    setFormData(prev => ({...prev, title: generateTaskID()}));
+
     if (user && (user.role === 'Manager' || user.role === 'Administrator')) {
       apiClient.get('/users/role/Technician/').then(response => {
         if (response.data) {
@@ -75,35 +83,32 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
         }
       })
     }
+    apiClient.get('/locations/').then(response => {
+      if (response.data) {
+        setLocations(response.data)
+        if (response.data.length > 0) {
+            setFormData(prev => ({...prev, current_location: response.data[0].name}))
+        }
+      }
+    })
   }, [user])
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
 
+    if (!formData.title.trim()) newErrors.title = 'Title is required'
     if (!formData.customer_name.trim()) newErrors.customer_name = 'Name is required'
     if (!formData.customer_phone.trim()) newErrors.customer_phone = 'Phone is required'
     if (!formData.serial_number.trim()) newErrors.serial_number = 'Serial number is required'
     if (!formData.description.trim()) newErrors.description = 'Description is required'
     if (!formData.urgency) newErrors.urgency = 'Urgency is required'
+    if (!formData.current_location) newErrors.current_location = 'Location is required'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const formatPhoneNumber = (value: string): string => {
-    const digits = value.replace(/\D/g, '')
-    if (digits.length >= 6) {
-      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`
-    } else if (digits.length >= 3) {
-      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
-    }
-    return digits
-  }
-
   const handleInputChange = (field: keyof FormData, value: string) => {
-    if (field === 'customer_phone') {
-      value = formatPhoneNumber(value)
-    }
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
@@ -145,6 +150,14 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
       <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
         <div className='space-y-4'>
           <h3 className='text-lg font-medium text-gray-900'>Customer & Device</h3>
+          <FormField id='title' label='Task ID' required error={errors.title}>
+            <Input
+              id='title'
+              value={formData.title}
+              readOnly
+              className='bg-gray-100'
+            />
+          </FormField>
           <FormField id='customer_name' label='Customer Name' required error={errors.customer_name}>
             <Input
               id='customer_name'
@@ -156,10 +169,9 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
           <FormField id='customer_phone' label='Phone Number' required error={errors.customer_phone}>
             <Input
               id='customer_phone'
-              type='tel'
+              type='text'
               value={formData.customer_phone}
               onChange={(e) => handleInputChange('customer_phone', e.target.value)}
-              maxLength={14}
               className={errors.customer_phone ? 'border-red-500' : ''}
             />
           </FormField>
@@ -223,15 +235,15 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
               </SelectContent>
             </Select>
           </FormField>
-          <FormField id='current_location' label='Initial Location' required>
+          <FormField id='current_location' label='Initial Location' required error={errors.current_location}>
             <Select value={formData.current_location} onValueChange={(value) => handleInputChange('current_location', value)}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className={errors.current_location ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent>
-                {LOCATION_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {locations.map((location) => (
+                  <SelectItem key={location.id} value={location.name}>
+                    {location.name}
                   </SelectItem>
                 ))}
               </SelectContent>

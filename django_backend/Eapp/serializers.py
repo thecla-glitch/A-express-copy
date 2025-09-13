@@ -2,16 +2,17 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, CollaborationRequest
+from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location
 
 class UserSerializer(serializers.ModelSerializer):
     profile_picture_url = serializers.SerializerMethodField()
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name',
                     'phone', 'role','profile_picture', 'profile_picture_url', 'is_active', 'created_at', 'last_login') 
-        read_only_fields = ('id', 'created_at', 'last_login') 
+        read_only_fields = ('id', 'created_at', 'last_login', 'full_name') 
         
     def get_profile_picture_url(self, obj):
         request = self.context.get('request')
@@ -168,3 +169,8 @@ class CollaborationRequestSerializer(serializers.ModelSerializer):
 
         # Managers can freely update assigned_to and status
         return super().update(instance, validated_data)
+
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['id', 'name']

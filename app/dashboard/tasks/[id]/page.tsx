@@ -1,5 +1,5 @@
 "use client"
-
+import React from "react"
 import { useAuth } from "@/lib/auth-context"
 import { TechnicianTaskDetails } from "@/components/tasks/technician-task-details"
 import { TaskDetailsPage } from "@/components/tasks/task-details-page"
@@ -10,7 +10,8 @@ interface TaskDetailsProps {
   }
 }
 
-export default function TaskDetails({ params }: TaskDetailsProps) {
+export default function TaskDetails({ params: paramsPromise }: TaskDetailsProps) {
+  const params = React.use(paramsPromise)
   const { user } = useAuth()
 
   if (!user) {

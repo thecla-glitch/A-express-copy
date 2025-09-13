@@ -30,38 +30,13 @@ import {
   CreditCard,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { getTask, updateTask, addTaskActivity, addTaskPayment } from "@/lib/api-client"
+import { getTask, updateTask, addTaskActivity, addTaskPayment, listTechnicians, getLocations } from "@/lib/api-client"
+import { getTaskStatusOptions, getTaskPriorityOptions } from "@/lib/tasks-api"
 import { SendCustomerUpdateDialog } from "./send-customer-update-dialog"
 import { TaskActivityLog } from "./task-activity-log"
 
-const statusOptions = [
-  "Pending",
-  "In Progress",
-  "Awaiting Parts",
-  "Ready for QC",
-  "Completed",
-  "Ready for Pickup",
-  "Picked Up",
-  "Cancelled",
-]
-
-const locationOptions = [
-  "Front Desk Intake",
-  "Diagnostic Station",
-  "Repair Bay 1",
-  "Repair Bay 2",
-  "Parts Storage",
-  "Quality Control",
-  "Front Desk",
-]
-
-const technicianOptions = ["John Smith", "Sarah Johnson", "Mike Chen", "Lisa Brown", "David Wilson"]
-
-const urgencyOptions = ["Low", "Medium", "High"]
-
-const paymentStatusOptions = ["Unpaid", "Partially Paid", "Paid", "Refunded"]
-
-const paymentMethodOptions = ["Cash", "Credit Card", "Debit Card", "Check", "Digital Payment"]
+const paymentStatusOptions = ["Unpaid", "Partially Paid", "Paid", "Refunded"];
+const paymentMethodOptions = ["Cash", "Credit Card", "Debit Card", "Check", "Digital Payment"];
 
 interface TaskDetailsPageProps {
   taskId: string
@@ -74,6 +49,11 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [newPaymentAmount, setNewPaymentAmount] = useState("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
   const [isEditingCustomer, setIsEditingCustomer] = useState(false)
+  const [isEditingLaptop, setIsEditingLaptop] = useState(false)
+  const [technicians, setTechnicians] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
+  const [statusOptions, setStatusOptions] = useState<any[]>([])
+  const [priorityOptions, setPriorityOptions] = useState<any[]>([])
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -84,7 +64,24 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         console.error(`Error fetching task ${taskId}:`, error)
       }
     }
+    const fetchDropdownData = async () => {
+      try {
+        const [techs, locs, statuses, priorities] = await Promise.all([
+          listTechnicians(),
+          getLocations(),
+          getTaskStatusOptions(),
+          getTaskPriorityOptions(),
+        ])
+        setTechnicians(techs.data)
+        setLocations(locs.data)
+        setStatusOptions(statuses)
+        setPriorityOptions(priorities)
+      } catch (error) {
+        console.error("Error fetching dropdown data:", error)
+      }
+    }
     fetchTask()
+    fetchDropdownData()
   }, [taskId])
 
   // Role-based permissions
@@ -93,21 +90,29 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const isTechnician = user?.role === "Technician"
   const isFrontDesk = user?.role === "Front Desk"
 
-  const canEditCustomer = isAdmin || isFrontDesk
+  const canEditCustomer = isAdmin || isManager || isFrontDesk
   const canEditTechnician = isAdmin || isManager
   const canEditStatus = isAdmin || isTechnician || isFrontDesk
   const canEditFinancials = isAdmin || isManager
   const canMarkComplete = isAdmin || isTechnician
   const canMarkPickedUp = isAdmin || isFrontDesk
 
-  const handleFieldUpdate = async (field: string, value: string | number) => {
+  const handleFieldUpdate = async (field: string, value: any) => {
     if (!taskData) return
 
-    const updatedTask = { ...taskData, [field]: value }
+    let updatedTask = { ...taskData, [field]: value }
+
+    if (field === "assigned_to" && taskData.status === "Pending") {
+        updatedTask.status = "In Progress";
+    }
+
     setTaskData(updatedTask)
 
     try {
       await updateTask(taskData.id, { [field]: value })
+      if (field === "assigned_to" && taskData.status === "Pending") {
+        await updateTask(taskData.id, { status: "In Progress" })
+      }
     } catch (error) {
       console.error(`Error updating task ${taskData.id}:`, error)
       // Optionally revert the change in UI
@@ -339,24 +344,60 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
             {/* Laptop Information */}
             <Card className="border-gray-200">
               <CardHeader>
-                <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Laptop className="h-5 w-5 text-red-600" />
-                  Laptop Information
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    <Laptop className="h-5 w-5 text-red-600" />
+                    Laptop Information
+                  </CardTitle>
+                  {(isAdmin || isManager) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditingLaptop(!isEditingLaptop)}
+                      className="border-gray-300 text-gray-600 bg-transparent"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Make & Model</Label>
-                    <p className="text-gray-900 font-medium">
-                      {taskData.laptop_make} {taskData.laptop_model}
-                    </p>
+                    {isEditingLaptop ? (
+                      <div className="flex gap-2">
+                        <Input
+                          value={taskData.laptop_make}
+                          onChange={(e) => handleFieldUpdate("laptop_make", e.target.value)}
+                          className="mt-1"
+                        />
+                        <Input
+                          value={taskData.laptop_model}
+                          onChange={(e) => handleFieldUpdate("laptop_model", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-gray-900 font-medium">
+                        {taskData.laptop_make} {taskData.laptop_model}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Serial Number</Label>
-                    <p className="text-gray-900 font-mono text-sm bg-gray-50 p-2 rounded border">
-                      {taskData.serial_number}
-                    </p>
+                    {isEditingLaptop ? (
+                      <Input
+                        value={taskData.serial_number}
+                        onChange={(e) => handleFieldUpdate("serial_number", e.target.value)}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-mono text-sm bg-gray-50 p-2 rounded border">
+                        {taskData.serial_number}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Current Location</Label>
@@ -365,11 +406,19 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <span className="text-gray-900">{taskData.current_location}</span>
                     </div>
                   </div>
-                   <div>
+                  <div>
                     <Label className="text-sm font-medium text-gray-600">Negotiated By</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-900">{taskData.negotiated_by_details?.full_name}</span>
+                      {isEditingLaptop && isManager ? (
+                        <Input
+                          value={taskData.negotiated_by_details?.full_name}
+                          onChange={(e) => handleFieldUpdate("negotiated_by", e.target.value)}
+                          className="mt-1"
+                        />
+                      ) : (
+                        <span className="text-gray-900">{taskData.negotiated_by_details?.full_name || taskData.created_by_details?.full_name}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -410,9 +459,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {technicianOptions.map((tech) => (
-                            <SelectItem key={tech} value={tech}>
-                              {tech}
+                          {technicians.map((tech) => (
+                            <SelectItem key={tech.id} value={tech.id}>
+                              {tech.full_name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -434,8 +483,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
+                            <SelectItem key={status[0]} value={status[0]}>
+                              {status[1]}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -455,9 +504,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {locationOptions.map((location) => (
-                          <SelectItem key={location} value={location}>
-                            {location}
+                        {locations.map((location) => (
+                          <SelectItem key={location.id} value={location.name}>
+                            {location.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -471,9 +520,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {urgencyOptions.map((urgency) => (
-                          <SelectItem key={urgency} value={urgency}>
-                            {urgency}
+                        {priorityOptions.map((priority) => (
+                          <SelectItem key={priority[0]} value={priority[0]}>
+                            {priority[1]}
                           </SelectItem>
                         ))}
                       </SelectContent>

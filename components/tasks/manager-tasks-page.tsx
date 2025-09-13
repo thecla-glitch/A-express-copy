@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
-import { Plus } from "lucide-react";
+import { Plus, MapPin } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getTasks, deleteTask, apiClient } from "@/lib/api-client";
 import { User } from "@/lib/use-user-management";
 import { TasksDisplay } from "./tasks-display";
 import { NewTaskForm } from "./new-task-form";
+import { LocationsManager } from "../locations/locations-manager";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export function ManagerTasksPage() {
   const [error, setError] = useState<string | null>(null);
   const [technicians, setTechnicians] = useState<User[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isLocationsModalOpen, setIsLocationsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -106,20 +108,36 @@ export function ManagerTasksPage() {
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Manager Tasks Portal</h1>
           <p className="text-gray-600 mt-2">Complete task management with Front Desk workflow capabilities</p>
         </div>
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-red-600 hover:bg-red-700 text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Create New Repair Task</DialogTitle>
-            </DialogHeader>
-            <NewTaskForm onClose={handleTaskCreated} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-4">
+          <Dialog open={isLocationsModalOpen} onOpenChange={setIsLocationsModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <MapPin className="mr-2 h-4 w-4" />
+                Locations
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Manage Locations</DialogTitle>
+              </DialogHeader>
+              <LocationsManager />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-red-600 hover:bg-red-700 text-white">
+                <Plus className="mr-2 h-4 w-4" />
+                Create New Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Create New Repair Task</DialogTitle>
+              </DialogHeader>
+              <NewTaskForm onClose={handleTaskCreated} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Main Content */}
