@@ -218,34 +218,51 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex-grow">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task Details - {taskData.id}</h1>
-          <p className="text-gray-600 mt-2">Complete information and management for this repair task</p>
+          <div className="flex items-center gap-2 mt-2">
+            {getStatusBadge(taskData.status)}
+            {getUrgencyBadge(taskData.urgency)}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {getStatusBadge(taskData.status)}
-          {getUrgencyBadge(taskData.urgency)}
+        <div className="flex items-center gap-3 flex-wrap">
+          <SendCustomerUpdateDialog taskId={taskId} customerEmail={taskData.customer_email} />
+          {canMarkComplete && (
+            <Button className="bg-red-600 hover:bg-red-700 text-white">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Mark as Complete
+            </Button>
+          )}
+          {canMarkPickedUp && (
+            <Button className="bg-red-600 hover:bg-red-700 text-white">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Mark as Picked Up
+            </Button>
+          )}
+          {isAdmin && (
+            <Button variant="outline" className="border-gray-300 text-gray-700 bg-transparent">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Cancel Task
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-gray-100">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-100">
           <TabsTrigger value="overview" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="repair" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
-            Repair Details
+          <TabsTrigger value="repair-management" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
+            Repair Management
           </TabsTrigger>
-          <TabsTrigger value="activity" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
-            Activity Log
+          <TabsTrigger value="history" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
+            History
           </TabsTrigger>
           <TabsTrigger value="financials" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
             Financials
-          </TabsTrigger>
-          <TabsTrigger value="timeline" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
-            Timeline
           </TabsTrigger>
         </TabsList>
 
@@ -359,12 +376,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        {/* Repair Details Tab */}
-        <TabsContent value="repair" className="space-y-6">
-          <div className="grid gap-6">
-            {/* Initial Issue */}
+          {/* Initial Issue */}
             <Card className="border-gray-200">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-gray-900">Initial Issue Description</CardTitle>
@@ -375,7 +387,11 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                 </div>
               </CardContent>
             </Card>
+        </TabsContent>
 
+        {/* Repair Management Tab */}
+        <TabsContent value="repair-management" className="space-y-6">
+          <div className="grid gap-6">
             {/* Repair Management */}
             <Card className="border-gray-200">
               <CardHeader>
@@ -469,9 +485,62 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </div>
         </TabsContent>
 
-        {/* Activity Log Tab */}
-        <TabsContent value="activity" className="space-y-6">
+        {/* History Tab */}
+        <TabsContent value="history" className="space-y-6">
           <TaskActivityLog taskId={taskId} />
+          <Card className="border-gray-200">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-red-600" />
+                Dates & Milestones
+              </CardTitle>
+              <CardDescription>Key dates and milestones for this repair task</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-full">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Date In</Label>
+                      <p className="text-gray-900 font-medium">{taskData.date_in}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-full">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Approved Date</Label>
+                      <p className="text-gray-900 font-medium">{taskData.approved_date || "Not approved"}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 rounded-full">
+                      <DollarSign className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
+                      <p className="text-gray-900 font-medium">{taskData.paid_date || "Not paid"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-100 rounded-full">
+                      <Clock className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Date Out</Label>
+                      <p className="text-gray-900 font-medium">{taskData.date_out || "Not completed"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Financials Tab */}
@@ -632,94 +701,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Timeline Tab */}
-        <TabsContent value="timeline" className="space-y-6">
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-red-600" />
-                Dates & Milestones
-              </CardTitle>
-              <CardDescription>Key dates and milestones for this repair task</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-full">
-                      <Calendar className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Date In</Label>
-                      <p className="text-gray-900 font-medium">{taskData.date_in}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 rounded-full">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Approved Date</Label>
-                      <p className="text-gray-900 font-medium">{taskData.approved_date || "Not approved"}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-full">
-                      <DollarSign className="h-4 w-4 text-purple-600" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
-                      <p className="text-gray-900 font-medium">{taskData.paid_date || "Not paid"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-100 rounded-full">
-                      <Clock className="h-4 w-4 text-orange-600" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Date Out</Label>
-                      <p className="text-gray-900 font-medium">{taskData.date_out || "Not completed"}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
-
-      {/* Action Buttons */}
-      <Card className="border-gray-200 bg-gray-50">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-            <div className="flex items-center gap-3">
-              <SendCustomerUpdateDialog taskId={taskId} customerEmail={taskData.customer_email} />
-              {canMarkComplete && (
-                <Button className="bg-red-600 hover:bg-red-700 text-white">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark as Complete
-                </Button>
-              )}
-              {canMarkPickedUp && (
-                <Button className="bg-red-600 hover:bg-red-700 text-white">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark as Picked Up
-                </Button>
-              )}
-              {isAdmin && (
-                <Button variant="outline" className="border-gray-300 text-gray-700 bg-transparent">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Cancel Task
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

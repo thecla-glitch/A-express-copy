@@ -99,7 +99,7 @@ const navigationItems = {
       icon: User,
     },
   ],
-  Manager: [
+    Manager: [
     {
       title: "Dashboard",
       url: "/dashboard/manager",
@@ -117,7 +117,7 @@ const navigationItems = {
     },
     {
       title: "Tasks",
-      url: "/dashboard/tasks",
+      url: "/dashboard/manager/tasks",
       icon: Wrench,
     },
     {
