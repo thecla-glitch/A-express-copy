@@ -172,37 +172,37 @@ export class ApiClient {
 
 
   async login(username: string, password: string) {
-    return this.request('/auth/login/', {
+    return this.request('/login/', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     })
   }
 
   async getProfile(): Promise<ApiResponse<UserResponse>> {
-    return this.request<UserResponse>('/auth/profile/')
+    return this.request<UserResponse>('/profile/')
   }
 
 
   async registerUser(userData: any) {
-    return this.request('/auth/register/', {
+    return this.request('/register/', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
   }
 
   async listUsers() {
-    return this.request('/auth/users/')
+    return this.request('/users/')
   }
 
   async refreshToken(refreshToken: string) {
-    return this.request('/auth/token/refresh/', {
+    return this.request('/token/refresh/', {
       method: 'POST',
       body: JSON.stringify({ refresh: refreshToken }),
     })
   }
 
   async updateProfile(profileData: any) {
-    return this.request('/auth/profile/update/', {
+    return this.request('/profile/update/', {
       method: 'PATCH',
       body: JSON.stringify(profileData),
     })
@@ -213,7 +213,7 @@ export class ApiClient {
     new_password: string;
     confirm_password: string;
   }) {
-    return this.request('/auth/change-password/', {
+    return this.request('/change-password/', {
       method: 'POST',
       body: JSON.stringify(passwordData),
     })
@@ -237,7 +237,7 @@ export class ApiClient {
     // Set the token for this request
     this.setToken(accessToken)
 
-    return this.request('/auth/profile/upload-picture/', {
+    return this.request('/profile/upload-picture/', {
       method: 'POST',
       body: formData,
       // Don't set headers here - the request method will handle it
@@ -246,30 +246,30 @@ export class ApiClient {
 
 
   async getUserDetail(userId: number): Promise<ApiResponse<UserResponse>> {
-    return this.request<UserResponse>(`/auth/users/${userId}/`);
+    return this.request<UserResponse>(`/users/${userId}/`);
   }
 
   async updateUser(userId: number, userData: any): Promise<ApiResponse<UserResponse>> {
-    return this.request<UserResponse>(`/auth/users/${userId}/update/`, {
+    return this.request<UserResponse>(`/users/${userId}/update/`, {
       method: 'PATCH',
       body: JSON.stringify(userData),
     });
   }
 
   async deleteUser(userId: number): Promise<ApiResponse> {
-    return this.request(`/auth/users/${userId}/delete/`, {
+    return this.request(`/users/${userId}/delete/`, {
       method: 'DELETE',
     });
   }
 
   async deactivateUser(userId: number): Promise<ApiResponse> {
-    return this.request(`/auth/users/${userId}/deactivate/`, {
+    return this.request(`/users/${userId}/deactivate/`, {
       method: 'POST',
     });
   }
 
   async activateUser(userId: number): Promise<ApiResponse> {
-    return this.request(`/auth/users/${userId}/activate/`, {
+    return this.request(`/users/${userId}/activate/`, {
       method: 'POST',
     });
   }
@@ -290,7 +290,7 @@ export class ApiClient {
 
     // Set the token for this request
     this.setToken(accessToken)
-    return this.request<UserResponse[]>(`/auth/technicians/`);
+    return this.request<UserResponse[]>(`/technicians/`);
   }
 
   // Task methods
@@ -308,7 +308,7 @@ export class ApiClient {
 
     // Set the token for this request
     this.setToken(accessToken)
-    return this.request<Task[]>('/auth/tasks/');
+    return this.request<Task[]>('/tasks/');
   }
 
   async getTask(taskId: string): Promise<ApiResponse<Task>> {
@@ -327,7 +327,7 @@ export class ApiClient {
       }
     }
 
-    return this.request<Task>('/auth/tasks/', {
+    return this.request<Task>('/tasks/', {
       method: 'POST',
       body: JSON.stringify(taskData),
     });
@@ -366,6 +366,32 @@ export class ApiClient {
 
   async getTaskPayments(taskId: string): Promise<ApiResponse<TaskPayment[]>> {
     return this.request<TaskPayment[]>(`/tasks/${taskId}/payments/`);
+  }
+
+  async getTaskActivities(taskId: string): Promise<ApiResponse<TaskActivity[]>> {
+    return this.request<TaskActivity[]>(`/tasks/${taskId}/activities/`);
+  }
+
+  async createCollaborationRequest(taskId: string, reason: string): Promise<ApiResponse<any>> {
+    return this.request(`/tasks/${taskId}/collaboration-requests/`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async listCollaborationRequests(): Promise<ApiResponse<any[]>> {
+    return this.request('/collaboration-requests/');
+  }
+
+  async getCollaborationRequest(requestId: string): Promise<ApiResponse<any>> {
+    return this.request(`/collaboration-requests/${requestId}/`);
+  }
+
+  async updateCollaborationRequest(requestId: string, updates: any): Promise<ApiResponse<any>> {
+    return this.request(`/collaboration-requests/${requestId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
   }
 
 

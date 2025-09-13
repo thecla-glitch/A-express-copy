@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, Task, TaskActivity, Payment
+from .models import User, Task, TaskActivity, Payment, CollaborationRequest
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -129,4 +129,13 @@ class TaskSerializer(serializers.ModelSerializer):
         # Automatically set created_by to the current user
         validated_data['created_by'] = self.context['request'].user
         return super().create(validated_data)
-    
+
+class CollaborationRequestSerializer(serializers.ModelSerializer):
+    requested_by = UserSerializer(read_only=True)
+    assigned_to = UserSerializer(read_only=True)
+    task = TaskSerializer(read_only=True)
+
+    class Meta:
+        model = CollaborationRequest
+        fields = ('id', 'task', 'requested_by', 'assigned_to', 'reason', 'status', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'task', 'requested_by', 'assigned_to', 'created_at', 'updated_at')

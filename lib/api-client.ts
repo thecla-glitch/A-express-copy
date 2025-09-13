@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { getApiUrl } from './config';
 
-const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+export const apiClient = axios.create({
+  baseURL: getApiUrl(''),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -19,7 +20,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-export const getTasks = () => apiClient.get('/auth/tasks/');
+export const getTasks = (params: any = {}) => apiClient.get('/tasks/', { params });
 export const getTask = (id: string) => apiClient.get(`/tasks/${id}/`);
 export const createTask = (data: any) => apiClient.post('/tasks/', data);
 export const updateTask = (id: string, data: any) => apiClient.patch(`/tasks/${id}/`, data);

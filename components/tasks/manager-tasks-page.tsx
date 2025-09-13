@@ -26,10 +26,22 @@ import {
   Package,
   CheckCircle,
   Edit,
+  Trash2,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { getTasks, createTask, updateTask, apiClient } from "@/lib/task-api-client"
+import { getTasks, createTask, updateTask, deleteTask, apiClient } from "@/lib/api-client"
 import { User } from "@/lib/use-user-management"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/feedback/alert-dialog"
 
 type SortField = any
 type SortDirection = "asc" | "desc" | null
@@ -63,6 +75,7 @@ export function ManagerTasksPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [technicians, setTechnicians] = useState<User[]>([])
+  const [taskToDelete, setTaskToDelete] = useState<any>(null)
 
   // Use useMemo for all unique arrays to recalculate when data changes
 
@@ -109,7 +122,7 @@ const uniqueLocations = useMemo(() => [...new Set(tasks.map((task) => task?.curr
         }
 
         // Fetch technicians
-        const techResponse = await apiClient.listUsersByRole("Technician")
+        const techResponse = await apiClient.get("/users/role/Technician/")
         console.log("Fetched technicians:", techResponse.data)
 
         if (techResponse.data) {
@@ -126,6 +139,15 @@ const uniqueLocations = useMemo(() => [...new Set(tasks.map((task) => task?.curr
 
     fetchData()
   }, [])
+
+  const handleDeleteTask = async (taskId: string) => {
+    const response = await deleteTask(taskId)
+    if (response.error) {
+      console.error("Error deleting task:", response.error)
+    } else {
+      setTasks(tasks.filter((task) => task.id !== taskId))
+    }
+  }
 
 
 
@@ -506,6 +528,32 @@ const uniqueLocations = useMemo(() => [...new Set(tasks.map((task) => task?.curr
                               <Edit className="h-3 w-3 mr-1" />
                               Edit
                             </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3 mr-1" />
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the task.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteTask(task.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>

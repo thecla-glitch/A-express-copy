@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
@@ -8,6 +8,14 @@ import { Textarea } from "@/components/ui/core/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select"
 import { Separator } from "@/components/ui/core/separator"
 import { ScrollArea } from "@/components/ui/layout/scroll-area"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/feedback/dialog"
 import {
   ArrowLeft,
   AlertTriangle,
@@ -27,6 +35,8 @@ import {
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { getTask, updateTask, addTaskActivity } from "@/lib/api-client"
+import { CreateCollaborationRequest } from "@/components/dashboard/collaboration/create-collaboration-request"
+import { useToast } from "@/hooks/use-toast"
 
 interface TechnicianTaskDetailsProps {
   taskId: string
@@ -39,10 +49,11 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
   const [newNote, setNewNote] = useState("")
   const [noteType, setNoteType] = useState("repair_step")
   const [currentLocation, setCurrentLocation] = useState("")
-  const [urgency, setUrgency] = useState("")
   const [status, setStatus] = useState("")
+  const [isCollaborationDialogOpen, setIsCollaborationDialogOpen] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
     loadTaskDetails()
@@ -55,7 +66,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       const taskData = response.data
       setTask(taskData)
       setCurrentLocation(taskData.current_location)
-      setUrgency(taskData.urgency)
       setStatus(taskData.status)
     } catch (error) {
       console.error("Failed to load task details:", error)
@@ -86,15 +96,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
     }
   }
 
-  const handleUrgencyChange = async (newUrgency: string) => {
-    try {
-      await updateTask(taskId, { urgency: newUrgency })
-      setUrgency(newUrgency)
-    } catch (error) {
-      console.error("Failed to update urgency:", error)
-    }
-  }
-
   const handleAddNote = async () => {
     if (!newNote.trim()) return
 
@@ -117,16 +118,23 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
     await handleStatusChange("Completed")
   }
 
-  const handleRequestHelp = () => {
-    console.log("Request help modal would open here")
+  const handleCollaborationRequestSubmitted = () => {
+    setIsCollaborationDialogOpen(false)
+    toast({
+      title: "Collaboration Request Submitted",
+      description: "Your request has been sent to the collaboration board.",
+    })
   }
 
   const getStatusBadge = (status: string) => {
     const statusConfig: any = {
-      "To Do": { label: "To Do", color: "bg-gray-100 text-gray-800" },
+      "Pending": { label: "Pending", color: "bg-gray-100 text-gray-800" },
       "In Progress": { label: "In Progress", color: "bg-blue-100 text-blue-800" },
       "Awaiting Parts": { label: "Awaiting Parts", color: "bg-orange-100 text-orange-800" },
-      "Done": { label: "Done", color: "bg-green-100 text-green-800" },
+      "Ready for QC": { label: "Ready for QC", color: "bg-purple-100 text-purple-800" },
+      "Completed": { label: "Completed", color: "bg-green-100 text-green-800" },
+      "Ready for Pickup": { label: "Ready for Pickup", color: "bg-green-100 text-green-800" },
+      "Picked Up": { label: "Picked Up", color: "bg-purple-100 text-purple-800" },
       "Cancelled": { label: "Cancelled", color: "bg-red-100 text-red-800" },
     }
 
@@ -268,19 +276,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Urgency Level</label>
-                  <Select value={urgency} onValueChange={handleUrgencyChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -300,10 +295,11 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="To Do">To Do</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
                       <SelectItem value="In Progress">In Progress</SelectItem>
                       <SelectItem value="Awaiting Parts">Awaiting Parts</SelectItem>
-                      <SelectItem value="Done">Done</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Picked Up">Picked Up</SelectItem>
                       <SelectItem value="Cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
@@ -312,7 +308,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
               </div>
 
               <div className="flex gap-3">
-                {status === "Done" && (
+                {status === "Completed" && (
                   <Button
                     className="bg-red-600 hover:bg-red-700 text-white"
                     onClick={handleMarkComplete}
@@ -322,14 +318,26 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                     Mark as Complete
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  className="border-red-600 text-red-600 hover:bg-red-50 bg-transparent"
-                  onClick={handleRequestHelp}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Request Technician Help
-                </Button>
+                <Dialog open={isCollaborationDialogOpen} onOpenChange={setIsCollaborationDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="border-red-600 text-red-600 hover:bg-red-50 bg-transparent"
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Request Technician Help
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Request Collaboration</DialogTitle>
+                      <DialogDescription>
+                        Fill out the form below to request help from another technician.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <CreateCollaborationRequest taskId={taskId} onSubmitted={handleCollaborationRequestSubmitted} />
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>
@@ -472,7 +480,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                 <AlertTriangle className="h-4 w-4 text-gray-500" />
                 <div>
                   <p className="text-sm font-medium">Priority</p>
-                  <div className="mt-1">{getUrgencyBadge(urgency)}</div>
+                  <div className="mt-1">{getUrgencyBadge(task.urgency)}</div>
                 </div>
               </div>
             </CardContent>

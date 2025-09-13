@@ -89,12 +89,12 @@ WSGI_APPLICATION = 'A_express.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Inventory',
-        'USER': 'postgres',
-        'PASSWORD': 'ivan123',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'my_django_api',
+        'USER': 'root',
+        'PASSWORD': '',
         'HOST': 'localhost',
-        'PORT': '5432',
+        'PORT': '3306',
     }
 }
 
@@ -165,3 +165,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

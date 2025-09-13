@@ -21,7 +21,7 @@ import {
   Laptop,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { getTasks } from "@/lib/task-api-client"
+import { getTasks } from "@/lib/api-client"
 
 
 type SortField = any

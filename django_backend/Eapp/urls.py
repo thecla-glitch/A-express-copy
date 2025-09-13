@@ -21,10 +21,16 @@ urlpatterns = [
     # Task URLs
     path('tasks/', views.task_list_create, name='task-list-create'),
     path('tasks/<int:task_id>/', views.task_detail, name='task-detail'),
+    path('tasks/<int:task_id>/delete/', views.delete_task, name='task-delete'),
     path('tasks/<int:task_id>/activities/', views.task_activities, name='task-activities'),
     path('tasks/<int:task_id>/activities/add/', views.add_task_activity, name='add-task-activity'),
     path('tasks/<int:task_id>/payments/', views.task_payments, name='task-payments'),
     path('tasks/<int:task_id>/payments/add/', views.add_task_payment, name='add-task-payment'),
+    path('tasks/<int:task_id>/send-update/', views.send_customer_update, name='send-customer-update'),
     path('technicians/', views.list_technicians, name='technicians-list'),
 
+    # Collaboration Request URLs
+    path('tasks/<int:task_id>/collaboration-requests/', views.create_collaboration_request, name='create-collaboration-request'),
+    path('collaboration-requests/', views.list_collaboration_requests, name='list-collaboration-requests'),
+    path('collaboration-requests/<int:request_id>/', views.collaboration_request_detail, name='collaboration-request-detail'),
  ]

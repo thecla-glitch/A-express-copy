@@ -143,8 +143,8 @@ const navigationItems = {
       icon: Home,
     },
     {
-      title: "My Tasks",
-      url: "/dashboard/tasks",
+      title: "Tasks",
+      url: "/dashboard/technician",
       icon: ClipboardList,
     },
     {

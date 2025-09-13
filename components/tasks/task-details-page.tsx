@@ -31,15 +31,17 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { getTask, updateTask, addTaskActivity, addTaskPayment } from "@/lib/api-client"
+import { SendCustomerUpdateDialog } from "./send-customer-update-dialog"
+import { TaskActivityLog } from "./task-activity-log"
 
 const statusOptions = [
-  "Assigned - Not Accepted",
-  "Diagnostic",
+  "Pending",
   "In Progress",
   "Awaiting Parts",
   "Ready for QC",
-  "Ready for Pickup",
   "Completed",
+  "Ready for Pickup",
+  "Picked Up",
   "Cancelled",
 ]
 
@@ -93,7 +95,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
   const canEditCustomer = isAdmin || isFrontDesk
   const canEditTechnician = isAdmin || isManager
-  const canEditStatus = isAdmin || isTechnician
+  const canEditStatus = isAdmin || isTechnician || isFrontDesk
   const canEditFinancials = isAdmin || isManager
   const canMarkComplete = isAdmin || isTechnician
   const canMarkPickedUp = isAdmin || isFrontDesk
@@ -469,48 +471,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
         {/* Activity Log Tab */}
         <TabsContent value="activity" className="space-y-6">
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-900">Activity & Notes Log</CardTitle>
-              <CardDescription>Chronological record of all task activities and notes</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Add Note Section */}
-              <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
-                <Label className="text-sm font-medium text-gray-700">Add New Note</Label>
-                <Textarea
-                  placeholder="Enter your note, diagnosis, repair step, or communication details..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  className="min-h-[100px] resize-none"
-                />
-                <Button
-                  onClick={handleAddNote}
-                  disabled={!newNote.trim()}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Note
-                </Button>
-              </div>
-
-              {/* Activity Log */}
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {taskData.activities.map((activity: any) => (
-                  <div key={activity.id} className="flex gap-4 p-4 bg-white border rounded-lg">
-                    <div className="flex-shrink-0 p-2 bg-gray-100 rounded-full">{getActivityIcon(activity.type)}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-900">{activity.user.full_name}</span>
-                        <span className="text-sm text-gray-500">{new Date(activity.timestamp).toLocaleString()}</span>
-                      </div>
-                      <p className="text-gray-700 leading-relaxed">{activity.message}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <TaskActivityLog taskId={taskId} />
         </TabsContent>
 
         {/* Financials Tab */}
@@ -736,10 +697,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
             <div className="flex items-center gap-3">
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
-                <Mail className="h-4 w-4 mr-2" />
-                Send Customer Update
-              </Button>
+              <SendCustomerUpdateDialog taskId={taskId} customerEmail={taskData.customer_email} />
               {canMarkComplete && (
                 <Button className="bg-red-600 hover:bg-red-700 text-white">
                   <CheckCircle className="h-4 w-4 mr-2" />
