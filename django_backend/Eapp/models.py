@@ -76,8 +76,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         return self.first_name
     
-    
-    
     def get_profile_picture_url(self):
         """Return the URL for the user's profile picture or a default"""
         if self.profile_picture and hasattr(self.profile_picture, 'url'):
@@ -105,16 +103,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         if self.profile_picture:
             self.profile_picture.delete(save=False)
         super().delete(*args, **kwargs)
-    
-    
-    
-    
-    
-    def save(self, *args, **kwargs):
-        # Update last_login if password is being set (during login)
-        if 'update_fields' in kwargs and 'last_login' in kwargs['update_fields']:
-            self.last_login = timezone.now()
-        super().save(*args, **kwargs)
     
     def has_add_user_permission(self):
         """Check if user has permission to add other users"""
@@ -179,7 +167,7 @@ class Task(models.Model):
     )
     current_location = models.CharField(max_length=100)
     urgency = models.CharField(max_length=20, choices=Priority.choices, default=Priority.MEDIUM)
-    date_in = models.DateField(default=timezone.now)
+    date_in = models.DateField(default=lambda: timezone.now().date())
     approved_date = models.DateField(null=True, blank=True)
     paid_date = models.DateField(null=True, blank=True)
     date_out = models.DateField(null=True, blank=True)
@@ -247,7 +235,7 @@ class Payment(models.Model):
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateField(default=timezone.now)
+    date = models.DateField(default=lambda: timezone.now().date())
     method = models.CharField(max_length=20, choices=PaymentMethod.choices)
     reference = models.CharField(max_length=100, blank=True, null=True)
 

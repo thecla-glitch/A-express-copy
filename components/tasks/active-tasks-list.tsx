@@ -42,7 +42,7 @@ export function ActiveTasksList() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">Status: <Badge>{task.status}</Badge></p>
+                  <div className="text-sm text-gray-500">Status: <Badge>{task.status}</Badge></div>
                 </div>
               </div>
 

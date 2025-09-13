@@ -11,7 +11,7 @@ export interface UserResponse {
   id: number
   username: string
   email: string
-  role: "Administrator" | "Manager" | "Technician" | "Front Desk"
+  role: "Manager" | "Technician" | "Front Desk"
   first_name: string
   last_name: string
   phone: string
@@ -194,13 +194,6 @@ export class ApiClient {
     return this.request('/users/')
   }
 
-  async refreshToken(refreshToken: string) {
-    return this.request('/token/refresh/', {
-      method: 'POST',
-      body: JSON.stringify({ refresh: refreshToken }),
-    })
-  }
-
   async updateProfile(profileData: any) {
     return this.request('/profile/update/', {
       method: 'PATCH',
@@ -213,7 +206,7 @@ export class ApiClient {
     new_password: string;
     confirm_password: string;
   }) {
-    return this.request('/change-password/', {
+    return this.request('/profile/change-password/', {
       method: 'POST',
       body: JSON.stringify(passwordData),
     })
@@ -290,7 +283,7 @@ export class ApiClient {
 
     // Set the token for this request
     this.setToken(accessToken)
-    return this.request<UserResponse[]>(`/technicians/`);
+    return this.request<UserResponse[]>(`/users/role/${role}/`);
   }
 
   // Task methods
