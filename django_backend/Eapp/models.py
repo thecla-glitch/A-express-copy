@@ -172,6 +172,7 @@ class Task(models.Model):
     date_in = models.DateField(default=get_current_date)
     approved_date = models.DateField(null=True, blank=True)
     paid_date = models.DateField(null=True, blank=True)
+    next_payment_date = models.DateField(null=True, blank=True)
     date_out = models.DateField(null=True, blank=True)
     negotiated_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='negotiated_tasks'

@@ -4,6 +4,12 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location
 
+from rest_framework import serializers
+from django.contrib.auth import authenticate
+from django.core.validators import MinValueValidator
+from decimal import Decimal
+from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location
+
 class UserSerializer(serializers.ModelSerializer):
     profile_picture_url = serializers.SerializerMethodField()
     full_name = serializers.CharField(source='get_full_name', read_only=True)
@@ -129,7 +135,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'laptop_make', 'laptop_model', 'serial_number',
             'estimated_cost', 'total_cost', 'payment_status',
             'current_location', 'urgency', 'date_in', 'approved_date',
-            'paid_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
+            'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
             'activities', 'payments', 'outstanding_balance'
         )
         read_only_fields = ('created_by', 'created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'negotiated_by_details', 'activities', 'payments', 'payment_status')

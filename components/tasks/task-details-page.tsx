@@ -2,15 +2,26 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
 import { Input } from "@/components/ui/core/input"
 import { Label } from "@/components/ui/core/label"
 import { Textarea } from "@/components/ui/core/textarea"
 import { Badge } from "@/components/ui/core/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/core/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/feedback/alert-dialog"
 import {
   ArrowLeft,
   User,
@@ -57,12 +68,19 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [locations, setLocations] = useState<any[]>([])
   const [statusOptions, setStatusOptions] = useState<any[]>([])
   const [priorityOptions, setPriorityOptions] = useState<any[]>([])
+  const [paymentStatusConfirmation, setPaymentStatusConfirmation] = useState<{ open: boolean, newStatus: string | null }>({ open: false, newStatus: null });
+  const [pendingPaymentStatus, setPendingPaymentStatus] = useState<string | null>(null);
+  const [nextPaymentDate, setNextPaymentDate] = useState<string | null>(null);
+
 
   useEffect(() => {
     const fetchTask = async () => {
       try {
         const response = await getTask(taskId)
         setTaskData(response.data)
+        if (response.data.next_payment_date) {
+          setNextPaymentDate(response.data.next_payment_date)
+        }
       } catch (error) {
         console.error(`Error fetching task ${taskId}:`, error)
       }
@@ -124,6 +142,46 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
       // Optionally revert the change in UI
     }
   }
+
+  const showConfirmationDialog = () => {
+    if (pendingPaymentStatus) {
+        setPaymentStatusConfirmation({ open: true, newStatus: pendingPaymentStatus });
+    }
+  };
+
+  const cancelPendingChange = () => {
+      setPendingPaymentStatus(null);
+  }
+
+  const confirmPaymentStatusChange = async () => {
+    if (paymentStatusConfirmation.newStatus) {
+      const payload: { payment_status: string; paid_date?: string, next_payment_date?: string | null } = {
+        payment_status: paymentStatusConfirmation.newStatus,
+      };
+      if (paymentStatusConfirmation.newStatus === 'Partially Paid' || paymentStatusConfirmation.newStatus === 'Paid') {
+        payload.paid_date = new Date().toISOString();
+      }
+      if (paymentStatusConfirmation.newStatus === 'Partially Paid') {
+        payload.next_payment_date = nextPaymentDate;
+      } else {
+        payload.next_payment_date = null;
+      }
+
+      try {
+        const response = await updateTask(taskData.id, payload);
+        setTaskData(response.data);
+      } catch (error) {
+        console.error(`Error updating task ${taskData.id}:`, error)
+      }
+    }
+    setPaymentStatusConfirmation({ open: false, newStatus: null });
+    setPendingPaymentStatus(null);
+  };
+
+  const cancelPaymentStatusChange = () => {
+    setPaymentStatusConfirmation({ open: false, newStatus: null });
+  };
+
 
   const handleAddNote = async () => {
     if (!newNote.trim() || !taskData) return
@@ -215,12 +273,38 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     }
   }
 
+  const getFilteredPaymentStatusOptions = () => {
+    if (!taskData) return paymentStatusOptions;
+    if (taskData.payment_status === 'Paid') {
+      return ['Paid', 'Refunded'];
+    }
+    if (taskData.payment_status === 'Partially Paid') {
+      return ['Partially Paid', 'Paid', 'Refunded'];
+    }
+    return paymentStatusOptions;
+  };
+
   if (!taskData) {
     return <div>Loading...</div>
   }
 
   return (
     <div className="flex-1 space-y-6 p-6">
+      <AlertDialog open={paymentStatusConfirmation.open} onOpenChange={(open) => !open && cancelPaymentStatusChange()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Payment Status Change</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to change the payment status to "{paymentStatusConfirmation.newStatus}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelPaymentStatusChange}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPaymentStatusChange}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header Section */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600" onClick={() => router.push('/dashboard/tasks')}>
@@ -665,31 +749,45 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Payment Status</Label>
                     {canEditPaymentStatus ? (
-                      <Select
-                        value={taskData.payment_status || ''}
-                        onValueChange={(value) => handleFieldUpdate("payment_status", value)}
+                      <RadioGroup
+                        value={pendingPaymentStatus || taskData.payment_status || ''}
+                        onValueChange={setPendingPaymentStatus}
+                        className="mt-2 flex items-center gap-4"
                       >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {paymentStatusOptions.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {getFilteredPaymentStatusOptions().map((status) => (
+                          <div key={status} className="flex items-center space-x-2">
+                            <RadioGroupItem value={status} id={status} />
+                            <Label htmlFor={status} className="font-normal">{status}</Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
                     ) : (
                       <p className="text-gray-900 font-medium mt-1">{taskData.payment_status}</p>
                     )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
-                    <p className="text-gray-900 mt-1">{taskData.paid_date || "Not paid"}</p>
+                    <p className="text-gray-900 mt-1">{taskData.paid_date ? new Date(taskData.paid_date).toLocaleString() : "Not paid"}</p>
                   </div>
+                  {(pendingPaymentStatus === 'Partially Paid' || (!pendingPaymentStatus && taskData.payment_status === 'Partially Paid')) && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Next Payment Date</Label>
+                      <Input
+                        type="date"
+                        value={nextPaymentDate || ''}
+                        onChange={(e) => setNextPaymentDate(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
                 </div>
               </CardContent>
+              {canEditPaymentStatus && pendingPaymentStatus && pendingPaymentStatus !== taskData.payment_status && (
+                <CardFooter className="flex justify-end gap-2">
+                  <Button size="sm" variant="outline" onClick={cancelPendingChange}>Cancel</Button>
+                  <Button size="sm" onClick={showConfirmationDialog}>Confirm</Button>
+                </CardFooter>
+              )}
             </Card>
           </div>
 
