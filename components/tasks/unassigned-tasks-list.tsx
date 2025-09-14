@@ -14,8 +14,9 @@ export function UnassignedTasksList() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await getTasks({ assigned_to: null })
-        setTasks(response.data)
+        const response = await getTasks();
+        const unassignedTasks = response.data.filter((task: any) => task.assigned_to === null);
+        setTasks(unassignedTasks);
       } catch (error) {
         console.error("Error fetching unassigned tasks:", error)
       }

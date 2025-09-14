@@ -93,6 +93,32 @@ export function ManagerTasksPage() {
     alert("Pickup processed successfully!");
   };
 
+  const handleApprove = async (taskId: string) => {
+    try {
+      await apiClient.patch(`/tasks/${taskId}/`, { status: "Completed" });
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId ? { ...task, status: "Completed" } : task
+        )
+      );
+    } catch (error) {
+      console.error(`Error approving task ${taskId}:`, error);
+    }
+  };
+
+  const handleReject = async (taskId: string, notes: string) => {
+    try {
+      await apiClient.patch(`/tasks/${taskId}/`, { status: "In Progress", qc_notes: notes });
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId ? { ...task, status: "In Progress" } : task
+        )
+      );
+    } catch (error) {
+      console.error(`Error rejecting task ${taskId}:`, error);
+    }
+  };
+
   const handleTaskCreated = () => {
     setIsCreateModalOpen(false);
     // Refresh tasks list
@@ -170,6 +196,9 @@ export function ManagerTasksPage() {
             showActions={true}
             onDeleteTask={handleDeleteTask}
             onProcessPickup={handleProcessPickup}
+            isQcTab={true}
+            onApprove={handleApprove}
+            onReject={handleReject}
           />
         </TabsContent>
         <TabsContent value="completed">

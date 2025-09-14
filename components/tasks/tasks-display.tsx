@@ -20,17 +20,26 @@ import {
 import {  AlertDialog,  AlertDialogAction,  AlertDialogCancel,  AlertDialogContent,  AlertDialogDescription,  AlertDialogFooter,  AlertDialogHeader,  AlertDialogTitle,  AlertDialogTrigger,} from "@/components/ui/feedback/alert-dialog"
 import { TaskFilters } from "./task-filters"
 
+
+import { Textarea } from "@/components/ui/core/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/feedback/dialog";
+
 interface TasksDisplayProps {
-  tasks: any[]
-  technicians: any[]
-  onRowClick: (task: any) => void
-  showActions: boolean
-  onDeleteTask?: (taskId: string) => void
-  onProcessPickup?: (taskId: string) => void
+  tasks: any[];
+  technicians: any[];
+  onRowClick: (task: any) => void;
+  showActions: boolean;
+  onDeleteTask?: (taskId: string) => void;
+  onProcessPickup?: (taskId: string) => void;
+  isQcTab?: boolean;
+  onApprove?: (taskId: string) => void;
+  onReject?: (taskId: string, notes: string) => void;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup }: TasksDisplayProps) {
-  const [searchQuery, setSearchQuery] = useState("")
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, isQcTab, onApprove, onReject }: TasksDisplayProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [rejectionNotes, setRejectionNotes] = useState("");
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [technicianFilter, setTechnicianFilter] = useState<string>("all")
   const [urgencyFilter, setUrgencyFilter] = useState<string>("all")
@@ -199,7 +208,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
               <TableHead className="font-semibold text-gray-900">Issue</TableHead>
               <TableHead className="font-semibold text-gray-900">Status</TableHead>
               <TableHead className="font-semibold text-gray-900">Technician</TableHead>
-              <TableHead className="font-semibold text-gray-900">Payment</TableHead>
+              {!isQcTab && <TableHead className="font-semibold text-gray-900">Payment</TableHead>}
               {showActions && <TableHead className="font-semibold text-gray-900">Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -231,62 +240,114 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                     <span className="text-gray-900">{task.assigned_to_details?.full_name}</span>
                   </div>
                 </TableCell>
-                <TableCell>{getPaymentStatusBadge(task.payment_status)}</TableCell>
+                {!isQcTab && <TableCell>{getPaymentStatusBadge(task.payment_status)}</TableCell>}
                 {showActions && (
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {task.status === "Ready for Pickup" && onProcessPickup && (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onProcessPickup(task.id)
-                          }}
-                        >
-                          <Package className="h-3 w-3 mr-1" />
-                          Pickup
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-gray-300 text-gray-600 hover:bg-gray-50 bg-transparent"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onRowClick(task)
-                        }}
-                      >
-                        <Edit className="h-3 w-3 mr-1" />
-                        Edit
-                      </Button>
-                      {onDeleteTask && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
+                      {isQcTab ? (
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onApprove?.(task.id);
+                            }}
+                          >
+                            Approve
+                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedTask(task);
+                                }}
+                              >
+                                Reject
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Reject Task {selectedTask?.id}</DialogTitle>
+                              </DialogHeader>
+                              <Textarea
+                                placeholder="Enter rejection notes..."
+                                value={rejectionNotes}
+                                onChange={(e) => setRejectionNotes(e.target.value)}
+                              />
+                              <DialogFooter>
+                                <Button
+                                  onClick={() => {
+                                    onReject?.(selectedTask?.id, rejectionNotes);
+                                    setSelectedTask(null);
+                                    setRejectionNotes("");
+                                  }}
+                                >
+                                  Confirm
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </>
+                      ) : (
+                        <>
+                          {task.status === "Ready for Pickup" && onProcessPickup && (
                             <Button
                               size="sm"
-                              variant="destructive"
+                              className="bg-green-600 hover:bg-green-700 text-white"
                               onClick={(e) => {
-                                e.stopPropagation()
+                                e.stopPropagation();
+                                onProcessPickup(task.id);
                               }}
                             >
-                              <Trash2 className="h-3 w-3 mr-1" />
-                              Delete
+                              <Package className="h-3 w-3 mr-1" />
+                              Pickup
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the task.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteTask(task.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-gray-300 text-gray-600 hover:bg-gray-50 bg-transparent"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRowClick(task);
+                            }}
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                          {onDeleteTask && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3 mr-1" />
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the task.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onDeleteTask(task.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </>
                       )}
                     </div>
                   </TableCell>
