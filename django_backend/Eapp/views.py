@@ -273,7 +273,10 @@ def task_list_create(request):
                 {"error": "You do not have permission to create tasks."},
                 status=status.HTTP_403_FORBIDDEN
             )
-        serializer = TaskSerializer(data=request.data, context={'request': request})
+        data = request.data.copy()
+        if data.get('assigned_to'):
+            data['status'] = 'In Progress'
+        serializer = TaskSerializer(data=data, context={'request': request})
         if serializer.is_valid():
             serializer.save(created_by=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

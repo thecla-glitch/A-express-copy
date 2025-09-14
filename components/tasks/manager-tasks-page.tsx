@@ -10,6 +10,7 @@ import { User } from "@/lib/use-user-management";
 import { TasksDisplay } from "./tasks-display";
 import { NewTaskForm } from "./new-task-form";
 import { LocationsManager } from "../locations/locations-manager";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
 import {
   Dialog,
   DialogContent,
@@ -100,6 +101,10 @@ export function ManagerTasksPage() {
     });
   };
 
+  const pendingAndInProgressTasks = tasks.filter(task => ["Pending", "In Progress", "Awaiting Parts", "Assigned - Not Accepted", "Diagnostic"].includes(task.status));
+  const qualityControlTasks = tasks.filter(task => task.status === "Ready for QC");
+  const completedTasks = tasks.filter(task => ["Completed", "Ready for Pickup", "Picked Up"].includes(task.status));
+
   return (
     <div className="flex-1 space-y-6 p-6">
       {/* Header Section */}
@@ -141,14 +146,43 @@ export function ManagerTasksPage() {
       </div>
 
       {/* Main Content */}
-      <TasksDisplay
-        tasks={tasks}
-        technicians={technicians}
-        onRowClick={handleRowClick}
-        showActions={true}
-        onDeleteTask={handleDeleteTask}
-        onProcessPickup={handleProcessPickup}
-      />
+      <Tabs defaultValue="pending">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100">
+          <TabsTrigger value="pending" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Pending and in Progress</TabsTrigger>
+          <TabsTrigger value="qc" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Quality Control</TabsTrigger>
+          <TabsTrigger value="completed" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Completed</TabsTrigger>
+        </TabsList>
+        <TabsContent value="pending">
+          <TasksDisplay
+            tasks={pendingAndInProgressTasks}
+            technicians={technicians}
+            onRowClick={handleRowClick}
+            showActions={true}
+            onDeleteTask={handleDeleteTask}
+            onProcessPickup={handleProcessPickup}
+          />
+        </TabsContent>
+        <TabsContent value="qc">
+          <TasksDisplay
+            tasks={qualityControlTasks}
+            technicians={technicians}
+            onRowClick={handleRowClick}
+            showActions={true}
+            onDeleteTask={handleDeleteTask}
+            onProcessPickup={handleProcessPickup}
+          />
+        </TabsContent>
+        <TabsContent value="completed">
+          <TasksDisplay
+            tasks={completedTasks}
+            technicians={technicians}
+            onRowClick={handleRowClick}
+            showActions={true}
+            onDeleteTask={handleDeleteTask}
+            onProcessPickup={handleProcessPickup}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

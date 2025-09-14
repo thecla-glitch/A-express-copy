@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
 import { Input } from "@/components/ui/core/input"
@@ -44,12 +45,14 @@ interface TaskDetailsPageProps {
 
 export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { user } = useAuth()
+  const router = useRouter()
   const [taskData, setTaskData] = useState<any>(null)
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
   const [isEditingCustomer, setIsEditingCustomer] = useState(false)
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
+  const [isEditingCost, setIsEditingCost] = useState(false);
   const [technicians, setTechnicians] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
   const [statusOptions, setStatusOptions] = useState<any[]>([])
@@ -96,6 +99,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const canEditFinancials = isAdmin || isManager
   const canMarkComplete = isAdmin || isTechnician
   const canMarkPickedUp = isAdmin || isFrontDesk
+  const canEditPaymentStatus = isManager || isFrontDesk;
+  const canEditEstimatedCost = isManager || (isTechnician && taskData && !taskData.assigned_to);
+
 
   const handleFieldUpdate = async (field: string, value: any) => {
     if (!taskData) return
@@ -217,7 +223,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     <div className="flex-1 space-y-6 p-6">
       {/* Header Section */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600">
+        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600" onClick={() => router.push('/dashboard/tasks')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Tasks
         </Button>
@@ -301,7 +307,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <Label className="text-sm font-medium text-gray-600">Customer Name</Label>
                     {isEditingCustomer ? (
                       <Input
-                        value={taskData.customer_name}
+                        value={taskData.customer_name || ''}
                         onChange={(e) => handleFieldUpdate("customer_name", e.target.value)}
                         className="mt-1"
                       />
@@ -315,7 +321,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <Phone className="h-4 w-4 text-gray-400" />
                       {isEditingCustomer ? (
                         <Input
-                          value={taskData.customer_phone}
+                          value={taskData.customer_phone || ''}
                           onChange={(e) => handleFieldUpdate("customer_phone", e.target.value)}
                         />
                       ) : (
@@ -329,7 +335,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <Mail className="h-4 w-4 text-gray-400" />
                       {isEditingCustomer ? (
                         <Input
-                          value={taskData.customer_email}
+                          value={taskData.customer_email || ''}
                           onChange={(e) => handleFieldUpdate("customer_email", e.target.value)}
                         />
                       ) : (
@@ -369,12 +375,12 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     {isEditingLaptop ? (
                       <div className="flex gap-2">
                         <Input
-                          value={taskData.laptop_make}
+                          value={taskData.laptop_make || ''}
                           onChange={(e) => handleFieldUpdate("laptop_make", e.target.value)}
                           className="mt-1"
                         />
                         <Input
-                          value={taskData.laptop_model}
+                          value={taskData.laptop_model || ''}
                           onChange={(e) => handleFieldUpdate("laptop_model", e.target.value)}
                           className="mt-1"
                         />
@@ -389,7 +395,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <Label className="text-sm font-medium text-gray-600">Serial Number</Label>
                     {isEditingLaptop ? (
                       <Input
-                        value={taskData.serial_number}
+                        value={taskData.serial_number || ''}
                         onChange={(e) => handleFieldUpdate("serial_number", e.target.value)}
                         className="mt-1"
                       />
@@ -412,7 +418,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <User className="h-4 w-4 text-gray-400" />
                       {isEditingLaptop && isManager ? (
                         <Input
-                          value={taskData.negotiated_by_details?.full_name}
+                          value={taskData.negotiated_by_details?.full_name || ''}
                           onChange={(e) => handleFieldUpdate("negotiated_by", e.target.value)}
                           className="mt-1"
                         />
@@ -452,7 +458,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <Label className="text-sm font-medium text-gray-600">Assigned Technician</Label>
                     {canEditTechnician ? (
                       <Select
-                        value={taskData.assigned_to}
+                        value={taskData.assigned_to || ''}
                         onValueChange={(value) => handleFieldUpdate("assigned_to", value)}
                       >
                         <SelectTrigger>
@@ -475,7 +481,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <Label className="text-sm font-medium text-gray-600">Current Status</Label>
                     {canEditStatus ? (
                       <Select
-                        value={taskData.status}
+                        value={taskData.status || ''}
                         onValueChange={(value) => handleFieldUpdate("status", value)}
                       >
                         <SelectTrigger>
@@ -497,7 +503,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">Current Location</Label>
                     <Select
-                      value={taskData.current_location}
+                      value={taskData.current_location || ''}
                       onValueChange={(value) => handleFieldUpdate("current_location", value)}
                     >
                       <SelectTrigger>
@@ -515,7 +521,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">Urgency Level</Label>
-                    <Select value={taskData.urgency} onValueChange={(value) => handleFieldUpdate("urgency", value)}>
+                    <Select value={taskData.urgency || ''} onValueChange={(value) => handleFieldUpdate("urgency", value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -598,45 +604,48 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
             {/* Cost Breakdown */}
             <Card className="border-gray-200">
               <CardHeader>
-                <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-red-600" />
-                  Cost Breakdown
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-red-600" />
+                    Cost Breakdown
+                  </CardTitle>
+                  {canEditEstimatedCost && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditingCost(!isEditingCost)}
+                      className="border-gray-300 text-gray-600 bg-transparent"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      {isEditingCost ? "Done" : "Edit"}
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <Label className="text-sm font-medium text-gray-600">Parts Cost</Label>
-                    {canEditFinancials ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={taskData.parts_cost}
-                        onChange={(e) => handleFieldUpdate("parts_cost", Number.parseFloat(e.target.value))}
-                        className="w-24 text-right"
-                      />
-                    ) : (
-                      <span className="font-medium text-gray-900">${parseFloat(taskData.parts_cost).toFixed(2)}</span>
-                    )}
+                    <span className="font-medium text-gray-900">TSh {parseFloat(taskData.parts_cost || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <Label className="text-sm font-medium text-gray-600">Labor Cost</Label>
-                    {canEditFinancials ? (
+                    <Label className="text-sm font-medium text-gray-600">Estimated Cost</Label>
+                    {isEditingCost ? (
                       <Input
                         type="number"
                         step="0.01"
-                        value={taskData.labor_cost}
-                        onChange={(e) => handleFieldUpdate("labor_cost", Number.parseFloat(e.target.value))}
+                        value={taskData.estimated_cost || ''}
+                        onChange={(e) => handleFieldUpdate("estimated_cost", e.target.value ? Number.parseFloat(e.target.value) : null)}
                         className="w-24 text-right"
                       />
                     ) : (
-                      <span className="font-medium text-gray-900">${parseFloat(taskData.labor_cost).toFixed(2)}</span>
+                      <span className="font-medium text-gray-900">TSh {parseFloat(taskData.estimated_cost || 0).toFixed(2)}</span>
                     )}
                   </div>
                   <div className="border-t pt-3">
                     <div className="flex justify-between items-center">
                       <Label className="text-base font-semibold text-gray-900">Total Cost</Label>
-                      <span className="text-xl font-bold text-red-600">${parseFloat(taskData.total_cost).toFixed(2)}</span>
+                      <span className="text-xl font-bold text-red-600">TSh {parseFloat(taskData.total_cost || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -655,9 +664,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                 <div className="space-y-3">
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Payment Status</Label>
-                    {canEditFinancials ? (
+                    {canEditPaymentStatus ? (
                       <Select
-                        value={taskData.payment_status}
+                        value={taskData.payment_status || ''}
                         onValueChange={(value) => handleFieldUpdate("payment_status", value)}
                       >
                         <SelectTrigger className="mt-1">
@@ -736,7 +745,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                 <TableBody>
                   {taskData.payments.map((payment: any) => (
                     <TableRow key={payment.id}>
-                      <TableCell className="font-medium text-green-600">${parseFloat(payment.amount).toFixed(2)}</TableCell>
+                      <TableCell className="font-medium text-green-600">TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                       <TableCell>{payment.date}</TableCell>
                       <TableCell>{payment.method}</TableCell>
                       <TableCell className="font-mono text-sm">{payment.reference}</TableCell>

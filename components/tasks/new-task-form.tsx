@@ -33,6 +33,7 @@ interface FormData {
   urgency: string
   current_location: string
   assigned_to?: string
+  estimated_cost?: number
 }
 
 interface FormErrors {
@@ -70,6 +71,7 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
     urgency: 'Medium',
     current_location: '',
     assigned_to: '',
+    estimated_cost: 0,
   })
   const [errors, setErrors] = useState<FormErrors>({})
 
@@ -108,7 +110,7 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
@@ -121,7 +123,11 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
 
     setIsSubmitting(true)
     try {
-      await createTask(formData)
+      const taskData = {
+        ...formData,
+        total_cost: formData.estimated_cost,
+      };
+      await createTask(taskData)
       setSubmitSuccess(true)
       setTimeout(() => {
         onClose()
@@ -219,6 +225,14 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={canAssignTechnician ? 5 : 8}
               className={errors.description ? 'border-red-500' : ''}
+            />
+          </FormField>
+          <FormField id='estimated_cost' label='Estimated Cost (TSh)'>
+            <Input
+              id='estimated_cost'
+              type='number'
+              value={formData.estimated_cost}
+              onChange={(e) => handleInputChange('estimated_cost', e.target.valueAsNumber)}
             />
           </FormField>
           <FormField id='urgency' label='Urgency' required error={errors.urgency}>
