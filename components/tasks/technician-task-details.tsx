@@ -34,7 +34,8 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { getTask, updateTask, addTaskActivity } from "@/lib/api-client"
+import { getTask, updateTask, addTaskActivity, getAllowedTransitions } from "@/lib/api-client"
+import { getTaskStatusOptions } from "@/lib/tasks-api";
 import { CreateCollaborationRequest } from "@/components/dashboard/collaboration/create-collaboration-request"
 import { useToast } from "@/hooks/use-toast"
 
@@ -51,12 +52,16 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
   const [currentLocation, setCurrentLocation] = useState("")
   const [status, setStatus] = useState("")
   const [isCollaborationDialogOpen, setIsCollaborationDialogOpen] = useState(false)
+  const [statusOptions, setStatusOptions] = useState<string[]>([]);
+  const [allowedTransitions, setAllowedTransitions] = useState<any>({});
   const router = useRouter()
   const { user } = useAuth()
   const { toast } = useToast()
 
   useEffect(() => {
     loadTaskDetails()
+    fetchStatusOptions()
+    fetchAllowedTransitions()
   }, [taskId])
 
   const loadTaskDetails = async () => {
@@ -73,6 +78,24 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       setLoading(false)
     }
   }
+
+  const fetchStatusOptions = async () => {
+    try {
+      const response = await getTaskStatusOptions();
+      setStatusOptions(response.data.map((option: any) => option[0]));
+    } catch (error) {
+      console.error("Error fetching status options:", error);
+    }
+  };
+
+  const fetchAllowedTransitions = async () => {
+    try {
+      const response = await getAllowedTransitions();
+      setAllowedTransitions(response.data);
+    } catch (error) {
+      console.error("Error fetching allowed transitions:", error);
+    }
+  };
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -170,6 +193,15 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
     }
     return iconMap[type] || <FileText className="h-4 w-4 text-gray-600" />
   }
+
+  const getAvailableStatusOptions = () => {
+    if (!user || !task || !allowedTransitions[user.role]) {
+      return [];
+    }
+    const currentStatus = task.status;
+    const transitions = allowedTransitions[user.role][currentStatus] || [];
+    return statusOptions.filter(option => transitions.includes(option));
+  };
 
   if (loading) {
     return (
@@ -295,12 +327,9 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="Awaiting Parts">Awaiting Parts</SelectItem>
-                      <SelectItem value="Completed">Completed</SelectItem>
-                      <SelectItem value="Picked Up">Picked Up</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                      {getAvailableStatusOptions().map(option => (
+                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

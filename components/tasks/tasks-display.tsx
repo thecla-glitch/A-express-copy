@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table"
 import { Badge } from "@/components/ui/core/badge"
 import { Button } from "@/components/ui/core/button"
@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import {  AlertDialog,  AlertDialogAction,  AlertDialogCancel,  AlertDialogContent,  AlertDialogDescription,  AlertDialogFooter,  AlertDialogHeader,  AlertDialogTitle,  AlertDialogTrigger,} from "@/components/ui/feedback/alert-dialog"
 import { TaskFilters } from "./task-filters"
+import { getTaskStatusOptions } from "@/lib/tasks-api";
 
 
 import { Textarea } from "@/components/ui/core/textarea";
@@ -34,9 +35,11 @@ interface TasksDisplayProps {
   isQcTab?: boolean;
   onApprove?: (taskId: string) => void;
   onReject?: (taskId: string, notes: string) => void;
+  isCompletedTab?: boolean;
+  onMarkAsPaid?: (taskId: string) => void;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, isQcTab, onApprove, onReject }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, isQcTab, onApprove, onReject, isCompletedTab, onMarkAsPaid }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -46,8 +49,21 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
   const [locationFilter, setLocationFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null)
+  const [statusOptions, setStatusOptions] = useState<string[]>([]);
+  const [isPaidConfirmOpen, setIsPaidConfirmOpen] = useState(false);
+  const [taskToPay, setTaskToPay] = useState<any | null>(null);
 
-  const uniqueStatuses = useMemo(() => [...new Set(tasks.map((task) => task?.status || "Pending"))], [tasks])
+  useEffect(() => {
+    const fetchStatusOptions = async () => {
+      try {
+        const response = await getTaskStatusOptions();
+        setStatusOptions(response.data.map((option: any) => option[0]));
+      } catch (error) {
+        console.error("Error fetching status options:", error);
+      }
+    };
+    fetchStatusOptions();
+  }, []);
   const uniqueTechnicians = useMemo(() => {
     return technicians.map((tech) => ({ id: tech.id, full_name: `${tech.first_name} ${tech.last_name}`.trim() }))
   }, [technicians])
@@ -176,7 +192,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
         setUrgencyFilter={setUrgencyFilter}
         locationFilter={locationFilter}
         setLocationFilter={setLocationFilter}
-        uniqueStatuses={uniqueStatuses}
+        uniqueStatuses={statusOptions}
         uniqueTechnicians={uniqueTechnicians}
         uniqueUrgencies={uniqueUrgencies}
         uniqueLocations={uniqueLocations}
@@ -292,6 +308,20 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                             </DialogContent>
                           </Dialog>
                         </>
+                      ) : isCompletedTab ? (
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTaskToPay(task);
+                              setIsPaidConfirmOpen(true);
+                            }}
+                          >
+                            Paid
+                          </Button>
+                        </>
                       ) : (
                         <>
                           {task.status === "Ready for Pickup" && onProcessPickup && (
@@ -364,6 +394,29 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
           </div>
         )}
       </div>
+      <AlertDialog open={isPaidConfirmOpen} onOpenChange={setIsPaidConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Has the customer {taskToPay?.customer_name} paid for this task?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTaskToPay(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (taskToPay && onMarkAsPaid) {
+                  onMarkAsPaid(taskToPay.id);
+                }
+                setTaskToPay(null);
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

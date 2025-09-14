@@ -2,30 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
-import { Button } from "@/components/ui/core/button"
 import { Badge } from "@/components/ui/core/badge"
-import { getTasks, updateTask } from "@/lib/api-client"
+import { apiClient } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { Laptop } from "lucide-react"
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case "Assigned - Not Accepted":
-      return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Not Accepted</Badge>
-    case "Diagnostic":
-      return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Diagnostic</Badge>
-    case "In Progress":
-      return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>
-    case "Awaiting Parts":
-      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Awaiting Parts</Badge>
-    case "Ready for Pickup":
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ready for Pickup</Badge>
-    case "Completed":
-      return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Completed</Badge>
-    default:
-      return <Badge variant="secondary">{status}</Badge>
-  }
-}
 
 const getUrgencyBadge = (urgency: string) => {
   switch (urgency) {
@@ -40,7 +20,7 @@ const getUrgencyBadge = (urgency: string) => {
   }
 }
 
-export function ActiveTasksList({ refresh, setRefresh }: { refresh: boolean, setRefresh: (value: any) => void }) {
+export function QCTasksList({ refresh }: { refresh: boolean }) {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<any[]>([])
 
@@ -48,29 +28,23 @@ export function ActiveTasksList({ refresh, setRefresh }: { refresh: boolean, set
     const fetchTasks = async () => {
       if (!user) return
       try {
-        const response = await getTasks({ assigned_to: user.id, status: "In Progress" })
-        setTasks(response.data)
+        const response = await apiClient.getTasks()
+        if (response.data) {
+            const qcTasks = response.data.filter((task: any) => task.status === "Ready for QC" && task.assigned_to === user.id);
+            setTasks(qcTasks)
+        }
       } catch (error) {
-        console.error("Error fetching active tasks:", error)
+        console.error("Error fetching QC tasks:", error)
       }
     }
     fetchTasks()
   }, [user, refresh])
 
-  const handleReadyForQC = async (taskId: string) => {
-    try {
-      await updateTask(taskId, { status: "Ready for QC" })
-      setRefresh((prev: any) => !prev)
-    } catch (error) {
-      console.error("Error updating task status:", error)
-    }
-  }
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Active Tasks</CardTitle>
-        <CardDescription>Tasks that are currently assigned to you.</CardDescription>
+        <CardTitle>Tasks Awaiting QC</CardTitle>
+        <CardDescription>Tasks that are ready for quality control checkup.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-6">
@@ -96,15 +70,7 @@ export function ActiveTasksList({ refresh, setRefresh }: { refresh: boolean, set
                   </div>
                 </div>
                 <div className="space-y-4 flex flex-col justify-between items-end">
-                  <div className="text-right">
-                    {getStatusBadge(task.status)}
-                  </div>
-                  {task.status === "In Progress" && (
-                    <Button onClick={() => handleReadyForQC(task.id)} className="w-full md:w-auto">Ready for QC</Button>
-                  )}
-                  <Button variant="outline" asChild className="w-full md:w-auto">
-                    <a href={`/dashboard/tasks/${task.id}`}>View Details</a>
-                  </Button>
+                  <Badge variant="secondary">{task.status}</Badge>
                 </div>
               </div>
             </div>

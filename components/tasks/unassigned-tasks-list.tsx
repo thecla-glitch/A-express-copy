@@ -6,6 +6,20 @@ import { Button } from "@/components/ui/core/button"
 import { Badge } from "@/components/ui/core/badge"
 import { getTasks, updateTask } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
+import { Laptop } from "lucide-react"
+
+const getUrgencyBadge = (urgency: string) => {
+  switch (urgency) {
+    case "High":
+      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">High</Badge>
+    case "Medium":
+      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Medium</Badge>
+    case "Low":
+      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Low</Badge>
+    default:
+      return <Badge variant="secondary">{urgency}</Badge>
+  }
+}
 
 export function UnassignedTasksList() {
   const { user } = useAuth()
@@ -14,9 +28,9 @@ export function UnassignedTasksList() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await getTasks();
+        const response = await getTasks({ status: "Unassigned" })
         const unassignedTasks = response.data.filter((task: any) => task.assigned_to === null);
-        setTasks(unassignedTasks);
+        setTasks(unassignedTasks)
       } catch (error) {
         console.error("Error fetching unassigned tasks:", error)
       }
@@ -26,9 +40,8 @@ export function UnassignedTasksList() {
 
   const handleAssignToMe = async (taskId: string) => {
     try {
-      await updateTask(taskId, { assigned_to: user?.id, status: "In Progress" })
-      const response = await getTasks({ assigned_to: null })
-      setTasks(response.data)
+      await updateTask(taskId, { assigned_to: user?.id, status: "Assigned - Not Accepted" })
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId))
     } catch (error) {
       console.error(`Error assigning task ${taskId} to self:`, error)
     }
@@ -41,28 +54,34 @@ export function UnassignedTasksList() {
         <CardDescription>Tasks that are not yet assigned to any technician.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="grid gap-6">
           {tasks.map((task) => (
-            <div key={task.id} className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <span className="font-medium text-blue-600">{task.id}</span>
-                    <span className="font-medium text-gray-900 ml-2">{task.customer_name}</span>
+            <div key={task.id} className="rounded-lg border bg-card text-card-foreground shadow-sm">
+              <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{task.customer_name}</h3>
+                      <p className="text-sm text-gray-500">Task ID: <span className="font-medium text-red-600">{task.id}</span></p>
+                    </div>
+                    {getUrgencyBadge(task.urgency)}
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-gray-800">{task.description}</p>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Laptop className="h-4 w-4" />
+                      <span>{task.laptop_model}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">Created at: {new Date(task.created_at).toLocaleDateString()}</p>
+                <div className="space-y-4 flex flex-col justify-between items-end">
+                  <Button onClick={() => handleAssignToMe(task.id)} className="w-full md:w-auto">Assign to Me</Button>
+                  <Button variant="outline" asChild className="w-full md:w-auto">
+                    <a href={`/dashboard/tasks/${task.id}`}>View Details</a>
+                  </Button>
                 </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-3">
-                <h4 className="font-medium text-gray-900 mb-2">Issue Description:</h4>
-                <p className="text-sm text-gray-700">{task.description}</p>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={() => handleAssignToMe(task.id)}>Assign to Me</Button>
               </div>
             </div>
           ))}

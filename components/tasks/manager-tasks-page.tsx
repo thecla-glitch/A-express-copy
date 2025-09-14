@@ -1,12 +1,11 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
 import { Plus, MapPin } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { getTasks, deleteTask, apiClient } from "@/lib/api-client";
-import { User } from "@/lib/use-user-management";
+import { apiClient, UserResponse as User } from "@/lib/api";
 import { TasksDisplay } from "./tasks-display";
 import { NewTaskForm } from "./new-task-form";
 import { LocationsManager } from "../locations/locations-manager";
@@ -18,12 +17,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/feedback/dialog";
-
-// Define the custom response type
-interface CustomApiResponse<T> {
-  data?: T;
-  error?: string | null;
-}
 
 export function ManagerTasksPage() {
   const { user } = useAuth();
@@ -39,18 +32,18 @@ export function ManagerTasksPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const tasksResponse: CustomApiResponse<any[]> = await getTasks();
+        const tasksResponse = await apiClient.getTasks();
         if (tasksResponse.data) {
           setTasks(tasksResponse.data);
         } else if (tasksResponse.error) {
           setError(tasksResponse.error);
         }
 
-        const techResponse: CustomApiResponse<User[]> = await apiClient.get("/users/role/Technician/");
+        const techResponse = await apiClient.listUsersByRole("Technician");
         if (techResponse.data) {
           setTechnicians(techResponse.data);
         } else if (techResponse.error) {
-          setError(techResponse.error);
+          setError(techResponse.error as string);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -64,7 +57,7 @@ export function ManagerTasksPage() {
   }, []);
 
   const handleDeleteTask = async (taskId: string) => {
-    const response: CustomApiResponse<void> = await deleteTask(taskId);
+    const response = await apiClient.deleteTask(taskId);
     if (response.error) {
       console.error("Error deleting task:", response.error);
     } else {
@@ -79,7 +72,7 @@ export function ManagerTasksPage() {
   const handleProcessPickup = (taskId: string) => {
     const updateField = async (field: string, value: any) => {
       try {
-        await apiClient.patch(`/tasks/${taskId}/`, { [field]: value });
+        await apiClient.updateTask(taskId, { [field]: value });
         setTasks((prev) =>
           prev.map((task) => (task.id === taskId ? { ...task, [field]: value } : task))
         );
@@ -95,7 +88,7 @@ export function ManagerTasksPage() {
 
   const handleApprove = async (taskId: string) => {
     try {
-      await apiClient.patch(`/tasks/${taskId}/`, { status: "Completed" });
+      await apiClient.updateTask(taskId, { status: "Completed" });
       setTasks((prev) =>
         prev.map((task) =>
           task.id === taskId ? { ...task, status: "Completed" } : task
@@ -108,7 +101,7 @@ export function ManagerTasksPage() {
 
   const handleReject = async (taskId: string, notes: string) => {
     try {
-      await apiClient.patch(`/tasks/${taskId}/`, { status: "In Progress", qc_notes: notes });
+      await apiClient.updateTask(taskId, { status: "In Progress", qc_notes: notes });
       setTasks((prev) =>
         prev.map((task) =>
           task.id === taskId ? { ...task, status: "In Progress" } : task
@@ -122,9 +115,31 @@ export function ManagerTasksPage() {
   const handleTaskCreated = () => {
     setIsCreateModalOpen(false);
     // Refresh tasks list
-    getTasks().then((res: CustomApiResponse<any[]>) => {
+    apiClient.getTasks().then((res) => {
       if (res.data) setTasks(res.data);
     });
+  };
+
+  const handleMarkAsPaid = async (taskId: string) => {
+    try {
+      await apiClient.updateTask(taskId, {
+        payment_status: "Paid",
+        paid_date: new Date().toISOString(),
+      });
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                payment_status: "Paid",
+                paid_date: new Date().toISOString(),
+              }
+            : task
+        )
+      );
+    } catch (error) {
+      console.error(`Error marking task ${taskId} as paid:`, error);
+    }
   };
 
   const pendingAndInProgressTasks = tasks.filter(task => ["Pending", "In Progress", "Awaiting Parts", "Assigned - Not Accepted", "Diagnostic"].includes(task.status));
@@ -209,6 +224,8 @@ export function ManagerTasksPage() {
             showActions={true}
             onDeleteTask={handleDeleteTask}
             onProcessPickup={handleProcessPickup}
+            isCompletedTab={true}
+            onMarkAsPaid={handleMarkAsPaid}
           />
         </TabsContent>
       </Tabs>

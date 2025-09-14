@@ -53,10 +53,13 @@
     "react-dom": "^18",
     "react-hook-form": "latest",
     "react-resizable-panels": "latest",
+    "react-use-websocket": "^4.13.0",
     "recharts": "latest",
     "sonner": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
+    "use-websocket": "^0.2.0",
+    "use-websockets": "^2.1.0",
     "vaul": "latest"
   },
   "devDependencies": {
