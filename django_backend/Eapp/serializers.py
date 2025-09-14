@@ -138,7 +138,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
             'activities', 'payments', 'outstanding_balance'
         )
-        read_only_fields = ('created_by', 'created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'negotiated_by_details', 'activities', 'payments', 'payment_status')
+        read_only_fields = ('created_by', 'created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'negotiated_by_details', 'activities', 'payments')
         extra_kwargs = {
             'estimated_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
             'total_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
