@@ -80,7 +80,7 @@ const navigationItems = {
     },
     {
       title: "Tasks",
-      url: "/dashboard/tasks",
+      url: "/dashboard/front-desk/tasks",
       icon: Wrench,
     },
     {
@@ -176,7 +176,7 @@ const navigationItems = {
     },
     {
       title: "Tasks",
-      url: "/dashboard/tasks",
+      url: "/dashboard/front-desk/tasks",
       icon: Wrench,
     },
     {

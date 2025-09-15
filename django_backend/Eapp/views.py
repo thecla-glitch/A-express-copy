@@ -502,7 +502,7 @@ class LocationViewSet(viewsets.ModelViewSet):
     """
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [permissions.IsAuthenticated]
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

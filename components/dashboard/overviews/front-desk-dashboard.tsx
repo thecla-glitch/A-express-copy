@@ -431,7 +431,7 @@ export function FrontDeskDashboard() {
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <a href="/dashboard/tasks">View Tasks</a>
+              <a href="/dashboard/front-desk/tasks">View Tasks</a>
             </Button>
           </CardContent>
         </Card>
