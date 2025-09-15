@@ -13,7 +13,8 @@ import { useAuth } from '@/lib/auth-context'
 import { User } from "@/lib/use-user-management"
 
 interface NewTaskFormProps {
-  onClose: () => void
+  onClose: () => void;
+  locations: Location[];
 }
 
 interface Location {
@@ -53,12 +54,11 @@ const generateTaskID = () => {
     return `${prefix}-${timestamp}-${randomPart}`;
 }
 
-export function NewTaskForm({ onClose }: NewTaskFormProps) {
+export function NewTaskForm({ onClose, locations }: NewTaskFormProps) {
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [technicians, setTechnicians] = useState<User[]>([])
-  const [locations, setLocations] = useState<Location[]>([])
   const [formData, setFormData] = useState<FormData>({
     title: '',
     customer_name: '',
@@ -85,15 +85,10 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
         }
       })
     }
-    apiClient.get('/locations/').then(response => {
-      if (response.data) {
-        setLocations(response.data)
-        if (response.data.length > 0) {
-            setFormData(prev => ({...prev, current_location: response.data[0].name}))
-        }
-      }
-    })
-  }, [user])
+    if (locations.length > 0 && !formData.current_location) {
+        setFormData(prev => ({...prev, current_location: locations[0].name}))
+    }
+  }, [user, locations])
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}

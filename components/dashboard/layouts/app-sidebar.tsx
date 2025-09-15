@@ -45,7 +45,6 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
 
-// Navigation items for different roles
 const navigationItems = {
   Administrator: [
     {
@@ -160,11 +159,6 @@ const navigationItems = {
   ],
   "Front Desk": [
     {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: Home,
-    },
-    {
       title: "Front Desk",
       url: "/dashboard/front-desk",
       icon: Calendar,
@@ -176,7 +170,7 @@ const navigationItems = {
     },
     {
       title: "Tasks",
-      url: "/dashboard/tasks",
+      url: "/dashboard/front-desk/tasks",
       icon: Wrench,
     },
     {
@@ -208,16 +202,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       case "Technician":
         return "/dashboard/technician"
       case "Front Desk":
-        return "/dashboard"
+        return "/dashboard/front-desk"
       default:
         return "/dashboard"
     }
   }
 
-    // Create a full name from first_name and last_name
   const fullName = `${user.first_name} ${user.last_name}`.trim()
   
-  // Generate initials for avatar fallback
   const getInitials = () => {
     if (user.first_name && user.last_name) {
       return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()

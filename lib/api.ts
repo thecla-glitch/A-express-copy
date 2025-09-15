@@ -23,6 +23,11 @@ export interface UserResponse {
   bio?: string
 }
 
+export interface Location {
+  id: number;
+  name: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -387,6 +392,9 @@ export class ApiClient {
     });
   }
 
+  async getLocations(): Promise<ApiResponse<Location[]>> {
+    return this.request<Location[]>('/locations/');
+  }
 
 }
 

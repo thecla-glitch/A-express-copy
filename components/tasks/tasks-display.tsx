@@ -310,17 +310,27 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                         </>
                       ) : isCompletedTab ? (
                         <>
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTaskToPay(task);
-                              setIsPaidConfirmOpen(true);
-                            }}
-                          >
-                            Paid
-                          </Button>
+                          {task.payment_status === 'Fully Paid' ? (
+                            <Button
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              disabled
+                            >
+                              Notify Customer
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTaskToPay(task);
+                                setIsPaidConfirmOpen(true);
+                              }}
+                            >
+                              Paid
+                            </Button>
+                          )}
                         </>
                       ) : (
                         <>

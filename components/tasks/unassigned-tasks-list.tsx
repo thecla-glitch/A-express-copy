@@ -90,3 +90,5 @@ export function UnassignedTasksList() {
     </Card>
   )
 }
+
+export default UnassignedTasksList;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/layout/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
 import { Input } from "@/components/ui/core/input"
 import { Label } from "@/components/ui/core/label"
@@ -28,15 +28,14 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
-  CreditCard,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { getTask, updateTask, addTaskActivity, addTaskPayment, listTechnicians, getLocations } from "@/lib/api-client"
 import { getTaskStatusOptions, getTaskPriorityOptions } from "@/lib/tasks-api"
 import { SendCustomerUpdateDialog } from "./send-customer-update-dialog"
 import { TaskActivityLog } from "./task-activity-log"
+import { PaymentStatusView } from "./payment-status-view"
 
-const paymentStatusOptions = ["Unpaid", "Partially Paid", "Paid", "Refunded"];
 const paymentMethodOptions = ["Cash", "Credit Card", "Debit Card", "Check", "Digital Payment"];
 
 interface TaskDetailsPageProps {
@@ -53,27 +52,21 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [isEditingCustomer, setIsEditingCustomer] = useState(false)
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
   const [isEditingCost, setIsEditingCost] = useState(false);
-  const [isEditingPaymentStatus, setIsEditingPaymentStatus] = useState(false);
-  const [technicians, setTechnicians] = useState<any[]>([])
-  const [locations, setLocations] = useState<any[]>([])
-  const [statusOptions, setStatusOptions] = useState<any[]>([])
-  const [priorityOptions, setPriorityOptions] = useState<any[]>([])
-  const [pendingPaymentStatus, setPendingPaymentStatus] = useState<string | null>(null);
-  const [nextPaymentDate, setNextPaymentDate] = useState<string | null>(null);
+  const [technicians, setTechnicians] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
+  const [statusOptions, setStatusOptions] = useState<any[]>([]);
+  const [priorityOptions, setPriorityOptions] = useState<any[]>([]);
 
+  const fetchTask = async () => {
+    try {
+      const response = await getTask(taskId)
+      setTaskData(response.data)
+    } catch (error) {
+      console.error(`Error fetching task ${taskId}:`, error)
+    }
+  }
 
   useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        const response = await getTask(taskId)
-        setTaskData(response.data)
-        if (response.data.next_payment_date) {
-          setNextPaymentDate(response.data.next_payment_date)
-        }
-      } catch (error) {
-        console.error(`Error fetching task ${taskId}:`, error)
-      }
-    }
     const fetchDropdownData = async () => {
       try {
         const [techs, locs, statuses, priorities] = await Promise.all([
@@ -94,7 +87,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     fetchDropdownData()
   }, [taskId])
 
-  // Role-based permissions
   const isAdmin = user?.role === "Administrator"
   const isManager = user?.role === "Manager"
   const isTechnician = user?.role === "Technician"
@@ -113,66 +105,26 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const handleFieldUpdate = async (field: string, value: any) => {
     if (!taskData) return
 
-    let updatedTask = { ...taskData, [field]: value }
+    let payload: any = { [field]: value };
 
     if (field === "assigned_to" && taskData.status === "Pending") {
-        updatedTask.status = "In Progress";
-    }
-
-    setTaskData(updatedTask)
-
-    try {
-      await updateTask(taskData.id, { [field]: value })
-      if (field === "assigned_to" && taskData.status === "Pending") {
-        await updateTask(taskData.id, { status: "In Progress" })
-      }
-    } catch (error) {
-      console.error(`Error updating task ${taskData.id}:`, error)
-      // Optionally revert the change in UI
-    }
-  }
-
-  const handleSavePaymentStatus = async () => {
-    if (!pendingPaymentStatus) {
-      setIsEditingPaymentStatus(false);
-      return;
-    }
-
-    const payload: { payment_status: string; paid_date?: string, next_payment_date?: string | null } = {
-      payment_status: pendingPaymentStatus,
-    };
-    if (pendingPaymentStatus === 'Partially Paid' || pendingPaymentStatus === 'Paid') {
-      payload.paid_date = new Date().toISOString().split('T')[0];
-    }
-    if (pendingPaymentStatus === 'Partially Paid') {
-      payload.next_payment_date = nextPaymentDate;
-    } else {
-      payload.next_payment_date = null;
+        payload.status = "In Progress";
     }
 
     try {
-      const response = await updateTask(taskData.id, payload);
-      setTaskData(response.data);
+      const response = await updateTask(taskData.id, payload)
+      setTaskData(response.data)
     } catch (error) {
       console.error(`Error updating task ${taskData.id}:`, error)
     }
-    setPendingPaymentStatus(null);
-    setIsEditingPaymentStatus(false);
-  };
-
-  const handleCancelPaymentStatus = () => {
-    setPendingPaymentStatus(null);
-    setNextPaymentDate(taskData.next_payment_date);
-    setIsEditingPaymentStatus(false);
   }
-
 
   const handleAddNote = async () => {
     if (!newNote.trim() || !taskData) return
 
     try {
-      const response = await addTaskActivity(taskData.id, { message: newNote, type: 'note' })
-      setTaskData({ ...taskData, activities: [...taskData.activities, response.data] })
+      await addTaskActivity(taskData.id, { message: newNote, type: 'note' })
+      fetchTask(); // Refetch task data to get the latest updates
       setNewNote("")
     } catch (error) {
       console.error("Error adding note:", error)
@@ -183,20 +135,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     if (!newPaymentAmount || !newPaymentMethod || !taskData) return
 
     try {
-      const response = await addTaskPayment(taskData.id, { amount: newPaymentAmount, method: newPaymentMethod })
-      const newPayment = response.data
-      const updatedPayments = [...taskData.payments, newPayment]
-      const totalPaid = updatedPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-
-      let paymentStatus = "Partially Paid"
-      if (totalPaid >= parseFloat(taskData.total_cost)) {
-        paymentStatus = "Paid"
-      }
-
-      const updatedTask = { ...taskData, payments: updatedPayments, payment_status: paymentStatus }
-      setTaskData(updatedTask)
-      await updateTask(taskData.id, { payment_status: paymentStatus })
-
+      await addTaskPayment(taskData.id, { amount: newPaymentAmount, method: newPaymentMethod })
+      fetchTask(); // Refetch task data to get the latest updates
       setNewPaymentAmount("")
       setNewPaymentMethod("")
     } catch (error) {
@@ -240,43 +180,14 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     }
   }
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "status_update":
-        return <Settings className="h-4 w-4 text-blue-600" />
-      case "note":
-        return <MessageSquare className="h-4 w-4 text-gray-600" />
-      case "diagnosis":
-        return <ClipboardList className="h-4 w-4 text-purple-600" />
-      case "customer_contact":
-        return <Phone className="h-4 w-4 text-green-600" />
-      case "intake":
-        return <Plus className="h-4 w-4 text-orange-600" />
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />
-    }
-  }
-
-  const getFilteredPaymentStatusOptions = () => {
-    if (!taskData) return paymentStatusOptions;
-    if (taskData.payment_status === 'Paid') {
-      return ['Paid', 'Refunded'];
-    }
-    if (taskData.payment_status === 'Partially Paid') {
-      return ['Partially Paid', 'Paid', 'Refunded'];
-    }
-    return paymentStatusOptions;
-  };
-
   if (!taskData) {
     return <div>Loading...</div>
   }
 
   return (
     <div className="flex-1 space-y-6 p-6">
-      {/* Header Section */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600" onClick={() => router.push('/dashboard/tasks')}>
+        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Tasks
         </Button>
@@ -313,7 +224,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         </div>
       </div>
 
-      {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4 bg-gray-100">
           <TabsTrigger value="overview" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
@@ -330,10 +240,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Customer Information */}
             <Card className="border-gray-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -400,7 +308,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
               </CardContent>
             </Card>
 
-            {/* Laptop Information */}
             <Card className="border-gray-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -484,7 +391,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
               </CardContent>
             </Card>
           </div>
-          {/* Initial Issue */}
             <Card className="border-gray-200">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-gray-900">Initial Issue Description</CardTitle>
@@ -497,10 +403,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
             </Card>
         </TabsContent>
 
-        {/* Repair Management Tab */}
         <TabsContent value="repair-management" className="space-y-6">
           <div className="grid gap-6">
-            {/* Repair Management */}
             <Card className="border-gray-200">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-gray-900">Repair Management</CardTitle>
@@ -593,7 +497,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </div>
         </TabsContent>
 
-        {/* History Tab */}
         <TabsContent value="history" className="space-y-6">
           <TaskActivityLog taskId={taskId} />
           <Card className="border-gray-200">
@@ -602,7 +505,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                 <Calendar className="h-5 w-5 text-red-600" />
                 Dates & Milestones
               </CardTitle>
-              <CardDescription>Key dates and milestones for this repair task</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
@@ -651,10 +553,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </Card>
         </TabsContent>
 
-        {/* Financials Tab */}
         <TabsContent value="financials" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Cost Breakdown */}
             <Card className="border-gray-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -705,91 +605,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
               </CardContent>
             </Card>
 
-            {/* Payment Status */}
-            <Card className="border-gray-200">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-red-600" />
-                    Payment Status
-                  </CardTitle>
-                  {canEditPaymentStatus && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditingPaymentStatus(!isEditingPaymentStatus)}
-                      className="border-gray-300 text-gray-600 bg-transparent"
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      {isEditingPaymentStatus ? "Done" : "Edit"}
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {isEditingPaymentStatus ? (
-                    <>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Payment Status</Label>
-                        <Select
-                          value={pendingPaymentStatus || taskData.payment_status || ''}
-                          onValueChange={setPendingPaymentStatus}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getFilteredPaymentStatusOptions().map((status) => (
-                              <SelectItem key={status} value={status}>
-                                {status}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
-                        <p className="text-gray-900 mt-1">{taskData.paid_date ? new Date(taskData.paid_date).toLocaleString() : "Not paid"}</p>
-                      </div>
-                      {(pendingPaymentStatus === 'Partially Paid' || (!pendingPaymentStatus && taskData.payment_status === 'Partially Paid')) && (
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Next Payment Date</Label>
-                          <Input
-                            type="date"
-                            value={nextPaymentDate || ''}
-                            onChange={(e) => setNextPaymentDate(e.target.value)}
-                            className="mt-1"
-                          />
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Payment Status</Label>
-                      <p className="text-gray-900 font-medium mt-1">{taskData.payment_status}</p>
-                      <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
-                      <p className="text-gray-900 mt-1">{taskData.paid_date ? new Date(taskData.paid_date).toLocaleString() : "Not paid"}</p>
-                      {taskData.payment_status === 'Partially Paid' && (
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Next Payment Date</Label>
-                          <p className="text-gray-900 mt-1">{taskData.next_payment_date}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-              {isEditingPaymentStatus && (
-                <CardFooter className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={handleCancelPaymentStatus}>Cancel</Button>
-                  <Button size="sm" onClick={handleSavePaymentStatus}>Save</Button>
-                </CardFooter>
-              )}
-            </Card>
+            <PaymentStatusView
+              taskData={taskData}
+              onUpdate={setTaskData}
+              canEdit={canEditPaymentStatus}
+            />
           </div>
 
-          {/* Payment History */}
           <Card className="border-gray-200">
             <CardHeader>
               <div className="flex items-center justify-between">

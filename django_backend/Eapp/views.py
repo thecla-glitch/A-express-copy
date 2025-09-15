@@ -3,9 +3,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
-from django.db import models  # For Q
+from django.db import models
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location
 from .serializers import (
     ChangePasswordSerializer, UserProfileUpdateSerializer, UserSerializer, 
@@ -16,9 +17,6 @@ from django.shortcuts import get_object_or_404
 
 
 class IsAdminOrManager(permissions.BasePermission):
-    """
-    Custom permission to only allow admins or managers to add users.
-    """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
@@ -258,7 +256,6 @@ def change_password(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Task-related views (assuming these are the missing parts based on urls.py)
 @api_view(['GET', 'POST'])
 @permission_classes([permissions.IsAuthenticated])
 def task_list_create(request):
@@ -295,35 +292,14 @@ def task_detail(request, task_id):
         return Response(serializer.data)
 
     elif request.method in ['PUT', 'PATCH']:
-        if 'status' in request.data and not is_manager:
-            current_status = task.status
-            new_status = request.data['status']
+        if 'payment_status' in request.data:
+            if not (is_manager or user.role == 'Front Desk'):
+                return Response({"error": "You do not have permission to update payment status."}, status=status.HTTP_403_FORBIDDEN)
             
-            allowed_transitions = {
-                'Front Desk': {
-                    'Completed': ['Ready for Pickup'],
-                    'Ready for Pickup': ['Picked Up'],
-                    'Pending': ['Cancelled'],
-                    'In Progress': ['Cancelled'],
-                    'Awaiting Parts': ['Cancelled'],
-                    'Ready for QC': ['Cancelled'],
-                },
-                'Technician': {
-                    'Pending': ['In Progress'],
-                    'In Progress': ['Awaiting Parts', 'Ready for QC'],
-                    'Awaiting Parts': ['In Progress'],
-                },
-                'Manager': {
-                    'Ready for QC': ['Completed', 'In Progress'],
-                }
-            }
-
-            role_transitions = allowed_transitions.get(user.role, {})
-            if new_status not in role_transitions.get(current_status, []):
-                return Response(
-                    {"error": f"As a {user.role}, you cannot change status from '{current_status}' to '{new_status}'."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
+            try:
+                task.set_payment_status(request.data['payment_status'], request.data.get('next_payment_date'))
+            except ValidationError as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = TaskSerializer(task, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
@@ -382,17 +358,13 @@ def add_task_payment(request, task_id):
     serializer = PaymentSerializer(data=request.data)
     if serializer.is_valid():
         payment = serializer.save(task=task)
-        payment.task.update_payment_status()  # Trigger update
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_21_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def list_technicians(request):
-    """
-    Get all users with Technician role
-    """
     technicians = User.objects.filter(role='Technician', is_active=True)
     serializer = UserSerializer(technicians, many=True, context={'request': request})
     return Response(serializer.data)
@@ -468,7 +440,6 @@ def collaboration_request_detail(request, request_id):
     collaboration_request = get_object_or_404(CollaborationRequest, id=request_id)
     user = request.user
 
-    # Permissions for GET
     if request.method == 'GET':
         is_manager = user.role == 'Manager' or user.is_superuser
         is_involved = collaboration_request.requested_by == user or collaboration_request.assigned_to == user
@@ -480,7 +451,6 @@ def collaboration_request_detail(request, request_id):
         serializer = CollaborationRequestSerializer(collaboration_request, context={'request': request})
         return Response(serializer.data)
 
-    # Permissions for PATCH
     elif request.method == 'PATCH':
         is_manager = user.role == 'Manager' or user.is_superuser
         is_assigned = collaboration_request.assigned_to == user
@@ -497,12 +467,9 @@ def collaboration_request_detail(request, request_id):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LocationViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows locations to be viewed or edited.
-    """
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
-    permission_classes = [IsAdminOrManager]
+    permission_classes = [IsAdminOrManager, IsFrontDesk]
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.utils.translation import gettext_lazy as _
 import os
 from uuid import uuid4
@@ -67,8 +67,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = _('User')
         verbose_name_plural = _('Users')
-        ordering = ['id']  # Changed from 'user_id' to 'id'
-    
+        ordering = ['id']
+
     def __str__(self):
         return f"{self.username} ({self.get_full_name()})"
     
@@ -85,11 +85,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         return '/media/profile_pictures/default.png'
     
     def save(self, *args, **kwargs):
-        # Update last_login if password is being set (during login)
         if 'update_fields' in kwargs and 'last_login' in kwargs['update_fields']:
             self.last_login = timezone.now()
         
-        # Delete old profile picture when updating to a new one
         if self.pk:
             try:
                 old_instance = User.objects.get(pk=self.pk)
@@ -109,7 +107,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def has_add_user_permission(self):
         """Check if user has permission to add other users"""
         return self.is_superuser or self.role == 'Manager'
-    
+
 
 class Task(models.Model):
     class Status(models.TextChoices):
@@ -153,7 +151,6 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     due_date = models.DateField(null=True, blank=True)
 
-    # New fields
     customer_name = models.CharField(max_length=100)
     customer_phone = models.CharField(max_length=20)
     customer_email = models.EmailField(max_length=100, blank=True, null=True)
@@ -192,19 +189,51 @@ class Task(models.Model):
         return self.total_cost - paid
 
     def update_payment_status(self):
+        """Recalculates and updates the payment status based on payments."""
         paid = sum(p.amount for p in self.payments.all()) or Decimal('0.00')
         total = self.total_cost or Decimal('0.00')
+        
+        if self.payment_status == self.PaymentStatus.REFUNDED:
+            return
+
         if paid == 0:
             self.payment_status = self.PaymentStatus.UNPAID
+            self.paid_date = None
         elif paid < total:
             self.payment_status = self.PaymentStatus.PARTIALLY_PAID
-        elif paid == total:
+            self.paid_date = None
+        else: # paid >= total
             self.payment_status = self.PaymentStatus.FULLY_PAID
             if not self.paid_date:
                 self.paid_date = timezone.now().date()
-        else:
-            self.payment_status = self.PaymentStatus.REFUNDED
+        
         self.save(update_fields=['payment_status', 'paid_date'])
+
+    def set_payment_status(self, new_status, next_payment_date=None):
+        """Validates and sets the payment status, handling side effects."""
+        allowed_transitions = {
+            self.PaymentStatus.UNPAID: [self.PaymentStatus.PARTIALLY_PAID, self.PaymentStatus.FULLY_PAID],
+            self.PaymentStatus.PARTIALLY_PAID: [self.PaymentStatus.FULLY_PAID, self.PaymentStatus.REFUNDED],
+            self.PaymentStatus.FULLY_PAID: [self.PaymentStatus.REFUNDED],
+            self.PaymentStatus.REFUNDED: []
+        }
+
+        if new_status not in allowed_transitions.get(self.payment_status, []):
+            raise ValidationError(f"Cannot transition from {self.payment_status} to {new_status}")
+
+        self.payment_status = new_status
+        
+        if new_status == self.PaymentStatus.FULLY_PAID:
+            self.paid_date = timezone.now().date()
+            self.next_payment_date = None
+        elif new_status == self.PaymentStatus.PARTIALLY_PAID:
+            self.paid_date = None
+            self.next_payment_date = next_payment_date
+        elif new_status == self.PaymentStatus.REFUNDED:
+            self.paid_date = None
+            self.next_payment_date = None
+        
+        self.save()
 
 
 class TaskActivity(models.Model):

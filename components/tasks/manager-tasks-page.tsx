@@ -123,16 +123,16 @@ export function ManagerTasksPage() {
   const handleMarkAsPaid = async (taskId: string) => {
     try {
       await apiClient.updateTask(taskId, {
-        payment_status: "Paid",
-        paid_date: new Date().toISOString(),
+        payment_status: "Fully Paid",
+        paid_date: new Date().toISOString().split('T')[0],
       });
       setTasks((prev) =>
         prev.map((task) =>
           task.id === taskId
             ? {
                 ...task,
-                payment_status: "Paid",
-                paid_date: new Date().toISOString(),
+                payment_status: "Fully Paid",
+                paid_date: new Date().toISOString().split('T')[0],
               }
             : task
         )
