@@ -126,6 +126,7 @@ class TaskSerializer(serializers.ModelSerializer):
     activities = TaskActivitySerializer(many=True, read_only=True)
     payments = PaymentSerializer(many=True, read_only=True)
     outstanding_balance = serializers.SerializerMethodField()
+    partial_payment_amount = serializers.DecimalField(max_digits=10, decimal_places=2, write_only=True, required=False)
 
     class Meta:
         model = Task
@@ -139,7 +140,8 @@ class TaskSerializer(serializers.ModelSerializer):
             'estimated_cost', 'total_cost', 'payment_status',
             'current_location', 'urgency', 'date_in', 'approved_date',
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
-            'activities', 'payments', 'outstanding_balance', 'is_commissioned', 'commissioned_by'
+            'activities', 'payments', 'outstanding_balance', 'is_commissioned', 'commissioned_by',
+            'partial_payment_amount'
         )
         read_only_fields = ('created_by', 'created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments')
         extra_kwargs = {
@@ -158,6 +160,18 @@ class TaskSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"device_notes": "Device notes are required for 'Not Full' or 'Motherboard Only' device types."})
 
         return data
+
+    def update(self, instance, validated_data):
+        partial_payment_amount = validated_data.pop('partial_payment_amount', None)
+
+        if partial_payment_amount is not None:
+            Payment.objects.create(
+                task=instance,
+                amount=partial_payment_amount,
+                method='Partial Payment'  # Or any other appropriate method
+            )
+
+        return super().update(instance, validated_data)
 
 class CollaborationRequestSerializer(serializers.ModelSerializer):
     requested_by = UserSerializer(read_only=True)

@@ -1,5 +1,6 @@
 "use client"
 
+import { TaskNotes } from "./task-notes";
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/layout/card"
@@ -35,8 +36,11 @@ import { getTask, updateTask, addTaskActivity, addTaskPayment, listTechnicians, 
 import { getTaskStatusOptions, getTaskPriorityOptions } from "@/lib/tasks-api"
 import { SendCustomerUpdateDialog } from "./send-customer-update-dialog"
 import { TaskActivityLog } from "./task-activity-log"
+import { DayPicker } from "react-day-picker"
+import "react-day-picker/dist/style.css"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
 
-const paymentStatusOptions = ["Unpaid", "Partially Paid", "Paid", "Refunded"];
+const paymentStatusOptions = ["Unpaid", "Partially Paid", "Fully Paid", "Refunded"];
 const paymentMethodOptions = ["Cash", "Credit Card", "Debit Card", "Check", "Digital Payment"];
 
 interface TaskDetailsPageProps {
@@ -59,7 +63,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [statusOptions, setStatusOptions] = useState<any[]>([])
   const [priorityOptions, setPriorityOptions] = useState<any[]>([])
   const [pendingPaymentStatus, setPendingPaymentStatus] = useState<string | null>(null);
-  const [nextPaymentDate, setNextPaymentDate] = useState<string | null>(null);
+  const [nextPaymentDate, setNextPaymentDate] = useState<Date | undefined>(undefined);
+  const [partialPaymentAmount, setPartialPaymentAmount] = useState<string>("");
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
 
   useEffect(() => {
@@ -68,7 +74,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         const response = await getTask(taskId)
         setTaskData(response.data)
         if (response.data.next_payment_date) {
-          setNextPaymentDate(response.data.next_payment_date)
+          setNextPaymentDate(new Date(response.data.next_payment_date))
         }
       } catch (error) {
         console.error(`Error fetching task ${taskId}:`, error)
@@ -138,16 +144,23 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
       return;
     }
 
-    const payload: { payment_status: string; paid_date?: string, next_payment_date?: string | null } = {
+    const payload: { payment_status: string; paid_date?: string, next_payment_date?: string | null, partial_payment_amount?: string } = {
       payment_status: pendingPaymentStatus,
     };
-    if (pendingPaymentStatus === 'Partially Paid' || pendingPaymentStatus === 'Paid') {
-      payload.paid_date = new Date().toISOString().split('T')[0];
-    }
+
     if (pendingPaymentStatus === 'Partially Paid') {
-      payload.next_payment_date = nextPaymentDate;
+      if (parseFloat(partialPaymentAmount) > parseFloat(taskData.estimated_cost)) {
+        alert("Payment amount cannot be more than the estimated cost.");
+        return;
+      }
+      payload.partial_payment_amount = partialPaymentAmount;
+      payload.next_payment_date = nextPaymentDate ? nextPaymentDate.toISOString().split('T')[0] : null;
     } else {
       payload.next_payment_date = null;
+    }
+
+    if (pendingPaymentStatus === 'Fully Paid') {
+      payload.paid_date = new Date().toISOString().split('T')[0];
     }
 
     try {
@@ -158,26 +171,18 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     }
     setPendingPaymentStatus(null);
     setIsEditingPaymentStatus(false);
+    setPartialPaymentAmount("");
   };
 
   const handleCancelPaymentStatus = () => {
     setPendingPaymentStatus(null);
-    setNextPaymentDate(taskData.next_payment_date);
+    setNextPaymentDate(taskData.next_payment_date ? new Date(taskData.next_payment_date) : undefined);
     setIsEditingPaymentStatus(false);
+    setPartialPaymentAmount("");
   }
 
 
-  const handleAddNote = async () => {
-    if (!newNote.trim() || !taskData) return
-
-    try {
-      const response = await addTaskActivity(taskData.id, { message: newNote, type: 'note' })
-      setTaskData({ ...taskData, activities: [...taskData.activities, response.data] })
-      setNewNote("")
-    } catch (error) {
-      console.error("Error adding note:", error)
-    }
-  }
+  
 
   const handleAddPayment = async () => {
     if (!newPaymentAmount || !newPaymentMethod || !taskData) return
@@ -190,7 +195,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
       let paymentStatus = "Partially Paid"
       if (totalPaid >= parseFloat(taskData.total_cost)) {
-        paymentStatus = "Paid"
+        paymentStatus = "Fully Paid"
       }
 
       const updatedTask = { ...taskData, payments: updatedPayments, payment_status: paymentStatus }
@@ -259,11 +264,11 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
   const getFilteredPaymentStatusOptions = () => {
     if (!taskData) return paymentStatusOptions;
-    if (taskData.payment_status === 'Paid') {
-      return ['Paid', 'Refunded'];
+    if (taskData.payment_status === 'Fully Paid') {
+      return ['Fully Paid', 'Refunded'];
     }
     if (taskData.payment_status === 'Partially Paid') {
-      return ['Partially Paid', 'Paid', 'Refunded'];
+      return ['Partially Paid', 'Fully Paid', 'Refunded'];
     }
     return paymentStatusOptions;
   };
@@ -367,6 +372,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     ) : (
                       <p className="text-gray-900 font-medium">{taskData.customer_name}</p>
                     )}
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600">Commissioned By</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-900">{taskData.commissioned_by || "Not commissioned"}</span>
+                    </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Phone Number</Label>
@@ -497,6 +509,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
             </Card>
         </TabsContent>
 
+
+
         {/* Repair Management Tab */}
         <TabsContent value="repair-management" className="space-y-6">
           <div className="grid gap-6">
@@ -590,6 +604,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                 </div>
               </CardContent>
             </Card>
+            <TaskNotes taskId={taskId} />
           </div>
         </TabsContent>
 
@@ -748,6 +763,18 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                           </SelectContent>
                         </Select>
                       </div>
+                      {(pendingPaymentStatus === 'Partially Paid') && (
+                        <div>
+                          <Label className="text-sm font-medium text-gray-600">Payment Amount</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={partialPaymentAmount}
+                            onChange={(e) => setPartialPaymentAmount(e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
                       <div>
                         <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
                         <p className="text-gray-900 mt-1">{taskData.paid_date ? new Date(taskData.paid_date).toLocaleString() : "Not paid"}</p>
@@ -755,12 +782,28 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       {(pendingPaymentStatus === 'Partially Paid' || (!pendingPaymentStatus && taskData.payment_status === 'Partially Paid')) && (
                         <div>
                           <Label className="text-sm font-medium text-gray-600">Next Payment Date</Label>
-                          <Input
-                            type="date"
-                            value={nextPaymentDate || ''}
-                            onChange={(e) => setNextPaymentDate(e.target.value)}
-                            className="mt-1"
-                          />
+                          <Popover open={isDatePickerVisible} onOpenChange={setIsDatePickerVisible}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant={"outline"}
+                                className="w-full justify-start text-left font-normal mt-1"
+                              >
+                                <Calendar className="mr-2 h-4 w-4" />
+                                {nextPaymentDate ? nextPaymentDate.toLocaleDateString() : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <DayPicker
+                                mode="single"
+                                selected={nextPaymentDate}
+                                onSelect={setNextPaymentDate}
+                                disabled={(date) =>
+                                  date < new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       )}
                     </>

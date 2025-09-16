@@ -64,6 +64,8 @@ export interface Task {
   activities: any[];
   payments: any[];
   outstanding_balance: number;
+  is_commissioned: boolean;
+  commissioned_by: string;
 }
 
 export interface TaskActivity {

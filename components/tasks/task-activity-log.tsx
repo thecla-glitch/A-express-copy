@@ -60,20 +60,20 @@ export function TaskActivityLog({ taskId }: TaskActivityLogProps) {
               activities.map((activity) => (
                 <div key={activity.id} className="flex items-start gap-4">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={activity.user_avatar} alt="Avatar" />
-                    <AvatarFallback>{activity.user_name.substring(0, 2)}</AvatarFallback>
+                    <AvatarImage src={activity.user?.profile_picture_url} alt="Avatar" />
+                    <AvatarFallback>{activity.user?.full_name?.substring(0, 2) || 'S'}</AvatarFallback>
                   </Avatar>
                   <div className="grid gap-1">
                     <p className="text-sm font-medium leading-none">
-                      {activity.user_name} <span className="text-xs text-muted-foreground">({activity.user_role})</span>
+                      {activity.user?.full_name || 'System'} <span className="text-xs text-muted-foreground">({activity.user?.role || 'System'})</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">{activity.description}</p>
+                    <p className="text-sm text-muted-foreground">{activity.message}</p>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(activity.timestamp), "PPP p")}
                     </p>
                   </div>
                   <div className="ml-auto text-sm">
-                    <Badge>{getActivityIcon(activity.activity_type)} {activity.activity_type}</Badge>
+                    <Badge>{getActivityIcon(activity.type)} {activity.type}</Badge>
                   </div>
                 </div>
               ))
