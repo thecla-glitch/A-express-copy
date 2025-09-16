@@ -143,6 +143,11 @@ class Task(models.Model):
         FULLY_PAID = 'Fully Paid', _('Fully Paid')
         REFUNDED = 'Refunded', _('Refunded')
 
+    class DeviceType(models.TextChoices):
+        FULL = 'Full', _('Full')
+        NOT_FULL = 'Not Full', _('Not Full')
+        MOTHERBOARD_ONLY = 'Motherboard Only', _('Motherboard Only')
+
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(
@@ -168,6 +173,8 @@ class Task(models.Model):
     customer_phone = models.CharField(max_length=20)
     customer_email = models.EmailField(max_length=100, blank=True, null=True)
     brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True)
+    device_type = models.CharField(max_length=20, choices=DeviceType.choices, default=DeviceType.FULL)
+    device_notes = models.TextField(blank=True)
     laptop_model = models.CharField(max_length=100)
     serial_number = models.CharField(max_length=100)
     estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

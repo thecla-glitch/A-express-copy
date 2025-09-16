@@ -46,6 +46,8 @@ export interface Task {
   customer_email: string;
   brand: number;
   brand_details: Brand;
+  device_type: string;
+  device_notes: string;
   laptop_model: string;
   serial_number: string;
   estimated_cost: string;

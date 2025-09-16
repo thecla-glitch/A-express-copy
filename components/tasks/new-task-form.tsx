@@ -32,6 +32,8 @@ interface FormData {
   description: string
   urgency: string
   current_location: string
+  device_type: string
+  device_notes: string
   assigned_to?: string
   estimated_cost?: number
 }
@@ -44,6 +46,12 @@ const URGENCY_OPTIONS = [
   { value: 'Low', label: 'Low' },
   { value: 'Medium', label: 'Medium' },
   { value: 'High', label: 'High' },
+]
+
+const DEVICE_TYPE_OPTIONS = [
+  { value: 'Full', label: 'Full' },
+  { value: 'Not Full', label: 'Not Full' },
+  { value: 'Motherboard Only', label: 'Motherboard Only' },
 ]
 
 const generateTaskID = () => {
@@ -72,6 +80,8 @@ export function NewTaskForm({}: NewTaskFormProps) {
     description: '',
     urgency: 'Medium',
     current_location: '',
+    device_type: 'Full',
+    device_notes: '',
     assigned_to: '',
     estimated_cost: 0,
   })
@@ -112,13 +122,24 @@ export function NewTaskForm({}: NewTaskFormProps) {
     if (!formData.description.trim()) newErrors.description = 'Description is required'
     if (!formData.urgency) newErrors.urgency = 'Urgency is required'
     if (!formData.current_location) newErrors.current_location = 'Location is required'
+    if ((formData.device_type === 'Not Full' || formData.device_type === 'Motherboard Only') && !formData.device_notes.trim()) {
+        newErrors.device_notes = 'Device notes are required for this device type'
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleInputChange = (field: keyof FormData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData(prev => {
+        const newFormData = { ...prev, [field]: value };
+        if (field === 'device_type' && value === 'Motherboard Only') {
+            newFormData.laptop_model = 'Motherboard';
+        } else if (field === 'device_type' && prev.laptop_model === 'Motherboard') {
+            newFormData.laptop_model = '';
+        }
+        return newFormData;
+    })
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
@@ -217,6 +238,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 id='laptop_model'
                 value={formData.laptop_model}
                 onChange={(e) => handleInputChange('laptop_model', e.target.value)}
+                readOnly={formData.device_type === 'Motherboard Only'}
               />
             </FormField>
           </div>
@@ -241,6 +263,28 @@ export function NewTaskForm({}: NewTaskFormProps) {
               className={errors.description ? 'border-red-500' : ''}
             />
           </FormField>
+          <FormField id='device_type' label='Device Type'>
+            <Select value={formData.device_type} onValueChange={(value) => handleInputChange('device_type', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select device type" />
+              </SelectTrigger>
+              <SelectContent>
+                {DEVICE_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField id='device_notes' label='Device Notes' required={formData.device_type === 'Not Full' || formData.device_type === 'Motherboard Only'} error={errors.device_notes}>
+              <Textarea
+                id='device_notes'
+                value={formData.device_notes}
+                onChange={(e) => handleInputChange('device_notes', e.target.value)}
+                className={errors.device_notes ? 'border-red-500' : ''}
+              />
+            </FormField>
           <FormField id='estimated_cost' label='Estimated Cost (TSh)'>
             <Input
               id='estimated_cost'
