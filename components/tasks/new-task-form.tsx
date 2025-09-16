@@ -13,6 +13,7 @@ import { createTask, apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth-context'
 import { User } from "@/lib/use-user-management"
 import { Brand } from '@/lib/api'
+import { Checkbox } from '@/components/ui/core/checkbox'
 
 interface NewTaskFormProps {}
 
@@ -34,8 +35,11 @@ interface FormData {
   current_location: string
   device_type: string
   device_notes: string
+  negotiated_by: string
   assigned_to?: string
   estimated_cost?: number
+  is_commissioned: boolean
+  commissioned_by: string
 }
 
 interface FormErrors {
@@ -69,6 +73,8 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const [technicians, setTechnicians] = useState<User[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
+  const [managers, setManagers] = useState<User[]>([])
+  const [isCommissioned, setIsCommissioned] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     title: '',
     customer_name: '',
@@ -82,15 +88,18 @@ export function NewTaskForm({}: NewTaskFormProps) {
     current_location: '',
     device_type: 'Full',
     device_notes: '',
+    negotiated_by: '',
     assigned_to: '',
     estimated_cost: 0,
+    is_commissioned: false,
+    commissioned_by: ''
   })
   const [errors, setErrors] = useState<FormErrors>({})
 
   useEffect(() => {
     setFormData(prev => ({...prev, title: generateTaskID()}));
 
-    if (user && (user.role === 'Manager' || user.role === 'Administrator')) {
+    if (user && (user.role === 'Manager' || user.role === 'Administrator' || user.role === "Front Desk")) {
       apiClient.get('/users/role/Technician/').then(response => {
         if (response.data) {
           setTechnicians(response.data)
@@ -110,6 +119,15 @@ export function NewTaskForm({}: NewTaskFormProps) {
         setBrands(response.data)
       }
     })
+    apiClient.get('/users/role/Manager/').then(response => {
+        if (response.data) {
+            setManagers(response.data)
+        }
+    })
+
+    if (user?.role === 'Manager') {
+        setFormData(prev => ({...prev, negotiated_by: user.id.toString()}))
+    }
   }, [user])
 
   const validateForm = (): boolean => {
@@ -117,8 +135,21 @@ export function NewTaskForm({}: NewTaskFormProps) {
 
     if (!formData.title.trim()) newErrors.title = 'Title is required'
     if (!formData.customer_name.trim()) newErrors.customer_name = 'Name is required'
-    if (!formData.customer_phone.trim()) newErrors.customer_phone = 'Phone is required'
-    if (!formData.serial_number.trim()) newErrors.serial_number = 'Serial number is required'
+    
+    if (!formData.customer_phone.trim()) {
+        newErrors.customer_phone = 'Phone is required'
+    } else {
+        const phoneRegex = /^0\s?\d{3}\s?\d{3}\s?\d{3}$/;
+        if (!phoneRegex.test(formData.customer_phone)) {
+            newErrors.customer_phone = 'Invalid phone number format. Example: 0XXX XXX XXX'
+        }
+    }
+
+    if (!formData.brand && !formData.laptop_model.trim()) {
+        newErrors.brand = 'Either brand or model is required';
+        newErrors.laptop_model = 'Either brand or model is required';
+    }
+
     if (!formData.description.trim()) newErrors.description = 'Description is required'
     if (!formData.urgency) newErrors.urgency = 'Urgency is required'
     if (!formData.current_location) newErrors.current_location = 'Location is required'
@@ -130,7 +161,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleInputChange = (field: keyof FormData, value: string | number) => {
+  const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
     setFormData(prev => {
         const newFormData = { ...prev, [field]: value };
         if (field === 'device_type' && value === 'Motherboard Only') {
@@ -154,6 +185,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
       const taskData = {
         ...formData,
         total_cost: formData.estimated_cost,
+        commissioned_by: formData.is_commissioned ? formData.commissioned_by : 'Not Commissioned'
       };
       await createTask(taskData)
       setSubmitSuccess(true)
@@ -177,7 +209,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
     )
   }
 
-  const canAssignTechnician = user && (user.role === 'Manager' || user.role === 'Administrator')
+  const canAssignTechnician = user && (user.role === 'Manager' || user.role === 'Administrator' || user.role === 'Front Desk')
 
   return (
     <form onSubmit={handleSubmit} className='space-y-6 p-4'>
@@ -219,7 +251,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
             />
           </FormField>
           <div className='grid grid-cols-2 gap-4'>
-            <FormField id='brand' label='Brand'>
+            <FormField id='brand' label='Brand' error={errors.brand}>
               <Select value={formData.brand} onValueChange={(value) => handleInputChange('brand', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select brand" />
@@ -233,7 +265,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 </SelectContent>
               </Select>
             </FormField>
-            <FormField id='laptop_model' label='Model'>
+            <FormField id='laptop_model' label='Model' error={errors.laptop_model}>
               <Input
                 id='laptop_model'
                 value={formData.laptop_model}
@@ -242,7 +274,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
               />
             </FormField>
           </div>
-          <FormField id='serial_number' label='Serial Number' required error={errors.serial_number}>
+          <FormField id='serial_number' label='Serial Number' error={errors.serial_number}>
             <Input
               id='serial_number'
               value={formData.serial_number}
@@ -250,6 +282,63 @@ export function NewTaskForm({}: NewTaskFormProps) {
               className={errors.serial_number ? 'border-red-500' : ''}
             />
           </FormField>
+          <FormField id='negotiated_by' label='Negotiated By'>
+            {user?.role === 'Manager' ? (
+                <Input
+                    id='negotiated_by'
+                    value={`${user.first_name} ${user.last_name}`}
+                    readOnly
+                    className='bg-gray-100'
+                />
+            ) : (
+                <Select value={formData.negotiated_by} onValueChange={(value) => handleInputChange('negotiated_by', value)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select manager" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {managers.map((manager) => (
+                            <SelectItem key={manager.id} value={manager.id.toString()}>
+                                {manager.first_name} {manager.last_name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )}
+            </FormField>
+          {canAssignTechnician && (
+            <FormField id='assigned_to' label='Assign Technician'>
+              <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select technician" />
+                </SelectTrigger>
+                <SelectContent>
+                  {technicians.map((technician) => (
+                    <SelectItem key={technician.id} value={technician.id.toString()}>
+                      {technician.first_name} {technician.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          )}
+        <div className="flex items-center space-x-2">
+          <Checkbox id="is_commissioned" checked={isCommissioned} onCheckedChange={(checked) => { setIsCommissioned(!!checked); handleInputChange('is_commissioned', !!checked); }} />
+            <label
+              htmlFor="is_commissioned"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Commissioned
+            </label>
+          </div>
+          {isCommissioned && (
+            <FormField id='commissioned_by' label='Commissioned By'>
+              <Input
+                id='commissioned_by'
+                value={formData.commissioned_by}
+                onChange={(e) => handleInputChange('commissioned_by', e.target.value)}
+              />
+            </FormField>
+          )}
         </div>
 
         <div className='space-y-4'>
@@ -259,7 +348,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
               id='description'
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              rows={canAssignTechnician ? 5 : 8}
+              rows={canAssignTechnician ? 4 : 7}
               className={errors.description ? 'border-red-500' : ''}
             />
           </FormField>
@@ -321,22 +410,6 @@ export function NewTaskForm({}: NewTaskFormProps) {
               </SelectContent>
             </Select>
           </FormField>
-          {canAssignTechnician && (
-            <FormField id='assigned_to' label='Assign Technician'>
-              <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select technician" />
-                </SelectTrigger>
-                <SelectContent>
-                  {technicians.map((technician) => (
-                    <SelectItem key={technician.id} value={technician.id.toString()}>
-                      {technician.first_name} {technician.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-          )}
         </div>
       </div>
 
