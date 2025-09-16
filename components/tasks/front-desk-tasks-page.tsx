@@ -76,20 +76,12 @@ export function FrontDeskTasksPage() {
           <p className="text-gray-600 mt-2">Manage tasks assigned to the front desk.</p>
         </div>
         <div className="flex gap-4">
-          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Task
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl">
-              <DialogHeader>
-                <DialogTitle>Create New Repair Task</DialogTitle>
-              </DialogHeader>
-              <NewTaskForm onClose={handleTaskCreated} />
-            </DialogContent>
-          </Dialog>
+          <Button asChild className="bg-red-600 hover:bg-red-700 text-white">
+            <a href="/dashboard/tasks/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create New Task
+            </a>
+          </Button>
         </div>
       </div>
 

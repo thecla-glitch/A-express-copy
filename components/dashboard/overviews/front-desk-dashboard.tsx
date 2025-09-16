@@ -492,9 +492,11 @@ export function FrontDeskDashboard() {
                     <p className="text-gray-600 text-sm mb-4">
                       Start a new repair task for walk-in customers or phone inquiries
                     </p>
-                    <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white">
-                      <Plus className="h-5 w-5 mr-2" />
-                      New Task
+                    <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white">
+                      <a href="/dashboard/tasks/new">
+                        <Plus className="h-5 w-5 mr-2" />
+                        New Task
+                      </a>
                     </Button>
                   </div>
                   <div className="p-4 bg-red-100 rounded-full">

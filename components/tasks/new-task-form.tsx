@@ -12,9 +12,7 @@ import { createTask, apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth-context'
 import { User } from "@/lib/use-user-management"
 
-interface NewTaskFormProps {
-  onClose: () => void
-}
+interface NewTaskFormProps {}
 
 interface Location {
   id: number;
@@ -53,7 +51,7 @@ const generateTaskID = () => {
     return `${prefix}-${timestamp}-${randomPart}`;
 }
 
-export function NewTaskForm({ onClose }: NewTaskFormProps) {
+export function NewTaskForm({}: NewTaskFormProps) {
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -130,7 +128,7 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
       await createTask(taskData)
       setSubmitSuccess(true)
       setTimeout(() => {
-        onClose()
+        window.location.href = '/dashboard/tasks'
       }, 2000)
     } catch (error) {
       console.error('Error creating task:', error)
@@ -283,9 +281,6 @@ export function NewTaskForm({ onClose }: NewTaskFormProps) {
       </div>
 
       <div className='flex justify-end gap-4 pt-4'>
-        <Button type='button' variant='outline' onClick={onClose} disabled={isSubmitting}>
-          Cancel
-        </Button>
         <Button type='submit' disabled={isSubmitting} className='bg-red-600 hover:bg-red-700 text-white'>
           {isSubmitting ? 'Creating...' : 'Create Task'}
         </Button>
