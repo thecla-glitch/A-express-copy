@@ -143,7 +143,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'activities', 'payments', 'outstanding_balance', 'is_commissioned', 'commissioned_by',
             'partial_payment_amount'
         )
-        read_only_fields = ('created_by', 'created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments')
+        read_only_fields = ('created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments')
         extra_kwargs = {
             'estimated_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
             'total_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
@@ -162,8 +162,16 @@ class TaskSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop('partial_payment_amount', None)
-        return super().create(validated_data)
+        device_notes = validated_data.pop('device_notes', None)
+        task = super().create(validated_data)
+        if device_notes:
+            TaskActivity.objects.create(
+                task=task,
+                user=task.created_by,
+                type=TaskActivity.ActivityType.NOTE,
+                message=f"Device Notes: {device_notes}"
+            )
+        return task
 
     def update(self, instance, validated_data):
         partial_payment_amount = validated_data.pop('partial_payment_amount', None)

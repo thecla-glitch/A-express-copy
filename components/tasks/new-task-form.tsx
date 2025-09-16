@@ -184,7 +184,8 @@ export function NewTaskForm({}: NewTaskFormProps) {
     try {
       const taskData = {
         ...formData,
-        commissioned_by: formData.is_commissioned ? formData.commissioned_by : 'Not Commissioned'
+        commissioned_by: formData.is_commissioned ? formData.commissioned_by : 'Not Commissioned',
+        created_by: user?.id,
       };
       await createTask(taskData)
       setSubmitSuccess(true)
