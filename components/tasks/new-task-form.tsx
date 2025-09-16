@@ -2,6 +2,7 @@
 
 import type React from 'react'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/core/button'
 import { Input } from '@/components/ui/core/input'
 import { Label } from '@/components/ui/core/label'
@@ -11,6 +12,7 @@ import { AlertTriangle, CheckCircle } from 'lucide-react'
 import { createTask, apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth-context'
 import { User } from "@/lib/use-user-management"
+import { Brand } from '@/lib/api'
 
 interface NewTaskFormProps {}
 
@@ -24,7 +26,7 @@ interface FormData {
   customer_name: string
   customer_phone: string
   customer_email: string
-  laptop_make: string
+  brand: string
   laptop_model: string
   serial_number: string
   description: string
@@ -53,16 +55,18 @@ const generateTaskID = () => {
 
 export function NewTaskForm({}: NewTaskFormProps) {
   const { user } = useAuth()
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [technicians, setTechnicians] = useState<User[]>([])
   const [locations, setLocations] = useState<Location[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
   const [formData, setFormData] = useState<FormData>({
     title: '',
     customer_name: '',
     customer_phone: '',
     customer_email: '',
-    laptop_make: '',
+    brand: '',
     laptop_model: '',
     serial_number: '',
     description: '',
@@ -89,6 +93,11 @@ export function NewTaskForm({}: NewTaskFormProps) {
         if (response.data.length > 0) {
             setFormData(prev => ({...prev, current_location: response.data[0].name}))
         }
+      }
+    })
+    apiClient.get('/brands/').then(response => {
+      if (response.data) {
+        setBrands(response.data)
       }
     })
   }, [user])
@@ -189,12 +198,19 @@ export function NewTaskForm({}: NewTaskFormProps) {
             />
           </FormField>
           <div className='grid grid-cols-2 gap-4'>
-            <FormField id='laptop_make' label='Make'>
-              <Input
-                id='laptop_make'
-                value={formData.laptop_make}
-                onChange={(e) => handleInputChange('laptop_make', e.target.value)}
-              />
+            <FormField id='brand' label='Brand'>
+              <Select value={formData.brand} onValueChange={(value) => handleInputChange('brand', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  {brands.map((brand) => (
+                    <SelectItem key={brand.id} value={brand.id.toString()}>
+                      {brand.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormField>
             <FormField id='laptop_model' label='Model'>
               <Input
@@ -281,6 +297,9 @@ export function NewTaskForm({}: NewTaskFormProps) {
       </div>
 
       <div className='flex justify-end gap-4 pt-4'>
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          Back
+        </Button>
         <Button type='submit' disabled={isSubmitting} className='bg-red-600 hover:bg-red-700 text-white'>
           {isSubmitting ? 'Creating...' : 'Create Task'}
         </Button>

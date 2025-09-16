@@ -2,13 +2,14 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location
+from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location, Brand
 
-from rest_framework import serializers
-from django.contrib.auth import authenticate
-from django.core.validators import MinValueValidator
-from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location
+
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = ['id', 'name']
+
 
 class UserSerializer(serializers.ModelSerializer):
     profile_picture_url = serializers.SerializerMethodField()
@@ -121,6 +122,7 @@ class TaskSerializer(serializers.ModelSerializer):
     assigned_to_details = UserSerializer(source='assigned_to', read_only=True)
     created_by_details = UserSerializer(source='created_by', read_only=True)
     negotiated_by_details = UserSerializer(source='negotiated_by', read_only=True)
+    brand_details = BrandSerializer(source='brand', read_only=True)
     activities = TaskActivitySerializer(many=True, read_only=True)
     payments = PaymentSerializer(many=True, read_only=True)
     outstanding_balance = serializers.SerializerMethodField()
@@ -132,7 +134,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'assigned_to', 'assigned_to_details', 'created_by', 'created_by_details',
             'created_at', 'updated_at', 'due_date',
             'customer_name', 'customer_phone', 'customer_email',
-            'laptop_make', 'laptop_model', 'serial_number',
+            'brand', 'brand_details', 'laptop_model', 'serial_number',
             'estimated_cost', 'total_cost', 'payment_status',
             'current_location', 'urgency', 'date_in', 'approved_date',
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
@@ -180,3 +182,4 @@ class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
         fields = ['id', 'name']
+

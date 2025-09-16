@@ -111,6 +111,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.is_superuser or self.role == 'Manager'
     
 
+class Brand(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+
+
 class Task(models.Model):
     class Status(models.TextChoices):
         PENDING = 'Pending', _('Pending')
@@ -157,7 +167,7 @@ class Task(models.Model):
     customer_name = models.CharField(max_length=100)
     customer_phone = models.CharField(max_length=20)
     customer_email = models.EmailField(max_length=100, blank=True, null=True)
-    laptop_make = models.CharField(max_length=50)
+    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True)
     laptop_model = models.CharField(max_length=100)
     serial_number = models.CharField(max_length=100)
     estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

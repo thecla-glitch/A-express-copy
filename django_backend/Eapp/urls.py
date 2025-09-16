@@ -4,6 +4,7 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'locations', views.LocationViewSet, basename='location')
+router.register(r'brands', views.BrandViewSet, basename='brand')
 
 urlpatterns = [
     # Authentication endpoints

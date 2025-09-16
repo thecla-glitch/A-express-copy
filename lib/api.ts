@@ -23,6 +23,11 @@ export interface UserResponse {
   bio?: string
 }
 
+export interface Brand {
+  id: number;
+  name: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -39,7 +44,8 @@ export interface Task {
   customer_name: string;
   customer_phone: string;
   customer_email: string;
-  laptop_make: string;
+  brand: number;
+  brand_details: Brand;
   laptop_model: string;
   serial_number: string;
   estimated_cost: string;
@@ -387,6 +393,16 @@ export class ApiClient {
     });
   }
 
+  async getBrands(): Promise<ApiResponse<Brand[]>> {
+    return this.request<Brand[]>('/brands/');
+  }
+
+  async createBrand(brandData: { name: string }): Promise<ApiResponse<Brand>> {
+    return this.request<Brand>('/brands/', {
+      method: 'POST',
+      body: JSON.stringify(brandData),
+    });
+  }
 
 }
 

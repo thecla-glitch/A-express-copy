@@ -6,11 +6,11 @@ from django.utils import timezone
 from django.db import models  # For Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location
+from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location, Brand
 from .serializers import (
     ChangePasswordSerializer, UserProfileUpdateSerializer, UserSerializer, 
     UserRegistrationSerializer, LoginSerializer, TaskSerializer,
-    TaskActivitySerializer, PaymentSerializer, CollaborationRequestSerializer, LocationSerializer
+    TaskActivitySerializer, PaymentSerializer, CollaborationRequestSerializer, LocationSerializer, BrandSerializer
 )
 from django.shortcuts import get_object_or_404
 
@@ -513,3 +513,15 @@ def get_task_status_options(request):
 @permission_classes([permissions.IsAuthenticated])
 def get_task_priority_options(request):
     return Response(Task.Priority.choices)
+class BrandViewSet(viewsets.ModelViewSet):
+    queryset = Brand.objects.all()
+    serializer_class = BrandSerializer
+    permission_classes = [IsManager]
+
+class BrandViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows brands to be viewed or edited.
+    """
+    queryset = Brand.objects.all()
+    serializer_class = BrandSerializer
+    permission_classes = [IsManager]

@@ -9,6 +9,7 @@ import { apiClient, UserResponse as User } from "@/lib/api";
 import { TasksDisplay } from "./tasks-display";
 import { NewTaskForm } from "./new-task-form";
 import { LocationsManager } from "../locations/locations-manager";
+import { BrandManager } from "../brands/brand-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
 import {
   Dialog,
@@ -27,6 +28,7 @@ export function ManagerTasksPage() {
   const [technicians, setTechnicians] = useState<User[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLocationsModalOpen, setIsLocationsModalOpen] = useState(false);
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -167,6 +169,20 @@ export function ManagerTasksPage() {
                 <DialogTitle>Manage Locations</DialogTitle>
               </DialogHeader>
               <LocationsManager />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isBrandModalOpen} onOpenChange={setIsBrandModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Brands
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Manage Brands</DialogTitle>
+              </DialogHeader>
+              <BrandManager />
             </DialogContent>
           </Dialog>
           <Button asChild className="bg-red-600 hover:bg-red-700 text-white">
