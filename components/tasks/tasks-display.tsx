@@ -158,8 +158,8 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
 
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
-      case "Paid":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Paid</Badge>
+      case "Fully Paid":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Fully Paid</Badge>
       case "Partially Paid":
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Partially Paid</Badge>
       case "Unpaid":
@@ -310,17 +310,30 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                         </>
                       ) : isCompletedTab ? (
                         <>
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTaskToPay(task);
-                              setIsPaidConfirmOpen(true);
-                            }}
-                          >
-                            Paid
-                          </Button>
+                          {task.payment_status === 'Fully Paid' ? (
+                            <Button
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Add notification logic here in the future
+                              }}
+                            >
+                              Notify Customer
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTaskToPay(task);
+                                setIsPaidConfirmOpen(true);
+                              }}
+                            >
+                              Fully Paid
+                            </Button>
+                          )}
                         </>
                       ) : (
                         <>
