@@ -230,6 +230,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
               value={formData.customer_name}
               onChange={(e) => handleInputChange('customer_name', e.target.value)}
               className={errors.customer_name ? 'border-red-500' : ''}
+              placeholder="e.g. John Doe"
             />
           </FormField>
           <FormField id='customer_phone' label='Phone Number' required error={errors.customer_phone}>
@@ -239,6 +240,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
               value={formData.customer_phone}
               onChange={(e) => handleInputChange('customer_phone', e.target.value)}
               className={errors.customer_phone ? 'border-red-500' : ''}
+              placeholder="e.g. 0712 345 678"
             />
           </FormField>
           <FormField id='customer_email' label='Email Address' error={errors.customer_email}>
@@ -248,6 +250,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
               value={formData.customer_email}
               onChange={(e) => handleInputChange('customer_email', e.target.value)}
               className={errors.customer_email ? 'border-red-500' : ''}
+              placeholder="e.g. john.doe@example.com"
             />
           </FormField>
           <div className='grid grid-cols-2 gap-4'>
@@ -271,6 +274,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 value={formData.laptop_model}
                 onChange={(e) => handleInputChange('laptop_model', e.target.value)}
                 readOnly={formData.device_type === 'Motherboard Only'}
+                placeholder="e.g. MacBook Pro 14-inch"
               />
             </FormField>
           </div>
@@ -280,6 +284,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
               value={formData.serial_number}
               onChange={(e) => handleInputChange('serial_number', e.target.value)}
               className={errors.serial_number ? 'border-red-500' : ''}
+              placeholder="e.g. C02G812JHC85"
             />
           </FormField>
           <FormField id='negotiated_by' label='Negotiated By'>
@@ -336,6 +341,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 id='commissioned_by'
                 value={formData.commissioned_by}
                 onChange={(e) => handleInputChange('commissioned_by', e.target.value)}
+                placeholder="e.g. Jane Smith"
               />
             </FormField>
           )}
@@ -350,6 +356,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={canAssignTechnician ? 4 : 7}
               className={errors.description ? 'border-red-500' : ''}
+              placeholder="e.g. The laptop is not turning on. No signs of life."
             />
           </FormField>
           <FormField id='device_type' label='Device Type'>
@@ -372,6 +379,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 value={formData.device_notes}
                 onChange={(e) => handleInputChange('device_notes', e.target.value)}
                 className={errors.device_notes ? 'border-red-500' : ''}
+                placeholder="e.g. Customer brought only the motherboard and the screen."
               />
             </FormField>
           <FormField id='estimated_cost' label='Estimated Cost (TSh)'>
@@ -380,6 +388,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
               type='number'
               value={formData.estimated_cost}
               onChange={(e) => handleInputChange('estimated_cost', e.target.valueAsNumber)}
+              placeholder="e.g. 150000"
             />
           </FormField>
           <FormField id='urgency' label='Urgency' required error={errors.urgency}>
