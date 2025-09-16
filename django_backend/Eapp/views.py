@@ -513,10 +513,6 @@ def get_task_status_options(request):
 @permission_classes([permissions.IsAuthenticated])
 def get_task_priority_options(request):
     return Response(Task.Priority.choices)
-class BrandViewSet(viewsets.ModelViewSet):
-    queryset = Brand.objects.all()
-    serializer_class = BrandSerializer
-    permission_classes = [IsManager]
 
 class BrandViewSet(viewsets.ModelViewSet):
     """

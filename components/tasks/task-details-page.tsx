@@ -281,7 +281,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     <div className="flex-1 space-y-6 p-6">
       {/* Header Section */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600" onClick={() => router.push('/dashboard/tasks')}>
+        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Tasks
         </Button>

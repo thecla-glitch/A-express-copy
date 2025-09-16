@@ -161,6 +161,10 @@ class TaskSerializer(serializers.ModelSerializer):
 
         return data
 
+    def create(self, validated_data):
+        validated_data.pop('partial_payment_amount', None)
+        return super().create(validated_data)
+
     def update(self, instance, validated_data):
         partial_payment_amount = validated_data.pop('partial_payment_amount', None)
 

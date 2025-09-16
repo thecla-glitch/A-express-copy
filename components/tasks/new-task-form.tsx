@@ -184,7 +184,6 @@ export function NewTaskForm({}: NewTaskFormProps) {
     try {
       const taskData = {
         ...formData,
-        total_cost: formData.estimated_cost,
         commissioned_by: formData.is_commissioned ? formData.commissioned_by : 'Not Commissioned'
       };
       await createTask(taskData)
