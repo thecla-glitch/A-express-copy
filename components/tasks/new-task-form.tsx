@@ -287,64 +287,6 @@ export function NewTaskForm({}: NewTaskFormProps) {
               placeholder="e.g. C02G812JHC85"
             />
           </FormField>
-          <FormField id='negotiated_by' label='Negotiated By'>
-            {user?.role === 'Manager' ? (
-                <Input
-                    id='negotiated_by'
-                    value={`${user.first_name} ${user.last_name}`}
-                    readOnly
-                    className='bg-gray-100'
-                />
-            ) : (
-                <Select value={formData.negotiated_by} onValueChange={(value) => handleInputChange('negotiated_by', value)}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select manager" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {managers.map((manager) => (
-                            <SelectItem key={manager.id} value={manager.id.toString()}>
-                                {manager.first_name} {manager.last_name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            )}
-            </FormField>
-          {canAssignTechnician && (
-            <FormField id='assigned_to' label='Assign Technician'>
-              <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select technician" />
-                </SelectTrigger>
-                <SelectContent>
-                  {technicians.map((technician) => (
-                    <SelectItem key={technician.id} value={technician.id.toString()}>
-                      {technician.first_name} {technician.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-          )}
-        <div className="flex items-center space-x-2">
-          <Checkbox id="is_commissioned" checked={isCommissioned} onCheckedChange={(checked) => { setIsCommissioned(!!checked); handleInputChange('is_commissioned', !!checked); }} />
-            <label
-              htmlFor="is_commissioned"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Commissioned
-            </label>
-          </div>
-          {isCommissioned && (
-            <FormField id='commissioned_by' label='Commissioned By'>
-              <Input
-                id='commissioned_by'
-                value={formData.commissioned_by}
-                onChange={(e) => handleInputChange('commissioned_by', e.target.value)}
-                placeholder="e.g. Jane Smith"
-              />
-            </FormField>
-          )}
         </div>
 
         <div className='space-y-4'>
@@ -419,6 +361,64 @@ export function NewTaskForm({}: NewTaskFormProps) {
               </SelectContent>
             </Select>
           </FormField>
+		  <FormField id='negotiated_by' label='Negotiated By'>
+            {user?.role === 'Manager' ? (
+                <Input
+                    id='negotiated_by'
+                    value={`${user.first_name} ${user.last_name}`}
+                    readOnly
+                    className='bg-gray-100'
+                />
+            ) : (
+                <Select value={formData.negotiated_by} onValueChange={(value) => handleInputChange('negotiated_by', value)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select manager" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {managers.map((manager) => (
+                            <SelectItem key={manager.id} value={manager.id.toString()}>
+                                {manager.first_name} {manager.last_name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )}
+            </FormField>
+          {canAssignTechnician && (
+            <FormField id='assigned_to' label='Assign Technician'>
+              <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select technician" />
+                </SelectTrigger>
+                <SelectContent>
+                  {technicians.map((technician) => (
+                    <SelectItem key={technician.id} value={technician.id.toString()}>
+                      {technician.first_name} {technician.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          )}
+        <div className="flex items-center space-x-2">
+          <Checkbox id="is_commissioned" checked={isCommissioned} onCheckedChange={(checked) => { setIsCommissioned(!!checked); handleInputChange('is_commissioned', !!checked); }} />
+            <label
+              htmlFor="is_commissioned"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Commissioned
+            </label>
+          </div>
+          {isCommissioned && (
+            <FormField id='commissioned_by' label='Commissioned By'>
+              <Input
+                id='commissioned_by'
+                value={formData.commissioned_by}
+                onChange={(e) => handleInputChange('commissioned_by', e.target.value)}
+                placeholder="e.g. Jane Smith"
+              />
+            </FormField>
+          )}
         </div>
       </div>
 
