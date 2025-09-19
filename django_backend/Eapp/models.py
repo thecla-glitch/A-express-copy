@@ -54,6 +54,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=50, verbose_name=_('Last Name'))
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name=_('Phone'))
     role = models.CharField(max_length=20, choices=Role.choices, verbose_name=_('Role'))
+    is_workshop = models.BooleanField(default=False, verbose_name=_('Workshop'))
     is_active = models.BooleanField(default=True, verbose_name=_('Active'))
     created_at = models.DateTimeField(default=timezone.now, verbose_name=_('Created At'))
     last_login = models.DateTimeField(null=True, blank=True, verbose_name=_('Last Login'))

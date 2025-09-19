@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name',
-                    'phone', 'role','profile_picture', 'profile_picture_url', 'is_active', 'created_at', 'last_login') 
+                    'phone', 'role', 'is_workshop', 'profile_picture', 'profile_picture_url', 'is_active', 'created_at', 'last_login') 
         read_only_fields = ('id', 'created_at', 'last_login', 'full_name') 
         
     def get_profile_picture_url(self, obj):
@@ -63,7 +63,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'email', 'password', 'first_name', 
-                    'last_name', 'phone', 'role')
+                    'last_name', 'phone', 'role', 'is_workshop')
     
     def validate_role(self, value):
         if value not in dict(User.Role.choices):

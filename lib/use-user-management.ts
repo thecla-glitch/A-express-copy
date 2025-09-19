@@ -15,6 +15,7 @@ export interface User {
   phone: string
   profile_picture: string
   is_active: boolean
+  is_workshop: boolean
   created_at: string
   last_login: string
 }
@@ -69,6 +70,7 @@ const loadUsers = async () => {
     last_name: string
     phone: string
     role: "Administrator" | "Manager" | "Technician" | "Front Desk"
+    is_workshop: boolean
   }) => {
     setIsLoading(true)
     setError(null)

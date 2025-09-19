@@ -46,6 +46,7 @@ export function ManagerUserManagement() {
     phone: "",
     role: "Technician" as const,
     password: "",
+    is_workshop: false,
   })
 
   const filteredUsers = users.filter(
@@ -77,6 +78,7 @@ export function ManagerUserManagement() {
         phone: "",
         role: "Technician",
         password: "",
+        is_workshop: false,
       })
       setIsAddDialogOpen(false)
     }
@@ -91,6 +93,7 @@ export function ManagerUserManagement() {
       email: editingUser.email,
       phone: editingUser.phone,
       role: editingUser.role,
+      is_workshop: editingUser.is_workshop,
     })
 
     if (success) {
@@ -273,6 +276,17 @@ export function ManagerUserManagement() {
                     </div>
                   </div>
 
+                  {newUser.role === "Technician" && (
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="is_workshop"
+                        checked={newUser.is_workshop}
+                        onCheckedChange={(checked) => setNewUser({ ...newUser, is_workshop: checked })}
+                      />
+                      <Label htmlFor="is_workshop">Workshop</Label>
+                    </div>
+                  )}
+
                   <div className="grid gap-2">
                     <Label htmlFor="password">Password *</Label>
                     <Input
@@ -316,6 +330,7 @@ export function ManagerUserManagement() {
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Workshop</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Login</TableHead>
                 <TableHead>Created</TableHead>
@@ -333,6 +348,13 @@ export function ManagerUserManagement() {
                     <Badge variant="outline" className={user.role === "Manager" ? "bg-blue-100 text-blue-800" : user.role === "Technician" ? "bg-green-100 text-green-800" : "bg-purple-100 text-purple-800"}>
                       {user.role}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {user.role === "Technician" && (
+                      <Badge variant={user.is_workshop ? "default" : "secondary"}>
+                        {user.is_workshop ? "Yes" : "No"}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
@@ -405,21 +427,33 @@ export function ManagerUserManagement() {
                                 </div>
                               </div>
 
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-role">Role</Label>
-                                <Select
-                                  value={editingUser.role}
-                                  onValueChange={(value: any) => setEditingUser({ ...editingUser, role: value })}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Manager">Manager</SelectItem>
-                                    <SelectItem value="Technician">Technician</SelectItem>
-                                    <SelectItem value="Front Desk">Front Desk</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-role">Role</Label>
+                                  <Select
+                                    value={editingUser.role}
+                                    onValueChange={(value: any) => setEditingUser({ ...editingUser, role: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Manager">Manager</SelectItem>
+                                      <SelectItem value="Technician">Technician</SelectItem>
+                                      <SelectItem value="Front Desk">Front Desk</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                {editingUser.role === "Technician" && (
+                                  <div className="flex items-center space-x-2">
+                                    <Switch
+                                      id="edit-is_workshop"
+                                      checked={editingUser.is_workshop}
+                                      onCheckedChange={(checked) => setEditingUser({ ...editingUser, is_workshop: checked })}
+                                    />
+                                    <Label htmlFor="edit-is_workshop">Workshop</Label>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
