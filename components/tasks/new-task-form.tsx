@@ -58,13 +58,6 @@ const DEVICE_TYPE_OPTIONS = [
   { value: 'Motherboard Only', label: 'Motherboard Only' },
 ]
 
-const generateTaskID = () => {
-    const prefix = "TASK";
-    const timestamp = Date.now().toString(36).slice(-4).toUpperCase();
-    const randomPart = Math.random().toString(36).slice(2, 6).toUpperCase();
-    return `${prefix}-${timestamp}-${randomPart}`;
-}
-
 export function NewTaskForm({}: NewTaskFormProps) {
   const { user } = useAuth()
   const router = useRouter()
@@ -97,8 +90,6 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const [errors, setErrors] = useState<FormErrors>({})
 
   useEffect(() => {
-    setFormData(prev => ({...prev, title: generateTaskID()}));
-
     if (user && (user.role === 'Manager' || user.role === 'Administrator' || user.role === "Front Desk")) {
       apiClient.get('/users/role/Technician/').then(response => {
         if (response.data) {
@@ -133,7 +124,6 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
 
-    if (!formData.title.trim()) newErrors.title = 'Title is required'
     if (!formData.customer_name.trim()) newErrors.customer_name = 'Name is required'
     
     if (!formData.customer_phone.trim()) {
@@ -416,7 +406,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
             </label>
           </div>
           {isCommissioned && (
-            <FormField id='commissioned_by' label='Commissioned By'>
+            <FormField id='commissioned_.py' label='Commissioned By'>
               <Input
                 id='commissioned_by'
                 value={formData.commissioned_by}
