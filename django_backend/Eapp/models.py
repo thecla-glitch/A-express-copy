@@ -127,11 +127,11 @@ class Task(models.Model):
         PENDING = 'Pending', _('Pending')
         IN_PROGRESS = 'In Progress', _('In Progress')
         AWAITING_PARTS = 'Awaiting Parts', _('Awaiting Parts')
-        READY_FOR_QC = 'Ready for QC', _('Ready for QC')
         COMPLETED = 'Completed', _('Completed')
         READY_FOR_PICKUP = 'Ready for Pickup', _('Ready for Pickup')
         PICKED_UP = 'Picked Up', _('Picked Up')
         CANCELLED = 'Cancelled', _('Cancelled')
+        TERMINATED = 'Terminated', _('Terminated')
 
     class Priority(models.TextChoices):
         LOW = 'Low', _('Low')
@@ -203,29 +203,6 @@ class Task(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-
-    @staticmethod
-    def generate_task_id():
-        first_task = Task.objects.order_by('created_at').first()
-        if first_task:
-            first_year = first_task.created_at.year
-        else:
-            first_year = datetime.now().year
-
-        current_year = datetime.now().year
-        year_diff = current_year - first_year
-        year_letter = chr(ord('A') + year_diff)
-
-        current_month = datetime.now().month
-        monthly_tasks = Task.objects.filter(created_at__year=current_year, created_at__month=current_month).count()
-        task_number = monthly_tasks + 1
-
-        return f'{year_letter}{current_month}/{task_number:03d}'
-
-    def save(self, *args, **kwargs):
-        if not self.title:
-            self.title = Task.generate_task_id()
-        super().save(*args, **kwargs)
 
     @property
     def outstanding_balance(self):
@@ -304,7 +281,7 @@ class CollaborationRequest(models.Model):
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='collaboration_requests')
     requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='made_collaboration_requests')
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=T, blank=True, related_name='accepted_collaboration_requests')
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='accepted_collaboration_requests')
     reason = models.TextField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)

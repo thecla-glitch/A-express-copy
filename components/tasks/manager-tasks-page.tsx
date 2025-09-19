@@ -144,8 +144,20 @@ export function ManagerTasksPage() {
     }
   };
 
+  const handleTerminateTask = async (taskId: string) => {
+    try {
+      await apiClient.updateTask(taskId, { status: "Terminated" });
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId ? { ...task, status: "Terminated" } : task
+        )
+      );
+    } catch (error) {
+      console.error(`Error terminating task ${taskId}:`, error);
+    }
+  };
+
   const pendingAndInProgressTasks = tasks.filter(task => ["Pending", "In Progress", "Awaiting Parts", "Assigned - Not Accepted", "Diagnostic"].includes(task.status));
-  const qualityControlTasks = tasks.filter(task => task.status === "Ready for QC");
   const completedTasks = tasks.filter(task => ["Completed", "Ready for Pickup", "Picked Up"].includes(task.status));
 
   return (
@@ -196,9 +208,8 @@ export function ManagerTasksPage() {
 
       {/* Main Content */}
       <Tabs defaultValue="pending">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-100">
           <TabsTrigger value="pending" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Pending and in Progress</TabsTrigger>
-          <TabsTrigger value="qc" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Quality Control</TabsTrigger>
           <TabsTrigger value="completed" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Completed</TabsTrigger>
         </TabsList>
         <TabsContent value="pending">
@@ -209,19 +220,8 @@ export function ManagerTasksPage() {
             showActions={true}
             onDeleteTask={handleDeleteTask}
             onProcessPickup={handleProcessPickup}
-          />
-        </TabsContent>
-        <TabsContent value="qc">
-          <TasksDisplay
-            tasks={qualityControlTasks}
-            technicians={technicians}
-            onRowClick={handleRowClick}
-            showActions={true}
-            onDeleteTask={handleDeleteTask}
-            onProcessPickup={handleProcessPickup}
-            isQcTab={true}
-            onApprove={handleApprove}
-            onReject={handleReject}
+            onTerminateTask={handleTerminateTask}
+            isManagerView={true}
           />
         </TabsContent>
         <TabsContent value="completed">
@@ -234,6 +234,7 @@ export function ManagerTasksPage() {
             onProcessPickup={handleProcessPickup}
             isCompletedTab={true}
             onMarkAsPaid={handleMarkAsPaid}
+            isManagerView={true}
           />
         </TabsContent>
       </Tabs>

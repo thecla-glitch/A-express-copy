@@ -13,6 +13,7 @@ from .serializers import (
     TaskActivitySerializer, PaymentSerializer, CollaborationRequestSerializer, LocationSerializer, BrandSerializer
 )
 from django.shortcuts import get_object_or_404
+from datetime import datetime
 
 
 class IsAdminOrManager(permissions.BasePermission):
@@ -258,6 +259,23 @@ def change_password(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+def generate_task_id():
+    first_task = Task.objects.order_by('created_at').first()
+    if first_task:
+        first_year = first_task.created_at.year
+    else:
+        first_year = datetime.now().year
+
+    current_year = datetime.now().year
+    year_diff = current_year - first_year
+    year_letter = chr(ord('A') + year_diff)
+
+    current_month = datetime.now().month
+    monthly_tasks = Task.objects.filter(created_at__year=current_year, created_at__month=current_month).count()
+    task_number = monthly_tasks + 1
+
+    return f'{year_letter}{current_month}/{task_number:03d}'
+
 # Task-related views (assuming these are the missing parts based on urls.py)
 @api_view(['GET', 'POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -274,6 +292,7 @@ def task_list_create(request):
                 status=status.HTTP_403_FORBIDDEN
             )
         data = request.data.copy()
+        data['title'] = generate_task_id()
         if data.get('assigned_to'):
             data['status'] = 'In Progress'
         serializer = TaskSerializer(data=data, context={'request': request})
