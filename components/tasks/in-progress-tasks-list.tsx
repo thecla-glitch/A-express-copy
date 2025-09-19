@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
 import { Badge } from "@/components/ui/core/badge"
-import { getTasks, updateTask } from "@/lib/api-client"
+import { getTasks } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
 import { Laptop } from "lucide-react"
 
@@ -21,28 +21,29 @@ const getUrgencyBadge = (urgency: string) => {
   }
 }
 
-export function UnassignedTasksList() {
+export function InProgressTasksList() {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<any[]>([])
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await getTasks({ status: "Unassigned" })
-        const unassignedTasks = response.data.filter((task: any) => task.assigned_to === null);
-        setTasks(unassignedTasks)
+        const response = await getTasks({ assigned_to: user?.id, status: "In Progress" })
+        setTasks(response.data)
       } catch (error) {
-        console.error("Error fetching unassigned tasks:", error)
+        console.error("Error fetching in progress tasks:", error)
       }
     }
-    fetchTasks()
-  }, [])
+    if (user) {
+      fetchTasks()
+    }
+  }, [user])
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Unassigned Tasks</CardTitle>
-        <CardDescription>Tasks that are not yet assigned to any technician.</CardDescription>
+        <CardTitle>In Progress Tasks</CardTitle>
+        <CardDescription>Tasks that are currently being worked on.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-6">

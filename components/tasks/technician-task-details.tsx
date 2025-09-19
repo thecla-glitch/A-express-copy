@@ -34,7 +34,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { getTask, updateTask, addTaskActivity, getAllowedTransitions } from "@/lib/api-client"
+import { getTask, updateTask, addTaskActivity, getAllowedTransitions, listWorkshopLocations, listWorkshopTechnicians } from "@/lib/api-client"
 import { getTaskStatusOptions } from "@/lib/tasks-api";
 import { useToast } from "@/hooks/use-toast"
 
@@ -52,6 +52,11 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
   const [status, setStatus] = useState("")
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
   const [allowedTransitions, setAllowedTransitions] = useState<any>({});
+  const [isSendToWorkshopDialogOpen, setIsSendToWorkshopDialogOpen] = useState(false)
+  const [workshopLocations, setWorkshopLocations] = useState<any[]>([])
+  const [workshopTechnicians, setWorkshopTechnicians] = useState<any[]>([])
+  const [selectedWorkshopLocation, setSelectedWorkshopLocation] = useState<string | undefined>(undefined)
+  const [selectedWorkshopTechnician, setSelectedWorkshopTechnician] = useState<string | undefined>(undefined)
   const router = useRouter()
   const { user } = useAuth()
   const { toast } = useToast()
@@ -60,6 +65,8 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
     loadTaskDetails()
     fetchStatusOptions()
     fetchAllowedTransitions()
+    fetchWorkshopLocations()
+    fetchWorkshopTechnicians()
   }, [taskId])
 
   const loadTaskDetails = async () => {
@@ -94,6 +101,27 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       console.error("Error fetching allowed transitions:", error);
     }
   };
+
+  const fetchWorkshopLocations = async () => {
+    try {
+      const response = await listWorkshopLocations()
+      setWorkshopLocations(response.data)
+      if (response.data.length === 1) {
+        setSelectedWorkshopLocation(response.data[0].id)
+      }
+    } catch (error) {
+      console.error("Error fetching workshop locations:", error)
+    }
+  }
+
+  const fetchWorkshopTechnicians = async () => {
+    try {
+      const response = await listWorkshopTechnicians()
+      setWorkshopTechnicians(response.data)
+    } catch (error) {
+      console.error("Error fetching workshop technicians:", error)
+    }
+  }
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -137,6 +165,61 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
 
   const handleMarkComplete = async () => {
     await handleStatusChange("Completed")
+  }
+
+  const handleSendToWorkshop = async () => {
+    if (!selectedWorkshopLocation || !selectedWorkshopTechnician) {
+      toast({
+        title: "Error",
+        description: "Please select a workshop location and technician.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setUpdating(true)
+      await updateTask(taskId, { 
+        workshop_location: selectedWorkshopLocation,
+        workshop_technician: selectedWorkshopTechnician,
+      })
+      setIsSendToWorkshopDialogOpen(false)
+      await loadTaskDetails()
+      toast({
+        title: "Success",
+        description: "Task sent to workshop successfully.",
+      })
+    } catch (error) {
+      console.error("Failed to send task to workshop:", error)
+      toast({
+        title: "Error",
+        description: "Failed to send task to workshop.",
+        variant: "destructive",
+      })
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleWorkshopStatusChange = async (newStatus: string) => {
+    try {
+      setUpdating(true)
+      await updateTask(taskId, { workshop_status: newStatus })
+      await loadTaskDetails()
+      toast({
+        title: "Success",
+        description: `Task marked as ${newStatus}.`,
+      })
+    } catch (error) {
+      console.error("Failed to update workshop status:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update workshop status.",
+        variant: "destructive",
+      })
+    } finally {
+      setUpdating(false)
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -336,6 +419,62 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Mark as Complete
                   </Button>
+                )}
+                {task.status === 'In Progress' && !task.workshop_status && (
+                  <Dialog open={isSendToWorkshopDialogOpen} onOpenChange={setIsSendToWorkshopDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50 bg-transparent">
+                        <Users className="h-4 w-4 mr-2" />
+                        Send to Workshop
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Send to Workshop</DialogTitle>
+                        <DialogDescription>
+                          Select a workshop location and technician to send the task to.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <label htmlFor="workshop-location">Workshop Location</label>
+                          <Select value={selectedWorkshopLocation} onValueChange={setSelectedWorkshopLocation}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a location" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {workshopLocations.map(location => (
+                                <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <label htmlFor="workshop-technician">Workshop Technician</label>
+                          <Select value={selectedWorkshopTechnician} onValueChange={setSelectedWorkshopTechnician}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a technician" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {workshopTechnicians.map(technician => (
+                                <SelectItem key={technician.id} value={technician.id}>{technician.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsSendToWorkshopDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSendToWorkshop} disabled={updating}>Send</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+                {user?.is_workshop && task.workshop_status === 'In Workshop' && (
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleWorkshopStatusChange('Solved')} disabled={updating}>Solved</Button>
+                    <Button onClick={() => handleWorkshopStatusChange('Not Solved')} disabled={updating}>Not Solved</Button>
+                  </div>
                 )}
               </div>
             </CardContent>

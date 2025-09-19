@@ -2,25 +2,40 @@
 
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs"
-import { UnassignedTasksList } from "./unassigned-tasks-list"
-import { ActiveTasksList } from "./active-tasks-list"
+import { useAuth } from "@/lib/auth-context"
+import { InProgressTasksList } from "./in-progress-tasks-list"
+import { InWorkshopTasksList } from "./in-workshop-tasks-list"
+import { CompletedTasksList } from "./completed-tasks-list"
 
 export function TechnicianTasksPage() {
-  const [refresh, setRefresh] = useState(false)
+  const { user } = useAuth()
+
+  if (user?.is_workshop) {
+    return (
+      <div className="flex-1 space-y-6 p-6">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Workshop Tasks</h1>
+        <InWorkshopTasksList />
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 space-y-6 p-6">
       <h1 className="text-3xl font-bold tracking-tight text-gray-900">Tasks</h1>
-      <Tabs defaultValue="unassigned" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="unassigned" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">Unassigned</TabsTrigger>
-          <TabsTrigger value="active" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">Active Tasks</TabsTrigger>
+      <Tabs defaultValue="in-progress" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="in-progress" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">In Progress</TabsTrigger>
+          <TabsTrigger value="in-workshop" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">In Workshop</TabsTrigger>
+          <TabsTrigger value="completed" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">Completed</TabsTrigger>
         </TabsList>
-        <TabsContent value="unassigned">
-          <UnassignedTasksList />
+        <TabsContent value="in-progress">
+          <InProgressTasksList />
         </TabsContent>
-        <TabsContent value="active">
-          <ActiveTasksList refresh={refresh} setRefresh={setRefresh} />
+        <TabsContent value="in-workshop">
+          <InWorkshopTasksList />
+        </TabsContent>
+        <TabsContent value="completed">
+          <CompletedTasksList />
         </TabsContent>
       </Tabs>
     </div>

@@ -37,3 +37,5 @@ export const addTaskPayment = (taskId: string, data: any) => apiClient.post(`/ta
 
 export const listTechnicians = () => apiClient.get('/technicians/');
 export const getLocations = () => apiClient.get('/locations/');
+export const listWorkshopLocations = () => apiClient.get('/workshop-locations/');
+export const listWorkshopTechnicians = () => apiClient.get('/workshop-technicians/');

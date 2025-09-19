@@ -293,8 +293,6 @@ def task_list_create(request):
             )
         data = request.data.copy()
         data['title'] = generate_task_id()
-        if data.get('assigned_to'):
-            data['status'] = 'In Progress'
         serializer = TaskSerializer(data=data, context={'request': request})
         if serializer.is_valid():
             serializer.save(created_by=request.user)
@@ -343,6 +341,16 @@ def task_detail(request, task_id):
                     {"error": f"As a {user.role}, you cannot change status from '{current_status}' to '{new_status}'."},
                     status=status.HTTP_403_FORBIDDEN
                 )
+
+        if 'workshop_location' in request.data and 'workshop_technician' in request.data:
+            task.workshop_status = 'In Workshop'
+            task.original_technician = user
+
+        if 'workshop_status' in request.data and request.data['workshop_status'] in ['Solved', 'Not Solved']:
+            task.assigned_to = task.original_technician
+            task.workshop_location = None
+            task.workshop_technician = None
+            task.original_technician = None
 
         serializer = TaskSerializer(task, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
@@ -477,3 +485,17 @@ class BrandViewSet(viewsets.ModelViewSet):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
     permission_classes = [IsManager]
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def list_workshop_locations(request):
+    locations = Location.objects.filter(is_workshop=True)
+    serializer = LocationSerializer(locations, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def list_workshop_technicians(request):
+    technicians = User.objects.filter(is_workshop=True, is_active=True)
+    serializer = UserSerializer(technicians, many=True, context={'request': request})
+    return Response(serializer.data)

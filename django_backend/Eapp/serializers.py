@@ -118,6 +118,11 @@ class PaymentSerializer(serializers.ModelSerializer):
         }
 
 
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['id', 'name', 'is_workshop']
+
 class TaskSerializer(serializers.ModelSerializer):
     negotiated_by = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(is_active=True),
@@ -132,6 +137,9 @@ class TaskSerializer(serializers.ModelSerializer):
     payments = PaymentSerializer(many=True, read_only=True)
     outstanding_balance = serializers.SerializerMethodField()
     partial_payment_amount = serializers.DecimalField(max_digits=10, decimal_places=2, write_only=True, required=False)
+    workshop_location_details = LocationSerializer(source='workshop_location', read_only=True)
+    workshop_technician_details = UserSerializer(source='workshop_technician', read_only=True)
+    original_technician_details = UserSerializer(source='original_technician', read_only=True)
 
     class Meta:
         model = Task
@@ -146,9 +154,12 @@ class TaskSerializer(serializers.ModelSerializer):
             'current_location', 'urgency', 'date_in', 'approved_date',
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
             'activities', 'payments', 'outstanding_balance', 'is_commissioned', 'commissioned_by',
-            'partial_payment_amount'
+            'partial_payment_amount',
+            'workshop_status', 'workshop_location', 'workshop_technician', 'original_technician',
+            'workshop_location_details', 'workshop_technician_details', 'original_technician_details'
         )
-        read_only_fields = ('created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments')
+        read_only_fields = ('created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments',
+                            'workshop_location_details', 'workshop_technician_details', 'original_technician_details')
         extra_kwargs = {
             'estimated_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
             'total_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
@@ -189,9 +200,4 @@ class TaskSerializer(serializers.ModelSerializer):
             )
 
         return super().update(instance, validated_data)
-
-class LocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Location
-        fields = ['id', 'name', 'is_workshop']
 

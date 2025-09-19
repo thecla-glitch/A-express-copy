@@ -150,6 +150,11 @@ class Task(models.Model):
         NOT_FULL = 'Not Full', _('Not Full')
         MOTHERBOARD_ONLY = 'Motherboard Only', _('Motherboard Only')
 
+    class WorkshopStatus(models.TextChoices):
+        IN_WORKSHOP = 'In Workshop', _('In Workshop')
+        SOLVED = 'Solved', _('Solved')
+        NOT_SOLVED = 'Not Solved', _('Not Solved')
+
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(
@@ -198,6 +203,23 @@ class Task(models.Model):
     )
     is_commissioned = models.BooleanField(default=False)
     commissioned_by = models.CharField(max_length=100, blank=True)
+
+    # Workshop fields
+    workshop_status = models.CharField(
+        max_length=20,
+        choices=WorkshopStatus.choices,
+        null=True,
+        blank=True
+    )
+    workshop_location = models.ForeignKey(
+        'Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='workshop_tasks'
+    )
+    workshop_technician = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='workshop_assigned_tasks'
+    )
+    original_technician = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_to_workshop_tasks'
+    )
 
     def __str__(self):
         return self.title
