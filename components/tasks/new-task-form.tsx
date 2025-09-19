@@ -184,16 +184,22 @@ export function NewTaskForm({}: NewTaskFormProps) {
     try {
       const taskData = {
         ...formData,
+        negotiated_by: formData.negotiated_by || null,
         commissioned_by: formData.is_commissioned ? formData.commissioned_by : 'Not Commissioned',
-        created_by: user?.id,
       };
       await createTask(taskData)
       setSubmitSuccess(true)
       setTimeout(() => {
-        window.location.href = '/dashboard/tasks'
+        if (user?.role === 'Manager') {
+          window.location.href = '/dashboard/manager/tasks'
+        } else if (user?.role === 'Front Desk') {
+          window.location.href = '/dashboard/front-desk/tasks'
+        } else {
+          window.location.href = '/dashboard/tasks'
+        }
       }, 2000)
     } catch (error) {
-      console.error('Error creating task:', error)
+      console.error('Error creating task:', error.response.data)
     } finally {
       setIsSubmitting(false)
     }

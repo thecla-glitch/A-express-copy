@@ -119,6 +119,11 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    negotiated_by = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(is_active=True),
+        allow_null=True,
+        required=False
+    )
     assigned_to_details = UserSerializer(source='assigned_to', read_only=True)
     created_by_details = UserSerializer(source='created_by', read_only=True)
     negotiated_by_details = UserSerializer(source='negotiated_by', read_only=True)
@@ -132,7 +137,7 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = (
             'id', 'title', 'description', 'status', 'priority', 
-            'assigned_to', 'assigned_to_details', 'created_by', 'created_by_details',
+            'assigned_to', 'assigned_to_details', 'created_by_details',
             'created_at', 'updated_at', 'due_date',
             'customer_name', 'customer_phone', 'customer_email',
             'brand', 'brand_details', 'laptop_model', 'serial_number',
@@ -162,7 +167,7 @@ class TaskSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        device_notes = validated_data.pop('device_notes', None)
+        device_notes = validated_data.get('device_notes', None)
         task = super().create(validated_data)
         if device_notes:
             TaskActivity.objects.create(
