@@ -204,6 +204,13 @@ class Task(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+    def save(self, *args, **kwargs):
+        if self.pk:
+            original = Task.objects.get(pk=self.pk)
+            if original.status == self.Status.IN_PROGRESS and self.assigned_to != original.assigned_to:
+                raise PermissionDenied("Cannot change the assigned technician for a task that is in progress.")
+        super().save(*args, **kwargs)
+
     @property
     def outstanding_balance(self):
         if not self.total_cost:

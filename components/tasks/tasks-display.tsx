@@ -263,7 +263,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <UserIcon className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900">{task.assigned_to_details?.full_name}</span>
+                    <span className="text-gray-900">{task.assigned_to_details?.full_name || "Unassigned"}</span>
                   </div>
                 </TableCell>
                 {!isQcTab && <TableCell>{getPaymentStatusBadge(task.payment_status)}</TableCell>}
@@ -320,44 +320,45 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                         </>
                       ) : isCompletedTab ? (
                         <>
-                          {task.payment_status === 'Fully Paid' ? (
-                            <Button
-                              size="sm"
-                              className="bg-blue-600 hover:bg-blue-700 text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Add notification logic here in the future
-                              }}
-                            >
-                              Notify Customer
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTaskToPay(task);
-                                setIsPaidConfirmOpen(true);
-                              }}
-                            >
-                              Fully Paid
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Add notification logic here in the future
+                            }}
+                          >
+                            Notify Customer
+                          </Button>
                         </>
                       ) : (
                         <>
                           {["Pending", "In Progress"].includes(task.status) ? (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onTerminateTask?.(task.id);
-                              }}
-                            >
-                              Terminate
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                >
+                                  Terminate
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will terminate the task.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onTerminateTask?.(task.id)}>Terminate</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           ) : (
                             <>
                               <Button
