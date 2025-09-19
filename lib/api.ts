@@ -376,28 +376,6 @@ export class ApiClient {
     return this.request<TaskActivity[]>(`/tasks/${taskId}/activities/`);
   }
 
-  async createCollaborationRequest(taskId: string, reason: string): Promise<ApiResponse<any>> {
-    return this.request(`/tasks/${taskId}/collaboration-requests/`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
-  }
-
-  async listCollaborationRequests(): Promise<ApiResponse<any[]>> {
-    return this.request('/collaboration-requests/');
-  }
-
-  async getCollaborationRequest(requestId: string): Promise<ApiResponse<any>> {
-    return this.request(`/collaboration-requests/${requestId}/`);
-  }
-
-  async updateCollaborationRequest(requestId: string, updates: any): Promise<ApiResponse<any>> {
-    return this.request(`/collaboration-requests/${requestId}/`, {
-      method: 'PATCH',
-      body: JSON.stringify(updates),
-    });
-  }
-
   async getBrands(): Promise<ApiResponse<Brand[]>> {
     return this.request<Brand[]>('/brands/');
   }

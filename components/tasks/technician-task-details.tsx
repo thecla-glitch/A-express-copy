@@ -36,7 +36,6 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { getTask, updateTask, addTaskActivity, getAllowedTransitions } from "@/lib/api-client"
 import { getTaskStatusOptions } from "@/lib/tasks-api";
-import { CreateCollaborationRequest } from "@/components/dashboard/collaboration/create-collaboration-request"
 import { useToast } from "@/hooks/use-toast"
 
 interface TechnicianTaskDetailsProps {
@@ -51,7 +50,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
   const [noteType, setNoteType] = useState("repair_step")
   const [currentLocation, setCurrentLocation] = useState("")
   const [status, setStatus] = useState("")
-  const [isCollaborationDialogOpen, setIsCollaborationDialogOpen] = useState(false)
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
   const [allowedTransitions, setAllowedTransitions] = useState<any>({});
   const router = useRouter()
@@ -139,14 +137,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
 
   const handleMarkComplete = async () => {
     await handleStatusChange("Completed")
-  }
-
-  const handleCollaborationRequestSubmitted = () => {
-    setIsCollaborationDialogOpen(false)
-    toast({
-      title: "Collaboration Request Submitted",
-      description: "Your request has been sent to the collaboration board.",
-    })
   }
 
   const getStatusBadge = (status: string) => {
@@ -347,26 +337,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                     Mark as Complete
                   </Button>
                 )}
-                <Dialog open={isCollaborationDialogOpen} onOpenChange={setIsCollaborationDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="border-red-600 text-red-600 hover:bg-red-50 bg-transparent"
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Request Technician Help
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Request Collaboration</DialogTitle>
-                      <DialogDescription>
-                        Fill out the form below to request help from another technician.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <CreateCollaborationRequest taskId={taskId} onSubmitted={handleCollaborationRequestSubmitted} />
-                  </DialogContent>
-                </Dialog>
               </div>
             </CardContent>
           </Card>

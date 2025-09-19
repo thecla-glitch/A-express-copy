@@ -41,9 +41,5 @@ urlpatterns = [
     # Technician endpoints
     path('technicians/', views.list_technicians, name='list_technicians'),
     
-    # Collaboration endpoints
-    path('tasks/<int:task_id>/collaboration-requests/', views.create_collaboration_request, name='create_collaboration_request'),
-    path('collaboration-requests/', views.list_collaboration_requests, name='list_collaboration_requests'),
-    path('collaboration-requests/<int:request_id>/', views.collaboration_request_detail, name='collaboration_request_detail'),
     path('', include(router.urls)),
 ]

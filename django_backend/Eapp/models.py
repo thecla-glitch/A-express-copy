@@ -280,27 +280,6 @@ class Payment(models.Model):
         super().save(*args, **kwargs)
         self.task.update_payment_status()
 
-class CollaborationRequest(models.Model):
-    class Status(models.TextChoices):
-        PENDING = 'Pending', _('Pending')
-        ACCEPTED = 'Accepted', _('Accepted')
-        COMPLETED = 'Completed', _('Completed')
-        CANCELLED = 'Cancelled', _('Cancelled')
-
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='collaboration_requests')
-    requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='made_collaboration_requests')
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='accepted_collaboration_requests')
-    reason = models.TextField()
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f'Collaboration request for {self.task.title} by {self.requested_by.get_full_name()}'
-
-    class Meta:
-        ordering = ['-created_at']
-
 class Location(models.Model):
     name = models.CharField(max_length=100, unique=True)
     is_workshop = models.BooleanField(default=False)

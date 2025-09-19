@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location, Brand
+from .models import User, Task, TaskActivity, Payment, Location, Brand
 
 
 class BrandSerializer(serializers.ModelSerializer):
@@ -188,35 +188,6 @@ class TaskSerializer(serializers.ModelSerializer):
                 method='Partial Payment'  # Or any other appropriate method
             )
 
-        return super().update(instance, validated_data)
-
-class CollaborationRequestSerializer(serializers.ModelSerializer):
-    requested_by = UserSerializer(read_only=True)
-    assigned_to = UserSerializer(read_only=True)  # Keep for response rendering
-    task = TaskSerializer(read_only=True)
-
-    class Meta:
-        model = CollaborationRequest
-        fields = ('id', 'task', 'requested_by', 'assigned_to', 'reason', 'status', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'task', 'requested_by', 'created_at', 'updated_at')  # Remove 'assigned_to'
-
-    def update(self, instance, validated_data):
-        request = self.context.get('request')
-        user = request.user
-
-        # Only Managers or the assigned Technician can update
-        is_manager = user.role == 'Manager' or user.is_superuser
-        is_assigned = instance.assigned_to == user
-        if not (is_manager or is_assigned):
-            raise serializers.ValidationError(
-                "Only Managers or the assigned Technician can update this collaboration request."
-            )
-
-        # If Technician is accepting, set assigned_to to themselves and status to Accepted
-        if user.role == 'Technician' and 'status' in validated_data and validated_data['status'] == 'Accepted':
-            validated_data['assigned_to'] = user
-
-        # Managers can freely update assigned_to and status
         return super().update(instance, validated_data)
 
 class LocationSerializer(serializers.ModelSerializer):

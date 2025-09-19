@@ -6,11 +6,11 @@ from django.utils import timezone
 from django.db import models  # For Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Task, TaskActivity, Payment, CollaborationRequest, Location, Brand
+from .models import User, Task, TaskActivity, Payment, Location, Brand
 from .serializers import (
     ChangePasswordSerializer, UserProfileUpdateSerializer, UserSerializer, 
     UserRegistrationSerializer, LoginSerializer, TaskSerializer,
-    TaskActivitySerializer, PaymentSerializer, CollaborationRequestSerializer, LocationSerializer, BrandSerializer
+    TaskActivitySerializer, PaymentSerializer, LocationSerializer, BrandSerializer
 )
 from django.shortcuts import get_object_or_404
 from datetime import datetime
@@ -451,69 +451,6 @@ def send_customer_update(request, task_id):
         return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['POST'])
-@permission_classes([IsTechnician])
-def create_collaboration_request(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
-    serializer = CollaborationRequestSerializer(data=request.data, context={'request': request})
-    if serializer.is_valid():
-        serializer.save(task=task, requested_by=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_collaboration_requests(request):
-    user = request.user
-    if user.role == 'Manager' or user.is_superuser:
-        requests = CollaborationRequest.objects.all()
-    elif user.role == 'Technician':
-        requests = CollaborationRequest.objects.filter(
-            models.Q(requested_by=user) | models.Q(assigned_to=user)
-        ).distinct()
-    else:
-        requests = CollaborationRequest.objects.none()
-    
-    serializer = CollaborationRequestSerializer(requests, many=True, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['GET', 'PATCH'])
-@permission_classes([permissions.IsAuthenticated])
-def collaboration_request_detail(request, request_id):
-    collaboration_request = get_object_or_404(CollaborationRequest, id=request_id)
-    user = request.user
-
-    # Permissions for GET
-    if request.method == 'GET':
-        is_manager = user.role == 'Manager' or user.is_superuser
-        is_involved = collaboration_request.requested_by == user or collaboration_request.assigned_to == user
-        if not (is_manager or is_involved):
-            return Response(
-                {"error": "You do not have permission to view this collaboration request."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        serializer = CollaborationRequestSerializer(collaboration_request, context={'request': request})
-        return Response(serializer.data)
-
-    # Permissions for PATCH
-    elif request.method == 'PATCH':
-        is_manager = user.role == 'Manager' or user.is_superuser
-        is_assigned = collaboration_request.assigned_to == user
-        if not (is_manager or is_assigned):
-            return Response(
-                {"error": "You do not have permission to update this collaboration request."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        serializer = CollaborationRequestSerializer(collaboration_request, data=request.data, partial=True, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LocationViewSet(viewsets.ModelViewSet):
     """
