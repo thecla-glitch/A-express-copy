@@ -303,6 +303,7 @@ class CollaborationRequest(models.Model):
 
 class Location(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    is_workshop = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/core/button";
 import { Input } from "@/components/ui/core/input";
 import { Label } from "@/components/ui/core/label";
+import { Switch } from "@/components/ui/core/switch";
 import { Trash2, Edit, Plus } from "lucide-react";
 import {
   AlertDialog,
@@ -21,11 +22,13 @@ import {
 interface Location {
   id: number;
   name: string;
+  is_workshop: boolean;
 }
 
 export function LocationsManager() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [newLocationName, setNewLocationName] = useState("");
+  const [newLocationIsWorkshop, setNewLocationIsWorkshop] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
 
   useEffect(() => {
@@ -46,10 +49,11 @@ export function LocationsManager() {
   const handleAddLocation = async () => {
     if (!newLocationName.trim()) return;
     try {
-      const response = await apiClient.post("/locations/", { name: newLocationName });
+      const response = await apiClient.post("/locations/", { name: newLocationName, is_workshop: newLocationIsWorkshop });
       if (response.data) {
         setLocations([...locations, response.data]);
         setNewLocationName("");
+        setNewLocationIsWorkshop(false);
       }
     } catch (error) {
       console.error("Error adding location:", error);
@@ -59,7 +63,7 @@ export function LocationsManager() {
   const handleUpdateLocation = async () => {
     if (!editingLocation || !editingLocation.name.trim()) return;
     try {
-      const response = await apiClient.put(`/locations/${editingLocation.id}/`, { name: editingLocation.name });
+      const response = await apiClient.put(`/locations/${editingLocation.id}/`, { name: editingLocation.name, is_workshop: editingLocation.is_workshop });
       if (response.data) {
         setLocations(
           locations.map((loc) => (loc.id === editingLocation.id ? response.data : loc))
@@ -82,12 +86,21 @@ export function LocationsManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-4">
+      <div className="flex items-center gap-4">
         <Input
           value={newLocationName}
           onChange={(e) => setNewLocationName(e.target.value)}
           placeholder="New location name"
+          className="flex-grow"
         />
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="new-is-workshop"
+            checked={newLocationIsWorkshop}
+            onCheckedChange={setNewLocationIsWorkshop}
+          />
+          <Label htmlFor="new-is-workshop">Workshop</Label>
+        </div>
         <Button onClick={handleAddLocation}>
           <Plus className="mr-2 h-4 w-4" /> Add
         </Button>
@@ -97,13 +110,23 @@ export function LocationsManager() {
         {locations.map((location) => (
           <div key={location.id} className="flex items-center justify-between p-2 border rounded-md">
             {editingLocation?.id === location.id ? (
-              <Input
-                value={editingLocation.name}
-                onChange={(e) => setEditingLocation({ ...editingLocation, name: e.target.value })}
-                className="flex-grow"
-              />
+              <div className="flex-grow flex items-center gap-4">
+                <Input
+                  value={editingLocation.name}
+                  onChange={(e) => setEditingLocation({ ...editingLocation, name: e.target.value })}
+                  className="flex-grow"
+                />
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id={`edit-is-workshop-${location.id}`}
+                    checked={editingLocation.is_workshop}
+                    onCheckedChange={(checked) => setEditingLocation({ ...editingLocation, is_workshop: checked })}
+                  />
+                  <Label htmlFor={`edit-is-workshop-${location.id}`}>Workshop</Label>
+                </div>
+              </div>
             ) : (
-              <span className="flex-grow">{location.name}</span>
+              <span className="flex-grow">{location.name} {location.is_workshop && "(Workshop)"}</span>
             )}
             <div className="flex gap-2 ml-4">
               {editingLocation?.id === location.id ? (
