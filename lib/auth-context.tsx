@@ -15,6 +15,7 @@ interface User {
   phone: string
   profile_picture: string
   is_active: boolean
+  is_workshop: boolean
   created_at: string
   last_login: string
   address?: string
