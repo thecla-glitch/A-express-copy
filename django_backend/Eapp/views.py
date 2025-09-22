@@ -353,12 +353,28 @@ def task_detail(request, task_id):
         if 'workshop_location' in request.data and 'workshop_technician' in request.data:
             task.workshop_status = 'In Workshop'
             task.original_technician = user
+            task.workshop_sent_at = timezone.now()
+            workshop_technician_id = request.data.get('workshop_technician')
+            workshop_technician = User.objects.get(id=workshop_technician_id)
+            TaskActivity.objects.create(
+                task=task,
+                user=user,
+                type=TaskActivity.ActivityType.WORKSHOP,
+                message=f"Task sent to workshop technician {workshop_technician.get_full_name()}."
+            )
 
         if 'workshop_status' in request.data and request.data['workshop_status'] in ['Solved', 'Not Solved']:
             task.assigned_to = task.original_technician
             task.workshop_location = None
             task.workshop_technician = None
             task.original_technician = None
+            task.workshop_returned_at = timezone.now()
+            TaskActivity.objects.create(
+                task=task,
+                user=user,
+                type=TaskActivity.ActivityType.WORKSHOP,
+                message=f"Task returned from workshop with status: {request.data['workshop_status']}."
+            )
 
         serializer = TaskSerializer(task, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():

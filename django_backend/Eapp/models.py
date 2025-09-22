@@ -220,6 +220,8 @@ class Task(models.Model):
     original_technician = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_to_workshop_tasks'
     )
+    workshop_sent_at = models.DateTimeField(null=True, blank=True)
+    workshop_returned_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -264,6 +266,7 @@ class TaskActivity(models.Model):
         DIAGNOSIS = 'diagnosis', _('Diagnosis')
         CUSTOMER_CONTACT = 'customer_contact', _('Customer Contact')
         INTAKE = 'intake', _('Intake')
+        WORKSHOP = 'workshop', _('Workshop')
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='activities')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)

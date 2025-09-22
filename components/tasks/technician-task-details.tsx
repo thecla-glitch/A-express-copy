@@ -239,6 +239,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       customer_communication: <MessageSquare className="h-4 w-4 text-orange-600" />,
       handoff_reason: <Users className="h-4 w-4 text-red-600" />,
       parts_request: <Package className="h-4 w-4 text-yellow-600" />,
+      workshop: <Wrench className="h-4 w-4 text-indigo-600" />,
     }
     return iconMap[type] || <FileText className="h-4 w-4 text-gray-600" />
   }
@@ -500,26 +501,27 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Customer Information */}
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Customer Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Name</label>
-                <p className="text-gray-900">{task.customer_name}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Phone</label>
-                <p className="text-gray-900">{task.customer_phone}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Email</label>
-                <p className="text-gray-900">{task.customer_email}</p>
-              </div>
-            </CardContent>
-          </Card>
+          {user.role !== 'Technician' && (
+            <Card className="border-gray-200">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900">Customer Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Name</label>
+                  <p className="text-gray-900">{task.customer_name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Phone</label>
+                  <p className="text-gray-900">{task.customer_phone}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Email</label>
+                  <p className="text-gray-900">{task.customer_email}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Timeline */}
           <Card className="border-gray-200">
