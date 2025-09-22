@@ -185,6 +185,11 @@ const navigationItems = {
       icon: Wrench,
     },
     {
+        title: "History",
+        url: "/dashboard/front-desk/history",
+        icon: FileText,
+    },
+    {
       title: "Payments",
       url: "/dashboard/payments",
       icon: CreditCard,

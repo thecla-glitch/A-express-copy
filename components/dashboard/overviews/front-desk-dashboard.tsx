@@ -390,7 +390,7 @@ export function FrontDeskDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -434,6 +434,20 @@ export function FrontDeskDashboard() {
               <a href="/dashboard/front-desk/tasks">View Tasks</a>
             </Button>
           </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    History
+                </CardTitle>
+                <CardDescription>View completed and picked up tasks.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button asChild className="w-full">
+                    <a href="/dashboard/front-desk/history">View History</a>
+                </Button>
+            </CardContent>
         </Card>
       </div>
 
