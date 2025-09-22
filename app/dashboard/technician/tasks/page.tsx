@@ -2,10 +2,10 @@
 
 import { useAuth } from "@/lib/auth-context"
 import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
-import { TechnicianDashboard } from "@/components/dashboard/overviews/technician-dashboard"
+import { TechnicianTasksPage } from "@/components/tasks/technician-tasks-page"
 
-export default function TechnicianDashboardPage() {
-  const { isAuthenticated } = useAuth()
+export default function TechnicianTasksRoutePage() {
+  const { isAuthenticated, user } = useAuth()
 
   if (!isAuthenticated) {
     return null
@@ -13,7 +13,7 @@ export default function TechnicianDashboardPage() {
 
   return (
     <DashboardLayout>
-      <TechnicianDashboard />
+      <TechnicianTasksPage />
     </DashboardLayout>
   )
 }
