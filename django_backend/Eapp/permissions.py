@@ -23,3 +23,13 @@ class IsFrontDesk(permissions.BasePermission):
 class IsTechnician(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and request.user.role == 'Technician'
+
+
+class IsAdminOrManagerOrFrontDesk(permissions.BasePermission):
+    """
+    Custom permission to allow admins, managers, or front desk to view data.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return request.user.is_superuser or request.user.role in ['Manager', 'Front Desk']

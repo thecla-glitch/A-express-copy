@@ -14,31 +14,7 @@ from .serializers import (
 )
 from django.shortcuts import get_object_or_404
 from datetime import datetime
-
-
-class IsAdminOrManager(permissions.BasePermission):
-    """
-    Custom permission to only allow admins or managers to add users.
-    """
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return request.user.is_superuser or request.user.role == 'Manager'
-
-
-class IsManager(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and (request.user.role == 'Manager' or request.user.is_superuser)
-
-
-class IsFrontDesk(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.role == 'Front Desk'
-
-
-class IsTechnician(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.role == 'Technician'
+from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk
 
 
 @api_view(['POST'])
@@ -82,7 +58,7 @@ def get_user_profile(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminOrManager])
+@permission_classes([IsAdminOrManagerOrFrontDesk])
 def list_users(request):
     users = User.objects.all()
     serializer = UserSerializer(users, many=True, context={'request': request})
@@ -522,7 +498,16 @@ class BrandViewSet(viewsets.ModelViewSet):
     """
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
-    permission_classes = [IsManager]
+    
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action == 'list':
+            self.permission_classes = [permissions.IsAuthenticated]
+        else:
+            self.permission_classes = [IsManager]
+        return super().get_permissions()
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

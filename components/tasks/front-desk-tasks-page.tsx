@@ -91,7 +91,7 @@ export function FrontDeskTasksPage() {
     }
   };
 
-  const unassignedTasks = tasks.filter(task => task.status === "Pending");
+  const unassignedTasks = tasks.filter(task => task.status === "Pending" || task.status === "In Progress");
   const completedTasks = tasks.filter(task => task.status === "Completed");
   const readyForPickupTasks = tasks.filter(task => task.status === "Ready for Pickup");
 
@@ -112,18 +112,19 @@ export function FrontDeskTasksPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="unassigned">
+      <Tabs defaultValue="not-completed">
         <TabsList className="grid w-full grid-cols-3 bg-gray-100">
-          <TabsTrigger value="unassigned" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Unassigned Tasks</TabsTrigger>
+          <TabsTrigger value="not-completed" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Not Completed</TabsTrigger>
           <TabsTrigger value="completed" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Completed Tasks</TabsTrigger>
           <TabsTrigger value="pickup" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Ready For Pickup</TabsTrigger>
         </TabsList>
-        <TabsContent value="unassigned">
+        <TabsContent value="not-completed">
           <TasksDisplay
             tasks={unassignedTasks}
             technicians={technicians}
             onRowClick={handleRowClick}
             showActions={false}
+            isManagerView={true}
           />
         </TabsContent>
         <TabsContent value="completed">
