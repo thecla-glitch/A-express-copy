@@ -281,7 +281,15 @@ def generate_task_id():
 @permission_classes([permissions.IsAuthenticated])
 def task_list_create(request):
     if request.method == 'GET':
-        tasks = Task.objects.all()
+        filters = {}
+        for key, value in request.query_params.items():
+            if key.endswith('__in'):
+                filters[key] = request.query_params.getlist(key)
+            else:
+                filters[key] = value
+        
+        tasks = Task.objects.filter(**filters)
+        
         serializer = TaskSerializer(tasks, many=True, context={'request': request})
         return Response(serializer.data)
     

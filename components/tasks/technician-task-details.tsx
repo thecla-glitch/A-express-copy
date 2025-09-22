@@ -335,7 +335,13 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
               <div className="flex items-center gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Current Status</label>
-                  <div className="mt-2">{getStatusBadge(status)}</div>
+                  <div className="mt-2">
+                    {task.workshop_status === 'In Workshop' ? (
+                      <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">In Workshop</Badge>
+                    ) : (
+                      getStatusBadge(status)
+                    )}
+                  </div>
                 </div>
               </div>
 

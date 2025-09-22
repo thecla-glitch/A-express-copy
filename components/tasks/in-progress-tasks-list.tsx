@@ -29,7 +29,8 @@ export function InProgressTasksList() {
     const fetchTasks = async () => {
       try {
         const response = await getTasks({ assigned_to: user?.id, status: "In Progress" })
-        setTasks(response.data)
+        const filteredTasks = response.data.filter((task: any) => task.workshop_status !== "In Workshop");
+        setTasks(filteredTasks)
       } catch (error) {
         console.error("Error fetching in progress tasks:", error)
       }

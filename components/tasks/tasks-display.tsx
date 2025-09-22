@@ -259,7 +259,13 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 ) : (
                   <TableCell className="text-gray-600 max-w-xs truncate">{task.description}</TableCell>
                 )}
-                <TableCell>{getStatusBadge(task.status)}</TableCell>
+                <TableCell>
+                  {task.workshop_status === 'In Workshop' ? (
+                    <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">In Workshop</Badge>
+                  ) : (
+                    getStatusBadge(task.status)
+                  )}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <UserIcon className="h-4 w-4 text-gray-400" />

@@ -242,8 +242,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Low</Badge>
       default:
         return <Badge variant="secondary">{urgency}</Badge>
+    }
   }
-}
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -291,7 +291,11 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         <div className="flex-grow">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task Details - {taskData.title}</h1>
           <div className="flex items-center gap-2 mt-2">
-            {getStatusBadge(taskData.status)}
+            {taskData.workshop_status === 'In Workshop' ? (
+              <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">In Workshop</Badge>
+            ) : (
+              getStatusBadge(taskData.status)
+            )}
             {getUrgencyBadge(taskData.urgency)}
           </div>
         </div>

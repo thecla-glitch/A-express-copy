@@ -28,7 +28,7 @@ export function CompletedTasksList() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await getTasks({ workshop_status__in: ["Solved", "Not Solved"] })
+        const response = await getTasks({ status: "Completed" })
         setTasks(response.data)
       } catch (error) {
         console.error("Error fetching completed tasks:", error)
@@ -41,7 +41,7 @@ export function CompletedTasksList() {
     <Card>
       <CardHeader>
         <CardTitle>Completed Tasks</CardTitle>
-        <CardDescription>Tasks that have been returned from the workshop.</CardDescription>
+        <CardDescription>Tasks that have been marked as completed.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-6">
