@@ -198,7 +198,7 @@ def activate_user(request, user_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminOrManager])
+@permission_classes([IsAdminOrManagerOrFrontDesk])
 def list_users_by_role(request, role):
     valid_roles = [choice[0] for choice in User.Role.choices]
     if role not in valid_roles:
