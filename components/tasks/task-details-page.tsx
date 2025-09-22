@@ -108,7 +108,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
   const canEditCustomer = isAdmin || isManager || isFrontDesk
   const canEditTechnician = isAdmin || isManager
-  const canEditStatus = isAdmin || isTechnician || isFrontDesk
+  const canEditStatus = isAdmin || isTechnician;
+  const canEditLocation = isAdmin || isManager;
+  const canEditUrgency = isAdmin || isManager || isFrontDesk;
   const canEditFinancials = isAdmin || isManager
   const canMarkComplete = isAdmin || isTechnician
   const canMarkPickedUp = isAdmin || isFrontDesk

@@ -38,9 +38,10 @@ interface TasksDisplayProps {
   onMarkAsPaid?: (taskTitle: string) => void;
   onTerminateTask?: (taskTitle: string) => void;
   isManagerView?: boolean;
+  isFrontDeskCompletedView?: boolean;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView, isFrontDeskCompletedView }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -285,7 +286,55 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 {showActions && (
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {isCompletedTab ? (
+                      {isFrontDeskCompletedView ? (
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onApprove?.(task.title);
+                            }}
+                          >
+                            Approve
+                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedTask(task);
+                                }}
+                              >
+                                Reject
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Reject Task {selectedTask?.title}</DialogTitle>
+                              </DialogHeader>
+                              <Textarea
+                                placeholder="Enter rejection notes..."
+                                value={rejectionNotes}
+                                onChange={(e) => setRejectionNotes(e.target.value)}
+                              />
+                              <DialogFooter>
+                                <Button
+                                  onClick={() => {
+                                    onReject?.(selectedTask?.title, rejectionNotes);
+                                    setSelectedTask(null);
+                                    setRejectionNotes("");
+                                  }}
+                                >
+                                  Confirm
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </>
+                      ) : isCompletedTab ? (
                         <>
                           <Button
                             size="sm"

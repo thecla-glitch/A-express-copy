@@ -53,7 +53,7 @@ export function FrontDeskTasksPage() {
   }, []);
 
   const handleRowClick = (task: any) => {
-    router.push(`/dashboard/tasks/${task.id}`);
+    router.push(`/dashboard/tasks/${task.title}`);
   };
 
   const handleTaskCreated = () => {
@@ -62,6 +62,33 @@ export function FrontDeskTasksPage() {
     apiClient.getTasks().then((res) => {
       if (res.data) setTasks(res.data);
     });
+  };
+
+  const handleApprove = async (taskTitle: string) => {
+    try {
+      await apiClient.updateTask(taskTitle, { status: "Ready for Pickup" });
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.title === taskTitle ? { ...task, status: "Ready for Pickup" } : task
+        )
+      );
+    } catch (error) {
+      console.error(`Error approving task ${taskTitle}:`, error);
+    }
+  };
+
+  const handleReject = async (taskTitle: string, notes: string) => {
+    try {
+      await apiClient.updateTask(taskTitle, { status: "In Progress", qc_notes: notes });
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.title === taskTitle ? { ...task, status: "In Progress" } : task
+        )
+      );
+      // TODO: Add notification logic
+    } catch (error) {
+      console.error(`Error rejecting task ${taskTitle}:`, error);
+    }
   };
 
   const unassignedTasks = tasks.filter(task => task.status === "Pending");
@@ -104,7 +131,10 @@ export function FrontDeskTasksPage() {
             tasks={completedTasks}
             technicians={technicians}
             onRowClick={handleRowClick}
-            showActions={false}
+            showActions={true}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            isFrontDeskCompletedView={true}
           />
         </TabsContent>
         <TabsContent value="pickup">
