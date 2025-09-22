@@ -16,6 +16,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/feedback/dialog"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/feedback/alert-dialog"
+import {
   ArrowLeft,
   AlertTriangle,
   Clock,
@@ -335,18 +346,22 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
               <div className="flex items-center gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Current Status</label>
-                  <div className="mt-2">
-                    {task.workshop_status === 'In Workshop' ? (
-                      <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">In Workshop</Badge>
-                    ) : (
-                      getStatusBadge(status)
+                  <div className="mt-2 flex items-center gap-2">
+                    {getStatusBadge(status)}
+                    {['Solved', 'Not Solved'].includes(task.workshop_status) && (
+                      <Badge className={task.workshop_status === 'Solved' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                        {task.workshop_status}
+                      </Badge>
+                    )}
+                    {task.workshop_status === 'In Workshop' && (
+                        <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">In Workshop</Badge>
                     )}
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-3">
-                {task && task.status !== 'Completed' && (!task.workshop_status || ['Solved', 'Not Solved'].includes(task.workshop_status)) && (
+                {task && task.status !== 'Completed' && (!task.workshop_status || ['Solved', 'Not Solved'].includes(task.workshop_status)) && !user?.is_workshop && (
                   <Button
                     className="bg-green-600 hover:bg-green-700 text-white"
                     onClick={handleMarkComplete}
@@ -407,10 +422,10 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                   </Dialog>
                 )}
                 {user?.is_workshop && task.workshop_status === 'In Workshop' && (
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleWorkshopStatusChange('Solved')} disabled={updating}>Solved</Button>
-                    <Button onClick={() => handleWorkshopStatusChange('Not Solved')} disabled={updating}>Not Solved</Button>
-                  </div>
+                  <WorkshopStatusButtons 
+                    onStatusChange={handleWorkshopStatusChange} 
+                    updating={updating} 
+                  />
                 )}
               </div>
             </CardContent>
@@ -530,6 +545,47 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
           </Card>
         </div>
       </div>
+    </div>
+  )
+}
+
+function WorkshopStatusButtons({ onStatusChange, updating }: { onStatusChange: (status: string) => void, updating: boolean }) {
+  return (
+    <div className="flex gap-2">
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button className="bg-green-500 hover:bg-green-600 text-white" disabled={updating}>Solved</Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the task as solved. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onStatusChange('Solved')}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button className="bg-red-500 hover:bg-red-600 text-white" disabled={updating}>Not Solved</Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the task as not solved. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onStatusChange('Not Solved')}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
