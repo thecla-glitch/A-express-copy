@@ -149,7 +149,7 @@ const navigationItems = {
     },
     {
       title: "Tasks",
-      url: "/dashboard/technician",
+      url: "/dashboard/technician/tasks",
       icon: ClipboardList,
     },
     {
@@ -161,11 +161,6 @@ const navigationItems = {
       title: "Profile",
       url: "/dashboard/profile",
       icon: User,
-    },
-    {
-      title: "Workshop",
-      url: "/dashboard/workshop",
-      icon: Wrench,
     },
   ],
   "Front Desk": [
@@ -208,10 +203,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   if (!user) return null
 
   let items = navigationItems[user.role as keyof typeof navigationItems] || []
-
-  if (user.role === 'Technician' && !user.is_workshop) {
-    items = items.filter(item => item.title !== 'Workshop')
-  }
 
   const getDashboardUrl = () => {
     switch (user.role) {
