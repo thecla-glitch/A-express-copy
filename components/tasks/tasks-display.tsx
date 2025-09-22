@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   Calendar,
   MapPin,
+  MessageSquare,
+  CheckCircle,
 } from "lucide-react"
 import {  AlertDialog,  AlertDialogAction,  AlertDialogCancel,  AlertDialogContent,  AlertDialogDescription,  AlertDialogFooter,  AlertDialogHeader,  AlertDialogTitle,  AlertDialogTrigger,} from "@/components/ui/feedback/alert-dialog"
 import { TaskFilters } from "./task-filters"
@@ -39,9 +41,12 @@ interface TasksDisplayProps {
   onTerminateTask?: (taskTitle: string) => void;
   isManagerView?: boolean;
   isFrontDeskCompletedView?: boolean;
+  isPickupView?: boolean;
+  onPickedUp?: (taskTitle: string) => void;
+  onNotifyCustomer?: (taskTitle: string, customerName: string) => void;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView, isFrontDeskCompletedView }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -286,7 +291,48 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 {showActions && (
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {isFrontDeskCompletedView ? (
+                      {isPickupView ? (
+                        <>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Picked Up
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will mark the task as picked up.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onPickedUp?.(task.title)}>
+                                  Confirm
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-gray-300 text-gray-600 hover:bg-gray-50 bg-transparent"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onNotifyCustomer?.(task.title, task.customer_name);
+                            }}
+                          >
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            Notify Customer
+                          </Button>
+                        </>
+                      ) : isFrontDeskCompletedView ? (
                         <>
                           <Button
                             size="sm"

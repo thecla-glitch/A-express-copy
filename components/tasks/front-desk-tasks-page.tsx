@@ -37,6 +37,14 @@ export function FrontDeskTasksPage() {
     updateTaskMutation.mutate({ taskTitle, data: { status: "In Progress", qc_notes: notes } });
   };
 
+  const handlePickedUp = async (taskTitle: string) => {
+    updateTaskMutation.mutate({ taskTitle, data: { status: "Picked Up" } });
+  };
+
+  const handleNotifyCustomer = (taskTitle: string, customerName: string) => {
+    alert(`Notifying ${customerName} for task ${taskTitle}`);
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 space-y-6 p-6">
@@ -107,7 +115,10 @@ export function FrontDeskTasksPage() {
             tasks={readyForPickupTasks}
             technicians={technicians || []}
             onRowClick={handleRowClick}
-            showActions={false}
+            showActions={true}
+            isPickupView={true}
+            onPickedUp={handlePickedUp}
+            onNotifyCustomer={handleNotifyCustomer}
           />
         </TabsContent>
       </Tabs>
