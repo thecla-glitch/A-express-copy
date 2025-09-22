@@ -128,12 +128,12 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     setTaskData(updatedTask)
 
     try {
-      await updateTask(taskData.id, { [field]: value })
+      await updateTask(taskData.title, { [field]: value })
       if (field === "assigned_to" && taskData.status === "Pending") {
-        await updateTask(taskData.id, { status: "In Progress" })
+        await updateTask(taskData.title, { status: "In Progress" })
       }
     } catch (error) {
-      console.error(`Error updating task ${taskData.id}:`, error)
+      console.error(`Error updating task ${taskData.title}:`, error)
       // Optionally revert the change in UI
     }
   }
@@ -164,10 +164,10 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     }
 
     try {
-      const response = await updateTask(taskData.id, payload);
+      const response = await updateTask(taskData.title, payload);
       setTaskData(response.data);
     } catch (error) {
-      console.error(`Error updating task ${taskData.id}:`, error)
+      console.error(`Error updating task ${taskData.title}:`, error)
     }
     setPendingPaymentStatus(null);
     setIsEditingPaymentStatus(false);
@@ -188,7 +188,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     if (!newPaymentAmount || !newPaymentMethod || !taskData) return
 
     try {
-      const response = await addTaskPayment(taskData.id, { amount: newPaymentAmount, method: newPaymentMethod })
+      const response = await addTaskPayment(taskData.title, { amount: newPaymentAmount, method: newPaymentMethod })
       const newPayment = response.data
       const updatedPayments = [...taskData.payments, newPayment]
       const totalPaid = updatedPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
@@ -200,7 +200,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
       const updatedTask = { ...taskData, payments: updatedPayments, payment_status: paymentStatus }
       setTaskData(updatedTask)
-      await updateTask(taskData.id, { payment_status: paymentStatus })
+      await updateTask(taskData.title, { payment_status: paymentStatus })
 
       setNewPaymentAmount("")
       setNewPaymentMethod("")
@@ -242,8 +242,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Low</Badge>
       default:
         return <Badge variant="secondary">{urgency}</Badge>
-    }
   }
+}
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -289,7 +289,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex-grow">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task Details - {taskData.id}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task Details - {taskData.title}</h1>
           <div className="flex items-center gap-2 mt-2">
             {getStatusBadge(taskData.status)}
             {getUrgencyBadge(taskData.urgency)}

@@ -178,6 +178,11 @@ class TaskSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        if validated_data.get('assigned_to'):
+            validated_data['status'] = 'In Progress'
+        else:
+            validated_data['status'] = 'Pending'
+
         device_notes = validated_data.get('device_notes', None)
         task = super().create(validated_data)
         if device_notes:
@@ -190,6 +195,12 @@ class TaskSerializer(serializers.ModelSerializer):
         return task
 
     def update(self, instance, validated_data):
+        if 'assigned_to' in validated_data:
+            if validated_data['assigned_to']:
+                validated_data['status'] = 'In Progress'
+            else:
+                validated_data['status'] = 'Pending'
+
         partial_payment_amount = validated_data.pop('partial_payment_amount', None)
 
         if partial_payment_amount is not None:

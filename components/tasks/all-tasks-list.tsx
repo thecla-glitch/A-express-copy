@@ -38,7 +38,7 @@ export function AllTasksList() {
   }, [])
 
   const handleRowClick = (task: any) => {
-    window.location.href = `/dashboard/tasks/${task.id}`
+    window.location.href = `/dashboard/tasks/${encodeURIComponent(task.title)}`
   }
 
   return (

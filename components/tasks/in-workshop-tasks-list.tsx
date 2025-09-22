@@ -52,7 +52,7 @@ export function InWorkshopTasksList() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">{task.customer_name}</h3>
-                      <p className="text-sm text-gray-500">Task ID: <span className="font-medium text-red-600">{task.id}</span></p>
+                      <p className="text-sm text-gray-500">Task ID: <span className="font-medium text-red-600">{task.title}</span></p>
                     </div>
                     {getUrgencyBadge(task.urgency)}
                   </div>
@@ -68,7 +68,7 @@ export function InWorkshopTasksList() {
                 </div>
                 <div className="space-y-4 flex flex-col justify-between items-end">
                   <Button variant="outline" asChild className="w-full md:w-auto">
-                    <a href={`/dashboard/tasks/${task.id}`}>View Details</a>
+                    <a href={`/dashboard/tasks/${encodeURIComponent(task.title)}`}>View Details</a>
                   </Button>
                 </div>
               </div>

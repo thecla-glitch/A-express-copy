@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Badge } from "@/components/ui/core/badge"
@@ -12,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -34,8 +33,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { getTask, updateTask, addTaskActivity, getAllowedTransitions, listWorkshopLocations, listWorkshopTechnicians } from "@/lib/api-client"
-import { getTaskStatusOptions } from "@/lib/tasks-api";
+import { getTask, updateTask, addTaskActivity, listWorkshopLocations, listWorkshopTechnicians } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 
 interface TechnicianTaskDetailsProps {
@@ -47,11 +45,8 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [newNote, setNewNote] = useState("")
-  const [noteType, setNoteType] = useState("repair_step")
-  const [currentLocation, setCurrentLocation] = useState("")
+  const [noteType, setNoteType] = useState("note")
   const [status, setStatus] = useState("")
-  const [statusOptions, setStatusOptions] = useState<string[]>([]);
-  const [allowedTransitions, setAllowedTransitions] = useState<any>({});
   const [isSendToWorkshopDialogOpen, setIsSendToWorkshopDialogOpen] = useState(false)
   const [workshopLocations, setWorkshopLocations] = useState<any[]>([])
   const [workshopTechnicians, setWorkshopTechnicians] = useState<any[]>([])
@@ -63,8 +58,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
 
   useEffect(() => {
     loadTaskDetails()
-    fetchStatusOptions()
-    fetchAllowedTransitions()
     fetchWorkshopLocations()
     fetchWorkshopTechnicians()
   }, [taskId])
@@ -75,7 +68,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       const response = await getTask(taskId)
       const taskData = response.data
       setTask(taskData)
-      setCurrentLocation(taskData.current_location)
       setStatus(taskData.status)
     } catch (error) {
       console.error("Failed to load task details:", error)
@@ -83,24 +75,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       setLoading(false)
     }
   }
-
-  const fetchStatusOptions = async () => {
-    try {
-      const response = await getTaskStatusOptions();
-      setStatusOptions(response.data.map((option: any) => option[0]));
-    } catch (error) {
-      console.error("Error fetching status options:", error);
-    }
-  };
-
-  const fetchAllowedTransitions = async () => {
-    try {
-      const response = await getAllowedTransitions();
-      setAllowedTransitions(response.data);
-    } catch (error) {
-      console.error("Error fetching allowed transitions:", error);
-    }
-  };
 
   const fetchWorkshopLocations = async () => {
     try {
@@ -133,15 +107,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       console.error("Failed to update status:", error)
     } finally {
       setUpdating(false)
-    }
-  }
-
-  const handleLocationChange = async (newLocation: string) => {
-    try {
-      await updateTask(taskId, { current_location: newLocation })
-      setCurrentLocation(newLocation)
-    } catch (error) {
-      console.error("Failed to update location:", error)
     }
   }
 
@@ -267,15 +232,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
     return iconMap[type] || <FileText className="h-4 w-4 text-gray-600" />
   }
 
-  const getAvailableStatusOptions = () => {
-    if (!user || !task || !allowedTransitions[user.role]) {
-      return [];
-    }
-    const currentStatus = task.status;
-    const transitions = allowedTransitions[user.role][currentStatus] || [];
-    return statusOptions.filter(option => transitions.includes(option));
-  };
-
   if (loading) {
     return (
       <div className="flex-1 space-y-8 p-6">
@@ -313,7 +269,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
           Back to Tasks
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task Details - {task.id}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task Details - {task.title}</h1>
           <p className="text-gray-600 mt-1">Repair management and documentation</p>
         </div>
       </div>
@@ -337,7 +293,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Task ID</label>
-                  <p className="text-lg font-semibold text-gray-900">{task.id}</p>
+                  <p className="text-lg font-semibold text-gray-900">{task.title}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Customer Name</label>
@@ -365,22 +321,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
 
               {/* Editable fields */}
               <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Current Physical Location</label>
-                  <Select value={currentLocation} onValueChange={handleLocationChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Front Desk">Front Desk</SelectItem>
-                      <SelectItem value="Repair Bay 1">Repair Bay 1</SelectItem>
-                      <SelectItem value="Repair Bay 2">Repair Bay 2</SelectItem>
-                      <SelectItem value="Parts Storage">Parts Storage</SelectItem>
-                      <SelectItem value="Quality Control">Quality Control</SelectItem>
-                      <SelectItem value="Ready for Pickup">Ready for Pickup</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -393,26 +333,16 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Current Status</label>
-                  <Select value={status} onValueChange={handleStatusChange} disabled={updating}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailableStatusOptions().map(option => (
-                        <SelectItem key={option} value={option}>{option}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Current Status</label>
+                  <div className="mt-2">{getStatusBadge(status)}</div>
                 </div>
-                <div className="pt-6">{getStatusBadge(status)}</div>
               </div>
 
               <div className="flex gap-3">
-                {status === "Completed" && (
+                {task && task.status !== 'Completed' && (!task.workshop_status || ['Solved', 'Not Solved'].includes(task.workshop_status)) && (
                   <Button
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-green-600 hover:bg-green-700 text-white"
                     onClick={handleMarkComplete}
                     disabled={updating}
                   >
@@ -524,10 +454,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="diagnosis">Diagnosis</SelectItem>
-                      <SelectItem value="repair_step">Repair Step</SelectItem>
-                      <SelectItem value="status_update">Status Update</SelectItem>
-                      <SelectItem value="customer_communication">Customer Communication</SelectItem>
-                      <SelectItem value="parts_request">Parts Request</SelectItem>
+                      <SelectItem value="note">General Note</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -573,27 +500,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start bg-transparent">
-                <Phone className="h-4 w-4 mr-2" />
-                Call Customer
-              </Button>
-              <Button variant="outline" className="w-full justify-start bg-transparent">
-                <Mail className="h-4 w-4 mr-2" />
-                Email Customer
-              </Button>
-              <Button variant="outline" className="w-full justify-start bg-transparent">
-                <Printer className="h-4 w-4 mr-2" />
-                Print Work Order
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Timeline */}
           <Card className="border-gray-200">
             <CardHeader>
@@ -605,13 +511,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                 <div>
                   <p className="text-sm font-medium">Date In</p>
                   <p className="text-sm text-gray-600">{task.date_in}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <div>
-                  <p className="text-sm font-medium">Est. Completion</p>
-                  <p className="text-sm text-gray-600">{task.due_date}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-"use client"
+'use client'
 import React from "react"
 import { useAuth } from "@/lib/auth-context"
 import { TechnicianTaskDetails } from "@/components/tasks/technician-task-details"
@@ -6,7 +6,7 @@ import { TaskDetailsPage } from "@/components/tasks/task-details-page"
 
 interface TaskDetailsProps {
   params: {
-    id: string
+    title: string
   }
 }
 
@@ -27,9 +27,9 @@ export default function TaskDetails({ params: paramsPromise }: TaskDetailsProps)
 
   // Show technician-specific view for technicians
   if (user.role === "Technician") {
-    return <TechnicianTaskDetails taskId={params.id} />
+    return <TechnicianTaskDetails taskId={params.title} />
   }
 
   // Show general task details for other roles
-  return <TaskDetailsPage taskId={params.id} />
+  return <TaskDetailsPage taskId={params.title} />
 }

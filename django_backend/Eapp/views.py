@@ -274,7 +274,7 @@ def generate_task_id():
     monthly_tasks = Task.objects.filter(created_at__year=current_year, created_at__month=current_month).count()
     task_number = monthly_tasks + 1
 
-    return f'{year_letter}{current_month}/{task_number:03d}'
+    return f'{year_letter}{current_month}-{task_number:03d}'
 
 # Task-related views (assuming these are the missing parts based on urls.py)
 @api_view(['GET', 'POST'])
@@ -303,7 +303,7 @@ def task_list_create(request):
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([permissions.IsAuthenticated])
 def task_detail(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
+    task = get_object_or_404(Task, title=task_id)
     user = request.user
     is_manager = user.role == 'Manager' or user.is_superuser
 
@@ -371,7 +371,7 @@ def task_detail(request, task_id):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def task_activities(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
+    task = get_object_or_404(Task, title=task_id)
     activities = task.activities.all()
     serializer = TaskActivitySerializer(activities, many=True)
     return Response(serializer.data)
@@ -380,7 +380,7 @@ def task_activities(request, task_id):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def add_task_activity(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
+    task = get_object_or_404(Task, title=task_id)
     serializer = TaskActivitySerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(task=task, user=request.user)
@@ -391,7 +391,7 @@ def add_task_activity(request, task_id):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def task_payments(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
+    task = get_object_or_404(Task, title=task_id)
     payments = task.payments.all()
     serializer = PaymentSerializer(payments, many=True)
     return Response(serializer.data)
@@ -405,7 +405,7 @@ def add_task_payment(request, task_id):
             {"error": "You do not have permission to add payments."},
             status=status.HTTP_403_FORBIDDEN
         )
-    task = get_object_or_404(Task, id=task_id)
+    task = get_object_or_404(Task, title=task_id)
     serializer = PaymentSerializer(data=request.data)
     if serializer.is_valid():
         payment = serializer.save(task=task)
@@ -432,7 +432,7 @@ def send_customer_update(request, task_id):
         return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
 
     try:
-        task = Task.objects.get(pk=task_id)
+        task = get_object_or_404(Task, title=task_id)
         if not task.customer_email:
             return Response({'error': 'No customer email available for this task.'}, status=status.HTTP_400_BAD_REQUEST)
         

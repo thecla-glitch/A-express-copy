@@ -28,14 +28,14 @@ urlpatterns = [
     
     # Task management endpoints
     path('tasks/', views.task_list_create, name='task_list_create'),
-    path('tasks/<int:task_id>/', views.task_detail, name='task_detail'),
-    path('tasks/<int:task_id>/activities/', views.task_activities, name='task_activities'),
-    path('tasks/<int:task_id>/add-activity/', views.add_task_activity, name='add_task_activity'),
-    path('tasks/<int:task_id>/payments/', views.task_payments, name='task_payments'),
-    path('tasks/<int:task_id>/add-payment/', views.add_task_payment, name='add_task_payment'),
-    path('tasks/<int:task_id>/send-update/', views.send_customer_update, name='send_customer_update'),
+    path('tasks/<path:task_id>/activities/', views.task_activities, name='task_activities'),
+    path('tasks/<path:task_id>/add-activity/', views.add_task_activity, name='add_task_activity'),
+    path('tasks/<path:task_id>/payments/', views.task_payments, name='task_payments'),
+    path('tasks/<path:task_id>/add-payment/', views.add_task_payment, name='add_task_payment'),
+    path('tasks/<path:task_id>/send-update/', views.send_customer_update, name='send_customer_update'),
     path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
     path('tasks/priority-options/', views.get_task_priority_options, name='get_task_priority_options'),
+    path('tasks/<path:task_id>/', views.task_detail, name='task_detail'),
 
     
     # Technician endpoints
