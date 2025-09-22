@@ -320,6 +320,12 @@ def task_detail(request, task_id):
         return Response(serializer.data)
 
     elif request.method in ['PUT', 'PATCH']:
+        if user.role == 'Front Desk' and 'current_location' in request.data:
+            return Response(
+                {"error": "Front Desk users cannot change the task location."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         if 'status' in request.data and not is_manager:
             current_status = task.status
             new_status = request.data['status']

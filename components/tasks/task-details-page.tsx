@@ -594,21 +594,25 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">Current Location</Label>
-                    <Select
-                      value={taskData.current_location || ''}
-                      onValueChange={(value) => handleFieldUpdate("current_location", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {locations.map((location) => (
-                          <SelectItem key={location.id} value={location.name}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {canEditLocation ? (
+                      <Select
+                        value={taskData.current_location || ''}
+                        onValueChange={(value) => handleFieldUpdate("current_location", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locations.map((location) => (
+                            <SelectItem key={location.id} value={location.name}>
+                              {location.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-gray-900 p-2 bg-gray-50 rounded border">{taskData.current_location}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
