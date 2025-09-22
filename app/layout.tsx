@@ -1,3 +1,4 @@
+'use client'
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -7,14 +8,11 @@ import { NotificationProvider } from "@/lib/notification-context"
 import { WebSocketProvider } from "@/lib/websocket-context"
 import { ThemeProvider } from "@/components/provider/theme-provider"
 import { Toaster } from "@/components/ui/feedback/toaster"
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
 
 const inter = Inter({ subsets: ["latin"] })
-
-export const metadata: Metadata = {
-  title: "A+ Express - Computer Repair Management",
-  description: "Professional computer repair shop management system",
-    generator: 'v0.app'
-}
 
 export default function RootLayout({
   children,
@@ -24,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>
@@ -34,6 +33,7 @@ export default function RootLayout({
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
+        </QueryClientProvider>
       </body>
     </html>
   )

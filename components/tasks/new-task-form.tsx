@@ -9,20 +9,14 @@ import { Label } from '@/components/ui/core/label'
 import { Textarea } from '@/components/ui/core/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/core/select'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
-import { createTask, apiClient } from '@/lib/api-client'
+import { createTask } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth-context'
-import { User } from "@/lib/use-user-management"
-import { Brand } from '@/lib/api'
 import { Checkbox } from '@/components/ui/core/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/feedback/alert-dialog";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
+import { useTechnicians, useManagers, useBrands, useLocations } from '@/hooks/use-data'
 
 interface NewTaskFormProps {}
-
-interface Location {
-  id: number;
-  name: string;
-}
 
 interface FormData {
   title: string;
@@ -65,11 +59,13 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
-  const [technicians, setTechnicians] = useState<User[]>([])
-  const [locations, setLocations] = useState<Location[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [managers, setManagers] = useState<User[]>([])
   const [isCommissioned, setIsCommissioned] = useState(false)
+
+  const { data: technicians, isLoading: isLoadingTechnicians } = useTechnicians()
+  const { data: managers, isLoading: isLoadingManagers } = useManagers()
+  const { data: brands, isLoading: isLoadingBrands } = useBrands()
+  const { data: locations, isLoading: isLoadingLocations } = useLocations()
+
   const [formData, setFormData] = useState<FormData>({
     title: '',
     customer_name: '',
@@ -92,32 +88,12 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const [errors, setErrors] = useState<FormErrors>({})
 
   useEffect(() => {
-    if (user && (user.role === 'Manager' || user.role === 'Administrator' || user.role === "Front Desk")) {
-      apiClient.get('/users/role/Technician/').then(response => {
-        if (response.data) {
-          setTechnicians(response.data)
-        }
-      })
+    if (locations && locations.length > 0) {
+        setFormData(prev => ({...prev, current_location: locations[0].name}))
     }
-    apiClient.get('/locations/').then(response => {
-      if (response.data) {
-        setLocations(response.data)
-        if (response.data.length > 0) {
-            setFormData(prev => ({...prev, current_location: response.data[0].name}))
-        }
-      }
-    })
-    apiClient.get('/brands/').then(response => {
-      if (response.data) {
-        setBrands(response.data)
-      }
-    })
-    apiClient.get('/users/role/Manager/').then(response => {
-        if (response.data) {
-            setManagers(response.data)
-        }
-    })
+  }, [locations])
 
+  useEffect(() => {
     if (user?.role === 'Manager') {
         setFormData(prev => ({...prev, negotiated_by: user.id.toString()}))
     }
@@ -247,12 +223,12 @@ export function NewTaskForm({}: NewTaskFormProps) {
             </FormField>
             <div className='grid grid-cols-2 gap-4'>
               <FormField id='brand' label='Brand' error={errors.brand}>
-                <Select value={formData.brand} onValueChange={(value) => handleInputChange('brand', value)}>
+                <Select value={formData.brand} onValueChange={(value) => handleInputChange('brand', value)} disabled={isLoadingBrands}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select brand" />
                   </SelectTrigger>
                   <SelectContent>
-                    {brands.map((brand) => (
+                    {brands?.map((brand) => (
                       <SelectItem key={brand.id} value={brand.id.toString()}>
                         {brand.name}
                       </SelectItem>
@@ -339,12 +315,12 @@ export function NewTaskForm({}: NewTaskFormProps) {
               </Select>
             </FormField>
             <FormField id='current_location' label='Initial Location' required error={errors.current_location}>
-              <Select value={formData.current_location} onValueChange={(value) => handleInputChange('current_location', value)}>
+              <Select value={formData.current_location} onValueChange={(value) => handleInputChange('current_location', value)} disabled={isLoadingLocations}>
                 <SelectTrigger className={errors.current_location ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
-                  {locations.map((location) => (
+                  {locations?.map((location) => (
                     <SelectItem key={location.id} value={location.name}>
                       {location.name}
                     </SelectItem>
@@ -361,12 +337,12 @@ export function NewTaskForm({}: NewTaskFormProps) {
                       className='bg-gray-100'
                   />
               ) : (
-                  <Select value={formData.negotiated_by} onValueChange={(value) => handleInputChange('negotiated_by', value)}>
+                  <Select value={formData.negotiated_by} onValueChange={(value) => handleInputChange('negotiated_by', value)} disabled={isLoadingManagers}>
                       <SelectTrigger>
                           <SelectValue placeholder="Select manager" />
                       </SelectTrigger>
                       <SelectContent>
-                          {managers.map((manager) => (
+                          {managers?.map((manager) => (
                               <SelectItem key={manager.id} value={manager.id.toString()}>
                                   {manager.first_name} {manager.last_name}
                               </SelectItem>
@@ -377,12 +353,12 @@ export function NewTaskForm({}: NewTaskFormProps) {
               </FormField>
             {canAssignTechnician && (
               <FormField id='assigned_to' label='Assign Technician'>
-                <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)}>
+                <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)} disabled={isLoadingTechnicians}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select technician" />
                   </SelectTrigger>
                   <SelectContent>
-                    {technicians.map((technician) => (
+                    {technicians?.map((technician) => (
                       <SelectItem key={technician.id} value={technician.id.toString()}>
                         {technician.first_name} {technician.last_name}
                       </SelectItem>
