@@ -64,6 +64,12 @@ export function InWorkshopTasksList() {
                       <Laptop className="h-4 w-4" />
                       <span>{task.laptop_model}</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{task.status}</Badge>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{task.workshop_status}</Badge>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-4 flex flex-col justify-between items-end">

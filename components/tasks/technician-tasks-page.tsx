@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context"
 import { InProgressTasksList } from "./in-progress-tasks-list"
 import { InWorkshopTasksList } from "./in-workshop-tasks-list"
 import { CompletedTasksList } from "./completed-tasks-list"
-import { TechnicianTasksList } from "./technician-tasks-list"
+
 
 export function TechnicianTasksPage() {
   const { user } = useAuth()
@@ -15,7 +15,18 @@ export function TechnicianTasksPage() {
     return (
       <div className="flex-1 space-y-6 p-6">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">Workshop Tasks</h1>
-        <TechnicianTasksList />
+        <Tabs defaultValue="in-progress" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="in-progress" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">In Progress</TabsTrigger>
+            <TabsTrigger value="completed" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">Completed</TabsTrigger>
+          </TabsList>
+          <TabsContent value="in-progress">
+            <InProgressTasksList isWorkshopView={true} />
+          </TabsContent>
+          <TabsContent value="completed">
+            <CompletedTasksList />
+          </TabsContent>
+        </Tabs>
       </div>
     )
   }

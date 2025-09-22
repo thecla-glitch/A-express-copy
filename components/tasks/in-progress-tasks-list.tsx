@@ -21,7 +21,7 @@ const getUrgencyBadge = (urgency: string) => {
   }
 }
 
-export function InProgressTasksList() {
+export function InProgressTasksList({ isWorkshopView = false }: { isWorkshopView?: boolean }) {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<any[]>([])
 
@@ -29,8 +29,12 @@ export function InProgressTasksList() {
     const fetchTasks = async () => {
       try {
         const response = await getTasks({ assigned_to: user?.id, status: "In Progress" })
-        const filteredTasks = response.data.filter((task: any) => task.workshop_status !== "In Workshop");
-        setTasks(filteredTasks)
+        if (isWorkshopView) {
+          setTasks(response.data)
+        } else {
+          const filteredTasks = response.data.filter((task: any) => task.workshop_status !== "In Workshop");
+          setTasks(filteredTasks)
+        }
       } catch (error) {
         console.error("Error fetching in progress tasks:", error)
       }
@@ -38,7 +42,7 @@ export function InProgressTasksList() {
     if (user) {
       fetchTasks()
     }
-  }, [user])
+  }, [user, isWorkshopView])
 
   return (
     <Card>
@@ -66,6 +70,12 @@ export function InProgressTasksList() {
                     <div className="flex items-center gap-2">
                       <Laptop className="h-4 w-4" />
                       <span>{task.laptop_model}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{task.status}</Badge>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{task.workshop_status}</Badge>
                     </div>
                   </div>
                 </div>

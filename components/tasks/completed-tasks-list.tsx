@@ -28,14 +28,16 @@ export function CompletedTasksList() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await getTasks({ status: "Completed" })
+        const response = await getTasks({ status: "Completed", assigned_to: user?.id })
         setTasks(response.data)
       } catch (error) {
         console.error("Error fetching completed tasks:", error)
       }
     }
-    fetchTasks()
-  }, [])
+    if (user) {
+      fetchTasks()
+    }
+  }, [user])
 
   return (
     <Card>
@@ -63,6 +65,12 @@ export function CompletedTasksList() {
                     <div className="flex items-center gap-2">
                       <Laptop className="h-4 w-4" />
                       <span>{task.laptop_model}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{task.status}</Badge>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{task.workshop_status}</Badge>
                     </div>
                   </div>
                 </div>
