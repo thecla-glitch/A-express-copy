@@ -222,6 +222,7 @@ class Task(models.Model):
     )
     workshop_sent_at = models.DateTimeField(null=True, blank=True)
     workshop_returned_at = models.DateTimeField(null=True, blank=True)
+    original_location = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return self.title

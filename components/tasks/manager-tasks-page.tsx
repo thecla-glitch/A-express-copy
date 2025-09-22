@@ -58,28 +58,28 @@ export function ManagerTasksPage() {
     fetchData();
   }, []);
 
-  const handleDeleteTask = async (taskId: string) => {
-    const response = await apiClient.deleteTask(taskId);
+  const handleDeleteTask = async (taskTitle: string) => {
+    const response = await apiClient.deleteTask(taskTitle);
     if (response.error) {
       console.error("Error deleting task:", response.error);
     } else {
-      setTasks(tasks.filter((task) => task.id !== taskId));
+      setTasks(tasks.filter((task) => task.title !== taskTitle));
     }
   };
 
   const handleRowClick = (task: any) => {
-    router.push(`/dashboard/tasks/${task.id}`);
+    router.push(`/dashboard/tasks/${task.title}`);
   };
 
-  const handleProcessPickup = (taskId: string) => {
+  const handleProcessPickup = (taskTitle: string) => {
     const updateField = async (field: string, value: any) => {
       try {
-        await apiClient.updateTask(taskId, { [field]: value });
+        await apiClient.updateTask(taskTitle, { [field]: value });
         setTasks((prev) =>
-          prev.map((task) => (task.id === taskId ? { ...task, [field]: value } : task))
+          prev.map((task) => (task.title === taskTitle ? { ...task, [field]: value } : task))
         );
       } catch (error) {
-        console.error(`Error updating task ${taskId}:`, error);
+        console.error(`Error updating task ${taskTitle}:`, error);
       }
     };
     updateField("status", "Completed");
@@ -88,29 +88,29 @@ export function ManagerTasksPage() {
     alert("Pickup processed successfully!");
   };
 
-  const handleApprove = async (taskId: string) => {
+  const handleApprove = async (taskTitle: string) => {
     try {
-      await apiClient.updateTask(taskId, { status: "Completed" });
+      await apiClient.updateTask(taskTitle, { status: "Completed" });
       setTasks((prev) =>
         prev.map((task) =>
-          task.id === taskId ? { ...task, status: "Completed" } : task
+          task.title === taskTitle ? { ...task, status: "Completed" } : task
         )
       );
     } catch (error) {
-      console.error(`Error approving task ${taskId}:`, error);
+      console.error(`Error approving task ${taskTitle}:`, error);
     }
   };
 
-  const handleReject = async (taskId: string, notes: string) => {
+  const handleReject = async (taskTitle: string, notes: string) => {
     try {
-      await apiClient.updateTask(taskId, { status: "In Progress", qc_notes: notes });
+      await apiClient.updateTask(taskTitle, { status: "In Progress", qc_notes: notes });
       setTasks((prev) =>
         prev.map((task) =>
-          task.id === taskId ? { ...task, status: "In Progress" } : task
+          task.title === taskTitle ? { ...task, status: "In Progress" } : task
         )
       );
     } catch (error) {
-      console.error(`Error rejecting task ${taskId}:`, error);
+      console.error(`Error rejecting task ${taskTitle}:`, error);
     }
   };
 
@@ -122,15 +122,15 @@ export function ManagerTasksPage() {
     });
   };
 
-  const handleMarkAsPaid = async (taskId: string) => {
+  const handleMarkAsPaid = async (taskTitle: string) => {
     try {
-      await apiClient.updateTask(taskId, {
+      await apiClient.updateTask(taskTitle, {
         payment_status: "Paid",
         paid_date: new Date().toISOString(),
       });
       setTasks((prev) =>
         prev.map((task) =>
-          task.id === taskId
+          task.title === taskTitle
             ? {
                 ...task,
                 payment_status: "Paid",
@@ -140,20 +140,20 @@ export function ManagerTasksPage() {
         )
       );
     } catch (error) {
-      console.error(`Error marking task ${taskId} as paid:`, error);
+      console.error(`Error marking task ${taskTitle} as paid:`, error);
     }
   };
 
-  const handleTerminateTask = async (taskId: string) => {
+  const handleTerminateTask = async (taskTitle: string) => {
     try {
-      await apiClient.updateTask(taskId, { status: "Terminated" });
+      await apiClient.updateTask(taskTitle, { status: "Terminated" });
       setTasks((prev) =>
         prev.map((task) =>
-          task.id === taskId ? { ...task, status: "Terminated" } : task
+          task.title === taskTitle ? { ...task, status: "Terminated" } : task
         )
       );
     } catch (error) {
-      console.error(`Error terminating task ${taskId}:`, error);
+      console.error(`Error terminating task ${taskTitle}:`, error);
     }
   };
 

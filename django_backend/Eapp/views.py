@@ -331,15 +331,13 @@ def task_detail(request, task_id):
                     'Pending': ['Cancelled'],
                     'In Progress': ['Cancelled'],
                     'Awaiting Parts': ['Cancelled'],
-                    'Ready for QC': ['Cancelled'],
                 },
                 'Technician': {
                     'Pending': ['In Progress'],
-                    'In Progress': ['Awaiting Parts', 'Ready for QC', 'Completed'],
+                    'In Progress': ['Awaiting Parts', 'Completed'],
                     'Awaiting Parts': ['In Progress'],
                 },
                 'Manager': {
-                    'Ready for QC': ['Completed', 'In Progress'],
                 }
             }
 
@@ -351,19 +349,29 @@ def task_detail(request, task_id):
                 )
 
         if 'workshop_location' in request.data and 'workshop_technician' in request.data:
+            task.original_location = task.current_location
             task.workshop_status = 'In Workshop'
             task.original_technician = user
             task.workshop_sent_at = timezone.now()
             workshop_technician_id = request.data.get('workshop_technician')
             workshop_technician = User.objects.get(id=workshop_technician_id)
+            
+            workshop_location_id = request.data.get('workshop_location')
+            workshop_location = Location.objects.get(id=workshop_location_id)
+            task.current_location = workshop_location.name
+
             TaskActivity.objects.create(
                 task=task,
                 user=user,
                 type=TaskActivity.ActivityType.WORKSHOP,
-                message=f"Task sent to workshop technician {workshop_technician.get_full_name()}."
+                message=f"Task sent to workshop technician {workshop_technician.get_full_name()} at {workshop_location.name}."
             )
 
         if 'workshop_status' in request.data and request.data['workshop_status'] in ['Solved', 'Not Solved']:
+            if task.original_location:
+                task.current_location = task.original_location
+                task.original_location = None
+            
             task.assigned_to = task.original_technician
             task.workshop_location = None
             task.workshop_technician = None

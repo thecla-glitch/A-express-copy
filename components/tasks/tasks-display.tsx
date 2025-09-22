@@ -30,18 +30,17 @@ interface TasksDisplayProps {
   technicians: any[];
   onRowClick: (task: any) => void;
   showActions: boolean;
-  onDeleteTask?: (taskId: string) => void;
-  onProcessPickup?: (taskId: string) => void;
-  isQcTab?: boolean;
-  onApprove?: (taskId: string) => void;
-  onReject?: (taskId: string, notes: string) => void;
+  onDeleteTask?: (taskTitle: string) => void;
+  onProcessPickup?: (taskTitle: string) => void;
+  onApprove?: (taskTitle: string) => void;
+  onReject?: (taskTitle: string, notes: string) => void;
   isCompletedTab?: boolean;
-  onMarkAsPaid?: (taskId: string) => void;
-  onTerminateTask?: (taskId: string) => void;
+  onMarkAsPaid?: (taskTitle: string) => void;
+  onTerminateTask?: (taskTitle: string) => void;
   isManagerView?: boolean;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, isQcTab, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -76,7 +75,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
     const filtered = tasks.filter((task) => {
       const matchesSearch =
         searchQuery === "" ||
-        task.id.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.title.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.laptop_model.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -207,10 +206,10 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
               <TableHead className="font-semibold text-gray-900">
                 <Button
                   variant="ghost"
-                  onClick={() => handleSort("id")}
+                  onClick={() => handleSort("title")}
                   className="h-auto p-0 font-semibold text-gray-900 hover:text-red-600"
                 >
-                  Task ID {getSortIcon("id")}
+                  Task ID {getSortIcon("title")}
                 </Button>
               </TableHead>
               <TableHead className="font-semibold text-gray-900">
@@ -230,8 +229,10 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
               )}
               <TableHead className="font-semibold text-gray-900">Status</TableHead>
               <TableHead className="font-semibold text-gray-900">Technician</TableHead>
-              {!isQcTab && <TableHead className="font-semibold text-gray-900">Payment</TableHead>}
-              {showActions && <TableHead className="font-semibold text-gray-900">Actions</TableHead>}
+              <TableHead className="font-semibold text-gray-900">Payment</TableHead>
+              {showActions && (
+                <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -255,13 +256,19 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                   </div>
                 </TableCell>
                 {isManagerView ? (
-                  <TableCell className="text-gray-600 max-w-xs truncate">{task.current_location}</TableCell>
+                  <TableCell className="text-gray-600 max-w-xs truncate">
+                    {task.current_location}
+                  </TableCell>
                 ) : (
-                  <TableCell className="text-gray-600 max-w-xs truncate">{task.description}</TableCell>
+                  <TableCell className="text-gray-600 max-w-xs truncate">
+                    {task.description}
+                  </TableCell>
                 )}
                 <TableCell>
                   {task.workshop_status === 'In Workshop' ? (
-                    <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">In Workshop</Badge>
+                    <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">
+                      In Workshop
+                    </Badge>
                   ) : (
                     getStatusBadge(task.status)
                   )}
@@ -269,62 +276,16 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <UserIcon className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-900">{task.assigned_to_details?.full_name || "Unassigned"}</span>
+                    <span className="text-gray-900">
+                      {task.assigned_to_details?.full_name || "Unassigned"}
+                    </span>
                   </div>
                 </TableCell>
-                {!isQcTab && <TableCell>{getPaymentStatusBadge(task.payment_status)}</TableCell>}
+                <TableCell>{getPaymentStatusBadge(task.payment_status)}</TableCell>
                 {showActions && (
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {isQcTab ? (
-                        <>
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onApprove?.(task.id);
-                            }}
-                          >
-                            Approve
-                          </Button>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedTask(task);
-                                }}
-                              >
-                                Reject
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Reject Task {selectedTask?.id}</DialogTitle>
-                              </DialogHeader>
-                              <Textarea
-                                placeholder="Enter rejection notes..."
-                                value={rejectionNotes}
-                                onChange={(e) => setRejectionNotes(e.target.value)}
-                              />
-                              <DialogFooter>
-                                <Button
-                                  onClick={() => {
-                                    onReject?.(selectedTask?.id, rejectionNotes);
-                                    setSelectedTask(null);
-                                    setRejectionNotes("");
-                                  }}
-                                >
-                                  Confirm
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </>
-                      ) : isCompletedTab ? (
+                      {isCompletedTab ? (
                         <>
                           <Button
                             size="sm"
@@ -361,7 +322,11 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onTerminateTask?.(task.id)}>Terminate</AlertDialogAction>
+                                  <AlertDialogAction
+                                    onClick={() => onTerminateTask?.(task.title)}
+                                  >
+                                    Terminate
+                                  </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -402,7 +367,11 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => onDeleteTask(task.id)}>Delete</AlertDialogAction>
+                                      <AlertDialogAction
+                                        onClick={() => onDeleteTask(task.title)}
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
@@ -439,7 +408,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
             <AlertDialogAction
               onClick={() => {
                 if (taskToPay && onMarkAsPaid) {
-                  onMarkAsPaid(taskToPay.id);
+                  onMarkAsPaid(taskToPay.title);
                 }
                 setTaskToPay(null);
               }}
