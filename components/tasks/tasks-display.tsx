@@ -289,7 +289,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 </TableCell>
                 <TableCell>{getPaymentStatusBadge(task.payment_status)}</TableCell>
                 {showActions && (
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
                       {isPickupView ? (
                         <>

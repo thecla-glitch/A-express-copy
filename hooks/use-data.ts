@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { apiClient, getTasks, getTask, listWorkshopLocations, listWorkshopTechnicians } from '@/lib/api-client'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiClient, getTasks, getTask, listWorkshopLocations, listWorkshopTechnicians, updateTask } from '@/lib/api-client'
 import { getTaskStatusOptions, getTaskPriorityOptions } from '@/lib/tasks-api'
 import { User } from "@/lib/use-user-management"
 import { Brand, Task } from '@/lib/api'
@@ -55,6 +55,16 @@ export function useTasks() {
         queryFn: async () => {
             const response = await apiClient.get('/tasks/');
             return response.data;
+        },
+    });
+}
+
+export function useUpdateTask() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ taskId, data }: { taskId: string; data: any }) => updateTask(taskId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
         },
     });
 }

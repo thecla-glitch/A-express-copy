@@ -4,41 +4,30 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
 import { Plus } from "lucide-react";
-import { apiClient } from "@/lib/api";
 import { TasksDisplay } from "./tasks-display";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
-import { useTasks, useTechnicians } from "@/hooks/use-data";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTasks, useTechnicians, useUpdateTask } from "@/hooks/use-data";
 
 export function FrontDeskTasksPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
   const { data: tasks, isLoading, isError, error } = useTasks();
   const { data: technicians } = useTechnicians();
-
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ taskTitle, data }: { taskTitle: string; data: any }) =>
-      apiClient.updateTask(taskTitle, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    },
-  });
+  const updateTaskMutation = useUpdateTask();
 
   const handleRowClick = (task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
   };
 
   const handleApprove = async (taskTitle: string) => {
-    updateTaskMutation.mutate({ taskTitle, data: { status: "Ready for Pickup" } });
+    updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "Ready for Pickup" } });
   };
 
   const handleReject = async (taskTitle: string, notes: string) => {
-    updateTaskMutation.mutate({ taskTitle, data: { status: "In Progress", qc_notes: notes } });
+    updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "In Progress", qc_notes: notes } });
   };
 
   const handlePickedUp = async (taskTitle: string) => {
-    updateTaskMutation.mutate({ taskTitle, data: { status: "Picked Up" } });
+    updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "Picked Up" } });
   };
 
   const handleNotifyCustomer = (taskTitle: string, customerName: string) => {
