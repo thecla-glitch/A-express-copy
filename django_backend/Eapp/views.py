@@ -264,7 +264,9 @@ def task_list_create(request):
             else:
                 filters[key] = value
         
-        tasks = Task.objects.filter(**filters)
+        tasks = Task.objects.filter(**filters).select_related(
+            'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
+        ).prefetch_related('activities', 'payments')
         
         serializer = TaskSerializer(tasks, many=True, context={'request': request})
         return Response(serializer.data)
@@ -287,7 +289,12 @@ def task_list_create(request):
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([permissions.IsAuthenticated])
 def task_detail(request, task_id):
-    task = get_object_or_404(Task, title=task_id)
+    task = get_object_or_404(
+        Task.objects.select_related(
+            'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
+        ).prefetch_related('activities', 'payments'),
+        title=task_id
+    )
     user = request.user
     is_manager = user.role == 'Manager' or user.is_superuser
 
