@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
-import { Plus } from "lucide-react";
 import { TasksDisplay } from "./tasks-display";
 import { useTasks, useTechnicians } from "@/hooks/use-data";
 
