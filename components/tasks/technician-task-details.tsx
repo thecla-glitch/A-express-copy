@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Badge } from "@/components/ui/core/badge"
 import { Button } from "@/components/ui/core/button"
@@ -44,99 +44,54 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { getTask, updateTask, addTaskActivity, listWorkshopLocations, listWorkshopTechnicians } from "@/lib/api-client"
+import { updateTask, addTaskActivity } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
+import { useTask, useWorkshopLocations, useWorkshopTechnicians } from "@/hooks/use-data";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface TechnicianTaskDetailsProps {
   taskId: string
 }
 
 export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
-  const [task, setTask] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState(false)
-  const [newNote, setNewNote] = useState("")
-  const [noteType, setNoteType] = useState("note")
-  const [status, setStatus] = useState("")
-  const [isSendToWorkshopDialogOpen, setIsSendToWorkshopDialogOpen] = useState(false)
-  const [workshopLocations, setWorkshopLocations] = useState<any[]>([])
-  const [workshopTechnicians, setWorkshopTechnicians] = useState<any[]>([])
-  const [selectedWorkshopLocation, setSelectedWorkshopLocation] = useState<string | undefined>(undefined)
-  const [selectedWorkshopTechnician, setSelectedWorkshopTechnician] = useState<string | undefined>(undefined)
   const router = useRouter()
   const { user } = useAuth()
   const { toast } = useToast()
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadTaskDetails()
-    fetchWorkshopLocations()
-    fetchWorkshopTechnicians()
-  }, [taskId])
+  const { data: task, isLoading, isError, error } = useTask(taskId);
+  const { data: workshopLocations } = useWorkshopLocations();
+  const { data: workshopTechnicians } = useWorkshopTechnicians();
 
-  const loadTaskDetails = async () => {
-    try {
-      setLoading(true)
-      const response = await getTask(taskId)
-      const taskData = response.data
-      setTask(taskData)
-      setStatus(taskData.status)
-    } catch (error) {
-      console.error("Failed to load task details:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [updating, setUpdating] = useState(false)
+  const [newNote, setNewNote] = useState("")
+  const [noteType, setNoteType] = useState("note")
+  const [isSendToWorkshopDialogOpen, setIsSendToWorkshopDialogOpen] = useState(false)
+  const [selectedWorkshopLocation, setSelectedWorkshopLocation] = useState<string | undefined>(undefined)
+  const [selectedWorkshopTechnician, setSelectedWorkshopTechnician] = useState<string | undefined>(undefined)
 
-  const fetchWorkshopLocations = async () => {
-    try {
-      const response = await listWorkshopLocations()
-      setWorkshopLocations(response.data)
-      if (response.data.length === 1) {
-        setSelectedWorkshopLocation(response.data[0].id)
-      }
-    } catch (error) {
-      console.error("Error fetching workshop locations:", error)
-    }
-  }
+  const updateTaskMutation = useMutation({
+    mutationFn: (data: any) => updateTask(taskId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    },
+  });
 
-  const fetchWorkshopTechnicians = async () => {
-    try {
-      const response = await listWorkshopTechnicians()
-      setWorkshopTechnicians(response.data)
-    } catch (error) {
-      console.error("Error fetching workshop technicians:", error)
-    }
-  }
+  const addTaskActivityMutation = useMutation({
+    mutationFn: (data: any) => addTaskActivity(taskId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    },
+  });
 
   const handleStatusChange = async (newStatus: string) => {
-    try {
-      setUpdating(true)
-      await updateTask(taskId, { status: newStatus })
-      setStatus(newStatus)
-      await loadTaskDetails() // Reload to get updated notes
-    } catch (error) {
-      console.error("Failed to update status:", error)
-    } finally {
-      setUpdating(false)
-    }
+    updateTaskMutation.mutate({ status: newStatus });
   }
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return
-
-    try {
-      setUpdating(true)
-      await addTaskActivity(taskId, {
-        type: noteType,
-        message: newNote,
-      })
-      setNewNote("")
-      await loadTaskDetails() // Reload to get updated notes
-    } catch (error) {
-      console.error("Failed to add note:", error)
-    } finally {
-      setUpdating(false)
-    }
+    addTaskActivityMutation.mutate({ type: noteType, message: newNote });
+    setNewNote("")
   }
 
   const handleMarkComplete = async () => {
@@ -152,50 +107,23 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       })
       return
     }
-
-    try {
-      setUpdating(true)
-      await updateTask(taskId, { 
-        workshop_location: selectedWorkshopLocation,
-        workshop_technician: selectedWorkshopTechnician,
-      })
-      setIsSendToWorkshopDialogOpen(false)
-      await loadTaskDetails()
-      toast({
-        title: "Success",
-        description: "Task sent to workshop successfully.",
-      })
-    } catch (error) {
-      console.error("Failed to send task to workshop:", error)
-      toast({
-        title: "Error",
-        description: "Failed to send task to workshop.",
-        variant: "destructive",
-      })
-    } finally {
-      setUpdating(false)
-    }
+    updateTaskMutation.mutate({ 
+      workshop_location: selectedWorkshopLocation,
+      workshop_technician: selectedWorkshopTechnician,
+    });
+    setIsSendToWorkshopDialogOpen(false)
+    toast({
+      title: "Success",
+      description: "Task sent to workshop successfully.",
+    })
   }
 
   const handleWorkshopStatusChange = async (newStatus: string) => {
-    try {
-      setUpdating(true)
-      await updateTask(taskId, { workshop_status: newStatus })
-      await loadTaskDetails()
-      toast({
-        title: "Success",
-        description: `Task marked as ${newStatus}.`,
-      })
-    } catch (error) {
-      console.error("Failed to update workshop status:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update workshop status.",
-        variant: "destructive",
-      })
-    } finally {
-      setUpdating(false)
-    }
+    updateTaskMutation.mutate({ workshop_status: newStatus });
+    toast({
+      title: "Success",
+      description: `Task marked as ${newStatus}.`,
+    })
   }
 
   const getStatusBadge = (status: string) => {
@@ -244,7 +172,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
     return iconMap[type] || <FileText className="h-4 w-4 text-gray-600" />
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex-1 space-y-8 p-6">
         <div className="animate-pulse">
@@ -256,6 +184,10 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
         </div>
       </div>
     )
+  }
+
+  if (isError) {
+    return <div>Error: {error.message}</div>
   }
 
   if (!task) {
@@ -348,7 +280,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                 <div>
                   <label className="text-sm font-medium text-gray-700">Current Status</label>
                   <div className="mt-2 flex items-center gap-2">
-                    {getStatusBadge(status)}
+                    {getStatusBadge(task.status)}
                     {['Solved', 'Not Solved'].includes(task.workshop_status) && (
                       <Badge className={task.workshop_status === 'Solved' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
                         {task.workshop_status}
@@ -395,7 +327,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                               <SelectValue placeholder="Select a location" />
                             </SelectTrigger>
                             <SelectContent>
-                              {workshopLocations.map(location => (
+                              {workshopLocations?.map(location => (
                                 <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -408,7 +340,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                               <SelectValue placeholder="Select a technician" />
                             </SelectTrigger>
                             <SelectContent>
-                              {workshopTechnicians.map(technician => (
+                              {workshopTechnicians?.map(technician => (
                                 <SelectItem key={technician.id} value={technician.id}>{technician.full_name}</SelectItem>
                               ))}
                             </SelectContent>

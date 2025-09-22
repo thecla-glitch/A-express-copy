@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
 import { TaskNotes } from "./task-notes";
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
@@ -32,13 +32,14 @@ import {
   CreditCard,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { getTask, updateTask, addTaskActivity, addTaskPayment, listTechnicians, getLocations } from "@/lib/api-client"
-import { getTaskStatusOptions, getTaskPriorityOptions } from "@/lib/tasks-api"
+import { updateTask, addTaskPayment } from "@/lib/api-client"
 import { SendCustomerUpdateDialog } from "./send-customer-update-dialog"
 import { TaskActivityLog } from "./task-activity-log"
 import { DayPicker } from "react-day-picker"
 import "react-day-picker/dist/style.css"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
+import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskPriorityOptions } from "@/hooks/use-data";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const paymentStatusOptions = ["Unpaid", "Partially Paid", "Fully Paid", "Refunded"];
 const paymentMethodOptions = ["Cash", "Credit Card", "Debit Card", "Check", "Digital Payment"];
@@ -50,7 +51,14 @@ interface TaskDetailsPageProps {
 export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { user } = useAuth()
   const router = useRouter()
-  const [taskData, setTaskData] = useState<any>(null)
+  const queryClient = useQueryClient();
+
+  const { data: taskData, isLoading, isError, error } = useTask(taskId);
+  const { data: technicians } = useTechnicians();
+  const { data: locations } = useLocations();
+  const { data: statusOptions } = useTaskStatusOptions();
+  const { data: priorityOptions } = useTaskPriorityOptions();
+
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
@@ -58,47 +66,25 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
   const [isEditingCost, setIsEditingCost] = useState(false);
   const [isEditingPaymentStatus, setIsEditingPaymentStatus] = useState(false);
-  const [technicians, setTechnicians] = useState<any[]>([])
-  const [locations, setLocations] = useState<any[]>([])
-  const [statusOptions, setStatusOptions] = useState<any[]>([])
-  const [priorityOptions, setPriorityOptions] = useState<any[]>([])
   const [pendingPaymentStatus, setPendingPaymentStatus] = useState<string | null>(null);
   const [nextPaymentDate, setNextPaymentDate] = useState<Date | undefined>(undefined);
   const [partialPaymentAmount, setPartialPaymentAmount] = useState<string>("");
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ field, value }: { field: string; value: any }) =>
+      updateTask(taskId, { [field]: value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    },
+  });
 
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        const response = await getTask(taskId)
-        setTaskData(response.data)
-        if (response.data.next_payment_date) {
-          setNextPaymentDate(new Date(response.data.next_payment_date))
-        }
-      } catch (error) {
-        console.error(`Error fetching task ${taskId}:`, error)
-      }
-    }
-    const fetchDropdownData = async () => {
-      try {
-        const [techs, locs, statuses, priorities] = await Promise.all([
-          listTechnicians(),
-          getLocations(),
-          getTaskStatusOptions(),
-          getTaskPriorityOptions(),
-        ])
-        setTechnicians(techs.data)
-        setLocations(locs.data)
-        setStatusOptions(statuses)
-        setPriorityOptions(priorities)
-      } catch (error) {
-        console.error("Error fetching dropdown data:", error)
-      }
-    }
-    fetchTask()
-    fetchDropdownData()
-  }, [taskId])
+  const addTaskPaymentMutation = useMutation({
+    mutationFn: (data: any) => addTaskPayment(taskId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    },
+  });
 
   // Role-based permissions
   const isAdmin = user?.role === "Administrator"
@@ -119,45 +105,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
 
   const handleFieldUpdate = async (field: string, value: any) => {
-    if (!taskData) return
-
-    const oldValue = taskData[field]; // Get the old value before updating
-
-    let updatedTask = { ...taskData, [field]: value }
-
-    if (field === "assigned_to" && taskData.status === "Pending") {
-        updatedTask.status = "In Progress";
-    }
-
-    setTaskData(updatedTask)
-
-    try {
-      await updateTask(taskData.title, { [field]: value })
-      if (field === "assigned_to" && taskData.status === "Pending") {
-        await updateTask(taskData.title, { status: "In Progress" })
-      }
-
-      // Log the activity
-      if (field === 'assigned_to' || field === 'current_location' || field === 'urgency') {
-        let message = '';
-        if (field === 'assigned_to') {
-          const newTechnician = technicians.find(t => t.id === value);
-          const oldTechnician = technicians.find(t => t.id === oldValue);
-          message = `Assigned technician changed from ${oldTechnician?.full_name || 'unassigned'} to ${newTechnician?.full_name || 'unassigned'}.`;
-        } else {
-          message = `${field.replace('_', ' ')} changed from ${oldValue} to ${value}.`;
-        }
-        
-        await addTaskActivity(taskData.title, {
-          type: 'status_update',
-          message: message,
-        });
-      }
-
-    } catch (error) {
-      console.error(`Error updating task ${taskData.title}:`, error)
-      // Optionally revert the change in UI
-    }
+    updateTaskMutation.mutate({ field, value });
   }
 
   const handleSavePaymentStatus = async () => {
@@ -185,12 +133,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
       payload.paid_date = new Date().toISOString().split('T')[0];
     }
 
-    try {
-      const response = await updateTask(taskData.title, payload);
-      setTaskData(response.data);
-    } catch (error) {
-      console.error(`Error updating task ${taskData.title}:`, error)
-    }
+    updateTaskMutation.mutate({ field: 'payment_status', value: payload });
     setPendingPaymentStatus(null);
     setIsEditingPaymentStatus(false);
     setPartialPaymentAmount("");
@@ -203,32 +146,11 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     setPartialPaymentAmount("");
   }
 
-
-  
-
   const handleAddPayment = async () => {
     if (!newPaymentAmount || !newPaymentMethod || !taskData) return
-
-    try {
-      const response = await addTaskPayment(taskData.title, { amount: newPaymentAmount, method: newPaymentMethod })
-      const newPayment = response.data
-      const updatedPayments = [...taskData.payments, newPayment]
-      const totalPaid = updatedPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0)
-
-      let paymentStatus = "Partially Paid"
-      if (totalPaid >= parseFloat(taskData.total_cost)) {
-        paymentStatus = "Fully Paid"
-      }
-
-      const updatedTask = { ...taskData, payments: updatedPayments, payment_status: paymentStatus }
-      setTaskData(updatedTask)
-      await updateTask(taskData.title, { payment_status: paymentStatus })
-
-      setNewPaymentAmount("")
-      setNewPaymentMethod("")
-    } catch (error) {
-      console.error("Error adding payment:", error)
-    }
+    addTaskPaymentMutation.mutate({ amount: newPaymentAmount, method: newPaymentMethod });
+    setNewPaymentAmount("")
+    setNewPaymentMethod("")
   }
 
   const getStatusBadge = (status: string) => {
@@ -295,8 +217,12 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     return paymentStatusOptions;
   };
 
-  if (!taskData) {
+  if (isLoading) {
     return <div>Loading...</div>
+  }
+
+  if (isError) {
+    return <div>Error: {error.message}</div>
   }
 
   return (
@@ -557,7 +483,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {technicians.map((tech) => (
+                          {technicians?.map((tech) => (
                             <SelectItem key={tech.id} value={tech.id}>
                               {tech.full_name}
                             </SelectItem>
@@ -580,7 +506,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {statusOptions.map((status) => (
+                          {statusOptions?.map((status) => (
                             <SelectItem key={status[0]} value={status[0]}>
                               {status[1]}
                             </SelectItem>
@@ -603,7 +529,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {locations.map((location) => (
+                          {locations?.map((location) => (
                             <SelectItem key={location.id} value={location.name}>
                               {location.name}
                             </SelectItem>
@@ -622,7 +548,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {priorityOptions.map((priority) => (
+                        {priorityOptions?.map((priority) => (
                           <SelectItem key={priority[0]} value={priority[0]}>
                             {priority[1]}
                           </SelectItem>

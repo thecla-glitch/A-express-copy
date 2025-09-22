@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiClient, getTasks, getTask, getTaskStatusOptions, getTaskPriorityOptions } from '@/lib/api-client'
+import { apiClient, getTasks, getTask, listWorkshopLocations, listWorkshopTechnicians } from '@/lib/api-client'
+import { getTaskStatusOptions, getTaskPriorityOptions } from '@/lib/tasks-api'
 import { User } from "@/lib/use-user-management"
 import { Brand, Task } from '@/lib/api'
 
@@ -125,6 +126,26 @@ export function useTaskPriorityOptions() {
         queryFn: async () => {
             const response = await getTaskPriorityOptions();
             return response;
+        },
+    });
+}
+
+export function useWorkshopLocations() {
+    return useQuery<Location[]>({
+        queryKey: ['workshopLocations'],
+        queryFn: async () => {
+            const response = await listWorkshopLocations();
+            return response.data;
+        },
+    });
+}
+
+export function useWorkshopTechnicians() {
+    return useQuery<User[]>({
+        queryKey: ['workshopTechnicians'],
+        queryFn: async () => {
+            const response = await listWorkshopTechnicians();
+            return response.data;
         },
     });
 }
