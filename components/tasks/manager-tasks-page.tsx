@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
-import { Plus, MapPin } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { apiClient, UserResponse as User } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import { TasksDisplay } from "./tasks-display";
-import { NewTaskForm } from "./new-task-form";
-import { LocationsManager } from "../locations/locations-manager";
 import { BrandManager } from "../brands/brand-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
 import {
@@ -18,146 +16,79 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/feedback/dialog";
+import { useTasks, useTechnicians } from "@/hooks/use-data";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function ManagerTasksPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [technicians, setTechnicians] = useState<User[]>([]);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: tasks, isLoading, isError, error } = useTasks();
+  const { data: technicians } = useTechnicians();
+
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const tasksResponse = await apiClient.getTasks();
-        if (tasksResponse.data) {
-          setTasks(tasksResponse.data);
-        } else if (tasksResponse.error) {
-          setError(tasksResponse.error);
-        }
+  const deleteTaskMutation = useMutation({
+    mutationFn: (taskTitle: string) => apiClient.deleteTask(taskTitle),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
 
-        const techResponse = await apiClient.listUsersByRole("Technician");
-        if (techResponse.data) {
-          setTechnicians(techResponse.data);
-        } else if (techResponse.error) {
-          setError(techResponse.error as string);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Failed to fetch data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const handleDeleteTask = async (taskTitle: string) => {
-    const response = await apiClient.deleteTask(taskTitle);
-    if (response.error) {
-      console.error("Error deleting task:", response.error);
-    } else {
-      setTasks(tasks.filter((task) => task.title !== taskTitle));
-    }
-  };
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ taskTitle, data }: { taskTitle: string; data: any }) =>
+      apiClient.updateTask(taskTitle, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
 
   const handleRowClick = (task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
   };
 
   const handleProcessPickup = (taskTitle: string) => {
-    const updateField = async (field: string, value: any) => {
-      try {
-        await apiClient.updateTask(taskTitle, { [field]: value });
-        setTasks((prev) =>
-          prev.map((task) => (task.title === taskTitle ? { ...task, [field]: value } : task))
-        );
-      } catch (error) {
-        console.error(`Error updating task ${taskTitle}:`, error);
-      }
-    };
-    updateField("status", "Completed");
-    updateField("current_location", "Completed");
-    updateField("payment_status", "Paid");
+    updateTaskMutation.mutate({ taskTitle, data: { status: "Completed", current_location: "Completed", payment_status: "Paid" } });
     alert("Pickup processed successfully!");
   };
 
-  const handleApprove = async (taskTitle: string) => {
-    try {
-      await apiClient.updateTask(taskTitle, { status: "Completed" });
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.title === taskTitle ? { ...task, status: "Completed" } : task
-        )
-      );
-    } catch (error) {
-      console.error(`Error approving task ${taskTitle}:`, error);
-    }
+  const handleApprove = (taskTitle: string) => {
+    updateTaskMutation.mutate({ taskTitle, data: { status: "Completed" } });
   };
 
-  const handleReject = async (taskTitle: string, notes: string) => {
-    try {
-      await apiClient.updateTask(taskTitle, { status: "In Progress", qc_notes: notes });
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.title === taskTitle ? { ...task, status: "In Progress" } : task
-        )
-      );
-    } catch (error) {
-      console.error(`Error rejecting task ${taskTitle}:`, error);
-    }
+  const handleReject = (taskTitle: string, notes: string) => {
+    updateTaskMutation.mutate({ taskTitle, data: { status: "In Progress", qc_notes: notes } });
   };
 
-  const handleTaskCreated = () => {
-    setIsCreateModalOpen(false);
-    // Refresh tasks list
-    apiClient.getTasks().then((res) => {
-      if (res.data) setTasks(res.data);
-    });
+  const handleMarkAsPaid = (taskTitle: string) => {
+    updateTaskMutation.mutate({ taskTitle, data: { payment_status: "Paid", paid_date: new Date().toISOString() } });
   };
 
-  const handleMarkAsPaid = async (taskTitle: string) => {
-    try {
-      await apiClient.updateTask(taskTitle, {
-        payment_status: "Paid",
-        paid_date: new Date().toISOString(),
-      });
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.title === taskTitle
-            ? {
-                ...task,
-                payment_status: "Paid",
-                paid_date: new Date().toISOString(),
-              }
-            : task
-        )
-      );
-    } catch (error) {
-      console.error(`Error marking task ${taskTitle} as paid:`, error);
-    }
+  const handleTerminateTask = (taskTitle: string) => {
+    updateTaskMutation.mutate({ taskTitle, data: { status: "Terminated" } });
   };
 
-  const handleTerminateTask = async (taskTitle: string) => {
-    try {
-      await apiClient.updateTask(taskTitle, { status: "Terminated" });
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.title === taskTitle ? { ...task, status: "Terminated" } : task
-        )
-      );
-    } catch (error) {
-      console.error(`Error terminating task ${taskTitle}:`, error);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex-1 space-y-6 p-6">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
+  }
 
-  const pendingAndInProgressTasks = tasks.filter(task => ["Pending", "In Progress", "Awaiting Parts", "Assigned - Not Accepted", "Diagnostic"].includes(task.status));
-  const completedTasks = tasks.filter(task => ["Completed", "Ready for Pickup", "Picked Up"].includes(task.status));
+  if (isError) {
+    return (
+        <div className="flex-1 space-y-6 p-6">
+            <div className="text-red-500">Error: {error.message}</div>
+        </div>
+    )
+  }
+
+  const pendingAndInProgressTasks = tasks?.filter(task => ["Pending", "In Progress", "Awaiting Parts", "Assigned - Not Accepted", "Diagnostic"].includes(task.status)) || [];
+  const completedTasks = tasks?.filter(task => ["Completed", "Ready for Pickup", "Picked Up"].includes(task.status)) || [];
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -200,10 +131,10 @@ export function ManagerTasksPage() {
         <TabsContent value="pending">
           <TasksDisplay
             tasks={pendingAndInProgressTasks}
-            technicians={technicians}
+            technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
-            onDeleteTask={handleDeleteTask}
+            onDeleteTask={deleteTaskMutation.mutate}
             onProcessPickup={handleProcessPickup}
             onTerminateTask={handleTerminateTask}
             isManagerView={true}
@@ -212,10 +143,10 @@ export function ManagerTasksPage() {
         <TabsContent value="completed">
           <TasksDisplay
             tasks={completedTasks}
-            technicians={technicians}
+            technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
-            onDeleteTask={handleDeleteTask}
+            onDeleteTask={deleteTaskMutation.mutate}
             onProcessPickup={handleProcessPickup}
             isCompletedTab={true}
             onMarkAsPaid={handleMarkAsPaid}

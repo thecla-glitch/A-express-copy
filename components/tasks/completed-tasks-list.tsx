@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
 import { Badge } from "@/components/ui/core/badge"
-import { getTasks } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
 import { Laptop } from "lucide-react"
+import { useCompletedTasks } from "@/hooks/use-data"
 
 const getUrgencyBadge = (urgency: string) => {
   switch (urgency) {
@@ -59,21 +58,37 @@ const getWorkshopStatusBadge = (workshopStatus: string) => {
 
 export function CompletedTasksList() {
   const { user } = useAuth()
-  const [tasks, setTasks] = useState<any[]>([])
+  const { data: tasks, isLoading, isError, error } = useCompletedTasks(user?.id);
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const response = await getTasks({ status: "Completed", assigned_to: user?.id })
-        setTasks(response.data)
-      } catch (error) {
-        console.error("Error fetching completed tasks:", error)
-      }
-    }
-    if (user) {
-      fetchTasks()
-    }
-  }, [user])
+  if (isLoading) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Completed Tasks</CardTitle>
+                <CardDescription>Tasks that have been marked as completed.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Completed Tasks</CardTitle>
+                <CardDescription>Tasks that have been marked as completed.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-red-500">Error: {error.message}</div>
+            </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <Card>
@@ -83,7 +98,7 @@ export function CompletedTasksList() {
       </CardHeader>
       <CardContent>
         <div className="grid gap-6">
-          {tasks.map((task) => (
+          {tasks?.map((task) => (
             <div key={task.id} className="rounded-lg border bg-card text-card-foreground shadow-sm">
               <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2 space-y-4">

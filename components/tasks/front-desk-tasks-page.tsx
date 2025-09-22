@@ -1,99 +1,63 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
 import { Plus } from "lucide-react";
-import { apiClient, UserResponse as User } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import { TasksDisplay } from "./tasks-display";
-import { NewTaskForm } from "./new-task-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/feedback/dialog";
+import { useTasks, useTechnicians } from "@/hooks/use-data";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function FrontDeskTasksPage() {
   const router = useRouter();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [technicians, setTechnicians] = useState<User[]>([]);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const tasksResponse = await apiClient.getTasks();
-        if (tasksResponse.data) {
-          setTasks(tasksResponse.data);
-        } else if (tasksResponse.error) {
-          setError(tasksResponse.error);
-        }
+  const { data: tasks, isLoading, isError, error } = useTasks();
+  const { data: technicians } = useTechnicians();
 
-        const techResponse = await apiClient.listUsersByRole("Technician");
-        if (techResponse.data) {
-          setTechnicians(techResponse.data);
-        } else if (techResponse.error) {
-          setError(techResponse.error as string);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Failed to fetch data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ taskTitle, data }: { taskTitle: string; data: any }) =>
+      apiClient.updateTask(taskTitle, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
 
   const handleRowClick = (task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
   };
 
-  const handleTaskCreated = () => {
-    setIsCreateModalOpen(false);
-    // Refresh tasks list
-    apiClient.getTasks().then((res) => {
-      if (res.data) setTasks(res.data);
-    });
-  };
-
   const handleApprove = async (taskTitle: string) => {
-    try {
-      await apiClient.updateTask(taskTitle, { status: "Ready for Pickup" });
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.title === taskTitle ? { ...task, status: "Ready for Pickup" } : task
-        )
-      );
-    } catch (error) {
-      console.error(`Error approving task ${taskTitle}:`, error);
-    }
+    updateTaskMutation.mutate({ taskTitle, data: { status: "Ready for Pickup" } });
   };
 
   const handleReject = async (taskTitle: string, notes: string) => {
-    try {
-      await apiClient.updateTask(taskTitle, { status: "In Progress", qc_notes: notes });
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.title === taskTitle ? { ...task, status: "In Progress" } : task
-        )
-      );
-      // TODO: Add notification logic
-    } catch (error) {
-      console.error(`Error rejecting task ${taskTitle}:`, error);
-    }
+    updateTaskMutation.mutate({ taskTitle, data: { status: "In Progress", qc_notes: notes } });
   };
 
-  const unassignedTasks = tasks.filter(task => task.status === "Pending" || task.status === "In Progress");
-  const completedTasks = tasks.filter(task => task.status === "Completed");
-  const readyForPickupTasks = tasks.filter(task => task.status === "Ready for Pickup");
+  if (isLoading) {
+    return (
+      <div className="flex-1 space-y-6 p-6">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+        <div className="flex-1 space-y-6 p-6">
+            <div className="text-red-500">Error: {error.message}</div>
+        </div>
+    )
+  }
+
+  const unassignedTasks = tasks?.filter(task => task.status === "Pending" || task.status === "In Progress") || [];
+  const completedTasks = tasks?.filter(task => task.status === "Completed") || [];
+  const readyForPickupTasks = tasks?.filter(task => task.status === "Ready for Pickup") || [];
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -121,7 +85,7 @@ export function FrontDeskTasksPage() {
         <TabsContent value="not-completed">
           <TasksDisplay
             tasks={unassignedTasks}
-            technicians={technicians}
+            technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={false}
             isManagerView={true}
@@ -130,7 +94,7 @@ export function FrontDeskTasksPage() {
         <TabsContent value="completed">
           <TasksDisplay
             tasks={completedTasks}
-            technicians={technicians}
+            technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
             onApprove={handleApprove}
@@ -141,7 +105,7 @@ export function FrontDeskTasksPage() {
         <TabsContent value="pickup">
           <TasksDisplay
             tasks={readyForPickupTasks}
-            technicians={technicians}
+            technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={false}
           />
