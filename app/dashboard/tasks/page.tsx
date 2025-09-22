@@ -2,8 +2,6 @@
 
 import { useAuth } from "@/lib/auth-context"
 import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
-import { AllTasksList } from "@/components/tasks/all-tasks-list"
-
 export default function TasksPage() {
   const { isAuthenticated } = useAuth()
 
@@ -13,7 +11,7 @@ export default function TasksPage() {
 
   return (
     <DashboardLayout>
-      <AllTasksList />
+      <div>All tasks list removed</div>
     </DashboardLayout>
   )
 }
