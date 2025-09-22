@@ -27,7 +27,6 @@ export function ManagerTasksPage() {
   const [error, setError] = useState<string | null>(null);
   const [technicians, setTechnicians] = useState<User[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isLocationsModalOpen, setIsLocationsModalOpen] = useState(false);
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
 
   useEffect(() => {
@@ -169,20 +168,6 @@ export function ManagerTasksPage() {
           <p className="text-gray-600 mt-2">Complete task management with Front Desk workflow capabilities</p>
         </div>
         <div className="flex gap-4">
-          <Dialog open={isLocationsModalOpen} onOpenChange={setIsLocationsModalOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <MapPin className="mr-2 h-4 w-4" />
-                Locations
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Manage Locations</DialogTitle>
-              </DialogHeader>
-              <LocationsManager />
-            </DialogContent>
-          </Dialog>
           <Dialog open={isBrandModalOpen} onOpenChange={setIsBrandModalOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">

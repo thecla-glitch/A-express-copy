@@ -311,10 +311,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         <div className="flex-grow">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task Details - {taskData.title}</h1>
           <div className="flex items-center gap-2 mt-2">
-            {taskData.workshop_status === 'In Workshop' ? (
-              <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">In Workshop</Badge>
-            ) : (
-              getStatusBadge(taskData.status)
+            {getStatusBadge(taskData.status)}
+            {taskData.workshop_status && (
+              <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">{taskData.workshop_status}</Badge>
             )}
             {getUrgencyBadge(taskData.urgency)}
           </div>

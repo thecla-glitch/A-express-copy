@@ -29,14 +29,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/feedback/alert-dialog"
-import { Users, UserPlus, Search, Edit, Trash2, Shield, Activity, Clock, Loader2 } from "lucide-react"
+import { Users, UserPlus, Search, Edit, Trash2, Shield, Activity, Clock, Loader2, MapPin } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { useUserManagement } from "@/lib/use-user-management"
+import { LocationsManager } from "../locations/locations-manager";
 
 export function ManagerUserManagement() {
   const { users, isLoading, createUser, updateUser, deleteUser, toggleUserStatus } = useUserManagement()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isLocationsModalOpen, setIsLocationsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null)
   const [newUser, setNewUser] = useState({
     username: "",
@@ -192,122 +194,138 @@ export function ManagerUserManagement() {
               <CardTitle>Team Management</CardTitle>
               <CardDescription>Manage your team members and their access levels</CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Team Member
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Team Member</DialogTitle>
-                  <DialogDescription>Create a new user account for your team member.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="username">Username *</Label>
-                      <Input
-                        id="username"
-                        value={newUser.username}
-                        onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, username: e.target.value })}
-                        placeholder="Enter username"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={newUser.email}
-                        onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, email: e.target.value })}
-                        placeholder="Enter email address"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="first_name">First Name *</Label>
-                      <Input
-                        id="first_name"
-                        value={newUser.first_name}
-                        onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, first_name: e.target.value })}
-                        placeholder="Enter first name"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="last_name">Last Name *</Label>
-                      <Input
-                        id="last_name"
-                        value={newUser.last_name}
-                        onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, last_name: e.target.value })}
-                        placeholder="Enter last name"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={newUser.phone}
-                        onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, phone: e.target.value })}
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="role">Role *</Label>
-                      <Select
-                        value={newUser.role}
-                        onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Manager">Manager</SelectItem>
-                          <SelectItem value="Technician">Technician</SelectItem>
-                          <SelectItem value="Front Desk">Front Desk</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {newUser.role === "Technician" && (
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="is_workshop"
-                        checked={newUser.is_workshop}
-                        onCheckedChange={(checked) => setNewUser({ ...newUser, is_workshop: checked })}
-                      />
-                      <Label htmlFor="is_workshop">Workshop</Label>
-                    </div>
-                  )}
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">Password *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={newUser.password}
-                      onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, password: e.target.value })}
-                      placeholder="Enter password"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancel
+            <div className="flex gap-4">
+              <Dialog open={isLocationsModalOpen} onOpenChange={setIsLocationsModalOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Locations
                   </Button>
-                  <Button onClick={handleAddUser} disabled={isLoading}>
-                    {isLoading ? "Adding..." : "Add User"}
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Manage Locations</DialogTitle>
+                  </DialogHeader>
+                  <LocationsManager />
+                </DialogContent>
+              </Dialog>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Team Member
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Add New Team Member</DialogTitle>
+                    <DialogDescription>Create a new user account for your team member.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="username">Username *</Label>
+                        <Input
+                          id="username"
+                          value={newUser.username}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, username: e.target.value })}
+                          placeholder="Enter username"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={newUser.email}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, email: e.target.value })}
+                          placeholder="Enter email address"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="first_name">First Name *</Label>
+                        <Input
+                          id="first_name"
+                          value={newUser.first_name}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, first_name: e.target.value })}
+                          placeholder="Enter first name"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="last_name">Last Name *</Label>
+                        <Input
+                          id="last_name"
+                          value={newUser.last_name}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, last_name: e.target.value })}
+                          placeholder="Enter last name"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          value={newUser.phone}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, phone: e.target.value })}
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="role">Role *</Label>
+                        <Select
+                          value={newUser.role}
+                          onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Manager">Manager</SelectItem>
+                            <SelectItem value="Technician">Technician</SelectItem>
+                            <SelectItem value="Front Desk">Front Desk</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {newUser.role === "Technician" && (
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="is_workshop"
+                          checked={newUser.is_workshop}
+                          onCheckedChange={(checked) => setNewUser({ ...newUser, is_workshop: checked })}
+                        />
+                        <Label htmlFor="is_workshop">Workshop</Label>
+                      </div>
+                    )}
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="password">Password *</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={newUser.password}
+                        onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, password: e.target.value })}
+                        placeholder="Enter password"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddUser} disabled={isLoading}>
+                      {isLoading ? "Adding..." : "Add User"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <div className="relative flex-1 max-w-sm">
