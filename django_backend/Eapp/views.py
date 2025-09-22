@@ -335,7 +335,7 @@ def task_detail(request, task_id):
                 },
                 'Technician': {
                     'Pending': ['In Progress'],
-                    'In Progress': ['Awaiting Parts', 'Ready for QC'],
+                    'In Progress': ['Awaiting Parts', 'Ready for QC', 'Completed'],
                     'Awaiting Parts': ['In Progress'],
                 },
                 'Manager': {
