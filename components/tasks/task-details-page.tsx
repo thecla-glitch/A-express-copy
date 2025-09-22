@@ -119,6 +119,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const handleFieldUpdate = async (field: string, value: any) => {
     if (!taskData) return
 
+    const oldValue = taskData[field]; // Get the old value before updating
+
     let updatedTask = { ...taskData, [field]: value }
 
     if (field === "assigned_to" && taskData.status === "Pending") {
@@ -132,6 +134,24 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
       if (field === "assigned_to" && taskData.status === "Pending") {
         await updateTask(taskData.title, { status: "In Progress" })
       }
+
+      // Log the activity
+      if (field === 'assigned_to' || field === 'current_location' || field === 'urgency') {
+        let message = '';
+        if (field === 'assigned_to') {
+          const newTechnician = technicians.find(t => t.id === value);
+          const oldTechnician = technicians.find(t => t.id === oldValue);
+          message = `Assigned technician changed from ${oldTechnician?.full_name || 'unassigned'} to ${newTechnician?.full_name || 'unassigned'}.`;
+        } else {
+          message = `${field.replace('_', ' ')} changed from ${oldValue} to ${value}.`;
+        }
+        
+        await addTaskActivity(taskData.title, {
+          type: 'status_update',
+          message: message,
+        });
+      }
+
     } catch (error) {
       console.error(`Error updating task ${taskData.title}:`, error)
       // Optionally revert the change in UI
