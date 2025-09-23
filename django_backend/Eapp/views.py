@@ -319,7 +319,7 @@ def task_detail(request, task_id):
             
             allowed_transitions = {
                 'Front Desk': {
-                    'Completed': ['Ready for Pickup'],
+                    'Completed': ['Ready for Pickup','In Progress'],
                     'Ready for Pickup': ['Picked Up'],
                     'Pending': ['Cancelled'],
                     'In Progress': ['Cancelled'],
