@@ -88,7 +88,7 @@ export function ManagerTasksPage() {
   }
 
   const pendingAndInProgressTasks = tasks?.filter(task => ["Pending", "In Progress", "Awaiting Parts", "Assigned - Not Accepted", "Diagnostic"].includes(task.status)) || [];
-  const completedTasks = tasks?.filter(task => ["Completed", "Ready for Pickup", "Picked Up"].includes(task.status)) || [];
+  const completedTasks = tasks?.filter(task => ["Completed", "Ready for Pickup"].includes(task.status)) || [];
 
   return (
     <div className="flex-1 space-y-6 p-6">
