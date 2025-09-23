@@ -200,7 +200,10 @@ class Task(models.Model):
     )
     paid_date = models.DateField(null=True, blank=True)
     next_payment_date = models.DateField(null=True, blank=True)
-    date_out = models.DateField(null=True, blank=True)
+    date_out = models.DateTimeField(null=True, blank=True)
+    sent_out_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_out_tasks'
+    )
     negotiated_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='negotiated_tasks'
     )

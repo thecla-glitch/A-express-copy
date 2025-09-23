@@ -313,6 +313,10 @@ def task_detail(request, task_id):
             current_status = task.status
             new_status = request.data['status']
             
+            if new_status == 'Picked Up':
+                request.data['sent_out_by'] = user.id
+                request.data['date_out'] = timezone.now()
+            
             allowed_transitions = {
                 'Front Desk': {
                     'Completed': ['Ready for Pickup'],

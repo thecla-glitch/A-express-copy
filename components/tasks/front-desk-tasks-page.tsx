@@ -7,9 +7,11 @@ import { Plus } from "lucide-react";
 import { TasksDisplay } from "./tasks-display";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
 import { useTasks, useTechnicians, useUpdateTask } from "@/hooks/use-data";
+import { useAuth } from "@/lib/auth-context";
 
 export function FrontDeskTasksPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { data: tasks, isLoading, isError, error } = useTasks();
   const { data: technicians } = useTechnicians();
   const updateTaskMutation = useUpdateTask();
@@ -19,16 +21,34 @@ export function FrontDeskTasksPage() {
   }, [router]);
 
   const handleApprove = useCallback(async (taskTitle: string) => {
-    updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "Ready for Pickup" } });
-  }, [updateTaskMutation]);
+    if (user) {
+      updateTaskMutation.mutate({
+        taskId: taskTitle,
+        data: {
+          status: "Ready for Pickup",
+          approved_by: user.id,
+          approved_at: new Date().toISOString(),
+        },
+      });
+    }
+  }, [updateTaskMutation, user]);
 
   const handleReject = useCallback(async (taskTitle: string, notes: string) => {
     updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "In Progress", qc_notes: notes } });
   }, [updateTaskMutation]);
 
   const handlePickedUp = useCallback(async (taskTitle: string) => {
-    updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "Picked Up" } });
-  }, [updateTaskMutation]);
+    if (user) {
+      updateTaskMutation.mutate({
+        taskId: taskTitle,
+        data: {
+          status: "Picked Up",
+          date_out: new Date().toISOString(),
+          sent_out_by: user.id,
+        },
+      });
+    }
+  }, [updateTaskMutation, user]);
 
   const handleNotifyCustomer = useCallback((taskTitle: string, customerName: string) => {
     alert(`Notifying ${customerName} for task ${taskTitle}`);

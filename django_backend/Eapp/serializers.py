@@ -132,6 +132,8 @@ class TaskSerializer(serializers.ModelSerializer):
     assigned_to_details = UserSerializer(source='assigned_to', read_only=True)
     created_by_details = UserSerializer(source='created_by', read_only=True)
     negotiated_by_details = UserSerializer(source='negotiated_by', read_only=True)
+    approved_by_details = UserSerializer(source='approved_by', read_only=True)
+    sent_out_by_details = UserSerializer(source='sent_out_by', read_only=True)
     brand_details = BrandSerializer(source='brand', read_only=True)
     activities = TaskActivitySerializer(many=True, read_only=True)
     payments = PaymentSerializer(many=True, read_only=True)
@@ -151,15 +153,16 @@ class TaskSerializer(serializers.ModelSerializer):
             'brand', 'brand_details', 'laptop_model', 'serial_number',
             'device_type', 'device_notes',
             'estimated_cost', 'total_cost', 'payment_status',
-            'current_location', 'urgency', 'date_in', 'approved_at',
+            'current_location', 'urgency', 'date_in', 'approved_at', 'approved_by',
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
             'activities', 'payments', 'outstanding_balance', 'is_commissioned', 'commissioned_by',
             'partial_payment_amount',
             'workshop_status', 'workshop_location', 'workshop_technician', 'original_technician',
-            'workshop_location_details', 'workshop_technician_details', 'original_technician_details'
+            'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details',
+            'sent_out_by', 'sent_out_by_details'
         )
         read_only_fields = ('created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments',
-                            'workshop_location_details', 'workshop_technician_details', 'original_technician_details')
+                            'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details', 'sent_out_by_details')
         extra_kwargs = {
             'estimated_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
             'total_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
