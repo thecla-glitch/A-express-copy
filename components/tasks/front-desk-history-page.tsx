@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
+import { Plus } from "lucide-react";
 import { TasksDisplay } from "./tasks-display";
 import { useTasks, useTechnicians } from "@/hooks/use-data";
 
@@ -15,6 +16,25 @@ export function FrontDeskHistoryPage() {
   const handleRowClick = (task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
   };
+
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+    return tasks.filter(task => {
+      const taskDate = new Date(task.updated_at);
+      const isRecent = taskDate > twoWeeksAgo;
+      const isCompletedOrPickedUp = task.status === "Completed" || task.status === "Picked Up";
+
+      if (showAll) {
+          return isCompletedOrPickedUp;
+      }
+
+      return isRecent && isCompletedOrPickedUp;
+    });
+  }, [tasks, showAll]);
 
   if (isLoading) {
     return (
@@ -33,21 +53,6 @@ export function FrontDeskHistoryPage() {
         </div>
     )
   }
-
-  const twoWeeksAgo = new Date();
-  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
-  const filteredTasks = tasks?.filter(task => {
-    const taskDate = new Date(task.updated_at);
-    const isRecent = taskDate > twoWeeksAgo;
-    const isCompletedOrPickedUp = task.status === "Completed" || task.status === "Picked Up";
-
-    if (showAll) {
-        return isCompletedOrPickedUp;
-    }
-
-    return isRecent && isCompletedOrPickedUp;
-  }) || [];
 
   return (
     <div className="flex-1 space-y-6 p-6">

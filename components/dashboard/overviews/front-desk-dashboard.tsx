@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
 import { Input } from "@/components/ui/core/input"
@@ -257,15 +257,15 @@ export function FrontDeskDashboard() {
     )
   }, [searchQuery])
 
-  const handleInitiatePickup = (taskId: string, customerName: string) => {
+  const handleInitiatePickup = useCallback((taskId: string, customerName: string) => {
     alert(`Initiating pickup process for ${taskId} - ${customerName}`)
-  }
+  }, [])
 
-  const handleCallCustomer = (phoneNumber: string, customerName: string) => {
+  const handleCallCustomer = useCallback((phoneNumber: string, customerName: string) => {
     alert(`Calling ${customerName} at ${phoneNumber}`)
-  }
+  }, [])
 
-  const handleCreateTask = () => {
+  const handleCreateTask = useCallback(() => {
     // In a real app, this would submit to an API
     alert(`New task created for ${newTaskForm.customerName}`)
     setNewTaskForm({
@@ -277,7 +277,7 @@ export function FrontDeskDashboard() {
       priority: "Medium",
       notes: "",
     })
-  }
+  }, [newTaskForm.customerName])
 
   const getInteractionIcon = (type: string) => {
     switch (type) {

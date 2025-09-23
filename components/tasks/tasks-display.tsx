@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table"
 import { Badge } from "@/components/ui/core/badge"
 import { Button } from "@/components/ui/core/button"
@@ -131,7 +131,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
     return <ArrowUpDown className="h-4 w-4" />
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     switch (status) {
       case "Assigned - Not Accepted":
         return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Not Accepted</Badge>
@@ -148,9 +148,9 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
       default:
         return <Badge variant="secondary">{status}</Badge>
     }
-  }
+  }, [])
 
-  const getUrgencyBadge = (urgency: string) => {
+  const getUrgencyBadge = useCallback((urgency: string) => {
     switch (urgency) {
       case "High":
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">High</Badge>
@@ -161,9 +161,9 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
       default:
         return <Badge variant="secondary">{urgency}</Badge>
     }
-  }
+  }, [])
 
-  const getPaymentStatusBadge = (status: string) => {
+  const getPaymentStatusBadge = useCallback((status: string) => {
     switch (status) {
       case "Fully Paid":
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Fully Paid</Badge>
@@ -174,7 +174,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
       default:
         return <Badge variant="secondary">{status}</Badge>
     }
-  }
+  }, [])
 
   const clearAllFilters = () => {
     setSearchQuery("")

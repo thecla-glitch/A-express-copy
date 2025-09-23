@@ -1,5 +1,5 @@
 "use client"
-
+import { useMemo, useCallback } from "react"
 import type * as React from "react"
 import {
   Building2,
@@ -205,11 +205,10 @@ const navigationItems = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth()
 
-  if (!user) return null
+  const items = useMemo(() => (user ? navigationItems[user.role as keyof typeof navigationItems] : []) || [], [user]);
 
-  let items = navigationItems[user.role as keyof typeof navigationItems] || []
-
-  const getDashboardUrl = () => {
+  const getDashboardUrl = useCallback(() => {
+    if (!user) return "/dashboard";
     switch (user.role) {
       case "Administrator":
         return "/dashboard"
@@ -222,13 +221,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       default:
         return "/dashboard"
     }
-  }
+  }, [user])
 
     // Create a full name from first_name and last_name
-  const fullName = `${user.first_name} ${user.last_name}`.trim()
+  const fullName = useMemo(() => {
+    if (!user) return "";
+    return `${user.first_name} ${user.last_name}`.trim();
+  }, [user]);
   
   // Generate initials for avatar fallback
-  const getInitials = () => {
+  const getInitials = useCallback(() => {
+    if (!user) return "U";
     if (user.first_name && user.last_name) {
       return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
     } else if (user.first_name) {
@@ -237,7 +240,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       return user.username[0].toUpperCase()
     }
     return "U"
-  }
+  }, [user])
+
+  if (!user) return null
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -289,10 +294,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src="/placeholder-user.jpg" alt={fullName} />
                     <AvatarFallback className="rounded-lg">
-                      {fullName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+                      {getInitials()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
@@ -313,7 +315,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage src="/placeholder-user.jpg" alt={fullName} />
                       <AvatarFallback className="rounded-lg">
-                        {fullName}
+                        {getInitials()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">

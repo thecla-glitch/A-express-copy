@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
 import { Plus } from "lucide-react";
@@ -14,25 +14,29 @@ export function FrontDeskTasksPage() {
   const { data: technicians } = useTechnicians();
   const updateTaskMutation = useUpdateTask();
 
-  const handleRowClick = (task: any) => {
+  const handleRowClick = useCallback((task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
-  };
+  }, [router]);
 
-  const handleApprove = async (taskTitle: string) => {
+  const handleApprove = useCallback(async (taskTitle: string) => {
     updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "Ready for Pickup" } });
-  };
+  }, [updateTaskMutation]);
 
-  const handleReject = async (taskTitle: string, notes: string) => {
+  const handleReject = useCallback(async (taskTitle: string, notes: string) => {
     updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "In Progress", qc_notes: notes } });
-  };
+  }, [updateTaskMutation]);
 
-  const handlePickedUp = async (taskTitle: string) => {
+  const handlePickedUp = useCallback(async (taskTitle: string) => {
     updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "Picked Up" } });
-  };
+  }, [updateTaskMutation]);
 
-  const handleNotifyCustomer = (taskTitle: string, customerName: string) => {
+  const handleNotifyCustomer = useCallback((taskTitle: string, customerName: string) => {
     alert(`Notifying ${customerName} for task ${taskTitle}`);
-  };
+  }, []);
+
+  const unassignedTasks = useMemo(() => tasks?.filter(task => task.status === "Pending" || task.status === "In Progress") || [], [tasks]);
+  const completedTasks = useMemo(() => tasks?.filter(task => task.status === "Completed") || [], [tasks]);
+  const readyForPickupTasks = useMemo(() => tasks?.filter(task => task.status === "Ready for Pickup") || [], [tasks]);
 
   if (isLoading) {
     return (
@@ -51,10 +55,6 @@ export function FrontDeskTasksPage() {
         </div>
     )
   }
-
-  const unassignedTasks = tasks?.filter(task => task.status === "Pending" || task.status === "In Progress") || [];
-  const completedTasks = tasks?.filter(task => task.status === "Completed") || [];
-  const readyForPickupTasks = tasks?.filter(task => task.status === "Ready for Pickup") || [];
 
   return (
     <div className="flex-1 space-y-6 p-6">
