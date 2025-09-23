@@ -201,6 +201,8 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         return <Phone className="h-4 w-4 text-green-600" />
       case "intake":
         return <Plus className="h-4 w-4 text-orange-600" />
+      case "rejected":
+        return <AlertTriangle className="h-4 w-4 text-red-600" />
       default:
         return <Clock className="h-4 w-4 text-gray-600" />
     }

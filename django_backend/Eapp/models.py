@@ -229,6 +229,11 @@ class Task(models.Model):
     workshop_sent_at = models.DateTimeField(null=True, blank=True)
     workshop_returned_at = models.DateTimeField(null=True, blank=True)
     original_location = models.CharField(max_length=100, blank=True, null=True)
+    qc_notes = models.TextField(blank=True, null=True)
+    qc_rejected_at = models.DateTimeField(null=True, blank=True)
+    qc_rejected_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='rejected_tasks'
+    )
 
     def __str__(self):
         return self.title
@@ -274,6 +279,7 @@ class TaskActivity(models.Model):
         CUSTOMER_CONTACT = 'customer_contact', _('Customer Contact')
         INTAKE = 'intake', _('Intake')
         WORKSHOP = 'workshop', _('Workshop')
+        REJECTED = 'rejected', _('Rejected')
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='activities')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)

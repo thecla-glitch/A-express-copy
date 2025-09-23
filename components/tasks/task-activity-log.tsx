@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/core/badge"
 import { ScrollArea } from "@/components/ui/layout/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { format } from "date-fns"
+import { AlertTriangle, ClipboardList, Clock, MessageSquare, Phone, Plus, Settings } from "lucide-react"
 
 interface TaskActivityLogProps {
   taskId: string
@@ -31,16 +32,22 @@ export function TaskActivityLog({ taskId }: TaskActivityLogProps) {
     }
   }, [taskId])
 
-  const getActivityIcon = (activityType: string) => {
-    switch (activityType) {
-      case "created":
-        return "+"
-      case "updated":
-        return "📝"
-      case "status_changed":
-        return "🔄"
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case "status_update":
+        return <Settings className="h-4 w-4 text-blue-600" />
+      case "note":
+        return <MessageSquare className="h-4 w-4 text-gray-600" />
+      case "diagnosis":
+        return <ClipboardList className="h-4 w-4 text-purple-600" />
+      case "customer_contact":
+        return <Phone className="h-4 w-4 text-green-600" />
+      case "intake":
+        return <Plus className="h-4 w-4 text-orange-600" />
+      case "rejected":
+        return <AlertTriangle className="h-4 w-4 text-red-600" />
       default:
-        return "🔔"
+        return <Clock className="h-4 w-4 text-gray-600" />
     }
   }
 

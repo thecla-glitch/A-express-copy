@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 from .models import User, Task, TaskActivity, Payment, Location, Brand
+from django.utils import timezone
 
 
 class BrandSerializer(serializers.ModelSerializer):
@@ -159,7 +160,8 @@ class TaskSerializer(serializers.ModelSerializer):
             'partial_payment_amount',
             'workshop_status', 'workshop_location', 'workshop_technician', 'original_technician',
             'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details',
-            'sent_out_by', 'sent_out_by_details'
+            'sent_out_by', 'sent_out_by_details',
+            'qc_notes', 'qc_rejected_at', 'qc_rejected_by'
         )
         read_only_fields = ('created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments',
                             'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details', 'sent_out_by_details')
@@ -211,6 +213,16 @@ class TaskSerializer(serializers.ModelSerializer):
                 task=instance,
                 amount=partial_payment_amount,
                 method='Partial Payment'  # Or any other appropriate method
+            )
+
+        if 'qc_notes' in validated_data:
+            instance.qc_rejected_at = timezone.now()
+            instance.qc_rejected_by = self.context['request'].user
+            TaskActivity.objects.create(
+                task=instance,
+                user=self.context['request'].user,
+                type=TaskActivity.ActivityType.REJECTED,
+                message=f"Task Rejected with notes: {validated_data['qc_notes']}"
             )
 
         return super().update(instance, validated_data)
