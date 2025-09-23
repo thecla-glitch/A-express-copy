@@ -131,7 +131,6 @@ class Task(models.Model):
         COMPLETED = 'Completed', _('Completed')
         READY_FOR_PICKUP = 'Ready for Pickup', _('Ready for Pickup')
         PICKED_UP = 'Picked Up', _('Picked Up')
-        CANCELLED = 'Cancelled', _('Cancelled')
         TERMINATED = 'Terminated', _('Terminated')
 
     class Priority(models.TextChoices):
