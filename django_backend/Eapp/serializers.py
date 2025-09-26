@@ -171,7 +171,9 @@ class TaskSerializer(serializers.ModelSerializer):
         }
 
     def get_outstanding_balance(self, obj):
-        return obj.outstanding_balance
+        total_cost = obj.total_cost or Decimal('0.00')
+        paid_sum = obj.paid_sum or Decimal('0.00')
+        return total_cost - paid_sum
 
     def validate(self, data):
         device_type = data.get('device_type')

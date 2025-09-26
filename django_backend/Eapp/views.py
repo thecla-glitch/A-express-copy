@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
-from django.db import models  # For Q
+from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import User, Task, TaskActivity, Payment, Location, Brand
@@ -172,7 +172,7 @@ def deactivate_user(request, user_id):
     if user.id == request.user.id:
         return Response(
             {"error": "You cannot deactivate your own account."},
-            status=status.HTTP_403_FORBIDDEN
+            status=status.HTTP_4DELETED_FORBIDDEN
         )
     
     user.is_active = False
@@ -266,7 +266,9 @@ def task_list_create(request):
         
         tasks = Task.objects.filter(**filters).select_related(
             'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
-        ).prefetch_related('activities', 'payments')
+        ).prefetch_related('activities', 'payments').annotate(
+            paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
+        )
         
         serializer = TaskSerializer(tasks, many=True, context={'request': request})
         return Response(serializer.data)
@@ -292,7 +294,9 @@ def task_detail(request, task_id):
     task = get_object_or_404(
         Task.objects.select_related(
             'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
-        ).prefetch_related('activities', 'payments'),
+        ).prefetch_related('activities', 'payments').annotate(
+            paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
+        ),
         title=task_id
     )
     user = request.user
