@@ -344,6 +344,15 @@ def task_detail(request, task_id):
         return Response(serializer.data)
 
     elif request.method in ['PUT', 'PATCH']:
+        customer_data = request.data.pop('customer', None)
+        if customer_data:
+            customer = task.customer
+            customer_serializer = CustomerSerializer(customer, data=customer_data, partial=True)
+            if customer_serializer.is_valid():
+                customer_serializer.save()
+            else:
+                return Response(customer_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         if user.role == 'Front Desk' and 'current_location' in request.data:
             return Response(
                 {"error": "Front Desk users cannot change the task location."},
@@ -507,7 +516,7 @@ def send_customer_update(request, task_id):
 
     try:
         task = get_object_or_404(Task, title=task_id)
-        if not task.customer_email:
+        if not task.customer.email:
             return Response({'error': 'No customer email available for this task.'}, status=status.HTTP_400_BAD_REQUEST)
         
         subject = request.data.get('subject')
@@ -519,7 +528,7 @@ def send_customer_update(request, task_id):
             subject,
             message,
             settings.DEFAULT_FROM_EMAIL,
-            [task.customer_email],
+            [task.customer.email],
             fail_silently=False,
         )
         TaskActivity.objects.create(

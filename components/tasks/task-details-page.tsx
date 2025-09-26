@@ -38,7 +38,7 @@ import { TaskActivityLog } from "./task-activity-log"
 import { DayPicker } from "react-day-picker"
 import "react-day-picker/dist/style.css"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
-import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskPriorityOptions } from "@/hooks/use-data";
+import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskPriorityOptions, useBrands } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const paymentStatusOptions = ["Unpaid", "Partially Paid", "Fully Paid", "Refunded"];
@@ -58,11 +58,12 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { data: locations } = useLocations();
   const { data: statusOptions } = useTaskStatusOptions();
   const { data: priorityOptions } = useTaskPriorityOptions();
+  const { data: brands } = useBrands();
 
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
-  const [isEditingCustomer, setIsEditingCustomer] = useState(false)
+
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
   const [isEditingCost, setIsEditingCost] = useState(false);
   const [isEditingPaymentStatus, setIsEditingPaymentStatus] = useState(false);
@@ -105,7 +106,11 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
 
   const handleFieldUpdate = async (field: string, value: any) => {
-    updateTaskMutation.mutate({ field, value });
+    if (["name", "phone", "email"].includes(field)) {
+      updateTaskMutation.mutate({ field: "customer", value: { [field]: value } });
+    } else {
+      updateTaskMutation.mutate({ field, value });
+    }
   }
 
   const handleSavePaymentStatus = async () => {
@@ -249,7 +254,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <SendCustomerUpdateDialog taskId={taskId} customerEmail={taskData.customer_email} />
+          <SendCustomerUpdateDialog taskId={taskId} customerEmail={taskData.customer_details?.email} />
           {canMarkComplete && (
             <Button className="bg-red-600 hover:bg-red-700 text-white">
               <CheckCircle className="h-4 w-4 mr-2" />
@@ -299,32 +304,18 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <User className="h-5 w-5 text-red-600" />
                     Customer Information
                   </CardTitle>
-                  {canEditCustomer && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditingCustomer(!isEditingCustomer)}
-                      className="border-gray-300 text-gray-600 bg-transparent"
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                  )}
+
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Customer Name</Label>
-                    {isEditingCustomer ? (
-                      <Input
-                        value={taskData.customer_name || ''}
-                        onChange={(e) => handleFieldUpdate("customer_name", e.target.value)}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="text-gray-900 font-medium">{taskData.customer_name}</p>
-                    )}
+                    <Input
+                      value={taskData.customer_details?.name || ''}
+                      onChange={(e) => handleFieldUpdate("name", e.target.value)}
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Commissioned By</Label>
@@ -337,28 +328,20 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <Label className="text-sm font-medium text-gray-600">Phone Number</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Phone className="h-4 w-4 text-gray-400" />
-                      {isEditingCustomer ? (
-                        <Input
-                          value={taskData.customer_phone || ''}
-                          onChange={(e) => handleFieldUpdate("customer_phone", e.target.value)}
-                        />
-                      ) : (
-                        <span className="text-gray-900">{taskData.customer_phone}</span>
-                      )}
+                      <Input
+                        value={taskData.customer_details?.phone || ''}
+                        onChange={(e) => handleFieldUpdate("phone", e.target.value)}
+                      />
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Email Address</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Mail className="h-4 w-4 text-gray-400" />
-                      {isEditingCustomer ? (
-                        <Input
-                          value={taskData.customer_email || ''}
-                          onChange={(e) => handleFieldUpdate("customer_email", e.target.value)}
-                        />
-                      ) : (
-                        <span className="text-gray-900">{taskData.customer_email}</span>
-                      )}
+                      <Input
+                        value={taskData.customer_details?.email || ''}
+                        onChange={(e) => handleFieldUpdate("email", e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
@@ -392,21 +375,37 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <Label className="text-sm font-medium text-gray-600">Make & Model</Label>
                     {isEditingLaptop ? (
                       <div className="flex gap-2">
-                        <Input
-                          value={taskData.laptop_make || ''}
-                          onChange={(e) => handleFieldUpdate("laptop_make", e.target.value)}
-                          className="mt-1"
-                        />
+                        <Select
+                          value={taskData.brand?.toString() || ''}
+                          onValueChange={(value) => handleFieldUpdate("brand", parseInt(value, 10))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {brands?.map((brand) => (
+                              <SelectItem key={brand.id} value={brand.id.toString()}>
+                                {brand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Input
                           value={taskData.laptop_model || ''}
                           onChange={(e) => handleFieldUpdate("laptop_model", e.target.value)}
                           className="mt-1"
+                          placeholder="Model"
                         />
                       </div>
                     ) : (
-                      <p className="text-gray-900 font-medium">
-                        {taskData.laptop_make} {taskData.laptop_model}
-                      </p>
+                      <div className="flex gap-2">
+                        <p className="text-gray-900 font-medium">
+                          {taskData.brand_details?.name || "N/A"}
+                        </p>
+                        <p className="text-gray-900 font-medium">
+                          {taskData.laptop_model || "N/A"}
+                        </p>
+                      </div>
                     )}
                   </div>
                   <div>

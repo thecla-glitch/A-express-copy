@@ -82,7 +82,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
       const matchesSearch =
         searchQuery === "" ||
         task.title.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (task.customer_details?.name && task.customer_details.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
         task.laptop_model.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.description.toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -221,7 +221,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
               <TableHead className="font-semibold text-gray-900">
                 <Button
                   variant="ghost"
-                  onClick={() => handleSort("customer_name")}
+                  onClick={() => handleSort("customer_details.name")}
                   className="h-auto p-0 font-semibold text-gray-900 hover:text-red-600"
                 >
                   Customer {getSortIcon("customer_name")}
@@ -251,8 +251,8 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 <TableCell className="font-medium text-red-600">{task.title}</TableCell>
                 <TableCell>
                   <div>
-                    <p className="font-medium text-gray-900">{task.customer_name}</p>
-                    <p className="text-sm text-gray-500">{task.customer_phone}</p>
+                    <p className="font-medium text-gray-900">{task.customer_details?.name}</p>
+                    <p className="text-sm text-gray-500">{task.customer_details?.phone}</p>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -325,7 +325,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                             className="border-gray-300 text-gray-600 hover:bg-gray-50 bg-transparent"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onNotifyCustomer?.(task.title, task.customer_name);
+                              onNotifyCustomer?.(task.title, task.customer_details?.name);
                             }}
                           >
                             <MessageSquare className="h-3 w-3 mr-1" />
@@ -495,7 +495,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
             <AlertDialogDescription>
-              Has the customer {taskToPay?.customer_name} paid for this task?
+              Has the customer {taskToPay?.customer_details?.name} paid for this task?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
