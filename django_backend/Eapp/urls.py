@@ -25,6 +25,10 @@ urlpatterns = [
     path('users/<int:user_id>/deactivate/', views.deactivate_user, name='deactivate_user'),
     path('users/<int:user_id>/activate/', views.activate_user, name='activate_user'),
     path('users/role/<str:role>/', views.list_users_by_role, name='list_users_by_role'),
+
+    # Customer endpoints
+    path('customers/search/', views.customer_search, name='customer_search'),
+    path('customers/create/', views.customer_create, name='customer_create'),
     
     # Task management endpoints
     path('tasks/', views.task_list_create, name='task_list_create'),

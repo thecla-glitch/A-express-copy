@@ -6,15 +6,52 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Task, TaskActivity, Payment, Location, Brand
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer
 from .serializers import (
     ChangePasswordSerializer, UserProfileUpdateSerializer, UserSerializer, 
     UserRegistrationSerializer, LoginSerializer, TaskSerializer,
-    TaskActivitySerializer, PaymentSerializer, LocationSerializer, BrandSerializer
+    TaskActivitySerializer, PaymentSerializer, LocationSerializer, BrandSerializer, CustomerSerializer
 )
 from django.shortcuts import get_object_or_404
 from datetime import datetime
 from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def customer_search(request):
+    query = request.query_params.get('query', '')
+    customers = Customer.objects.filter(name__icontains=query)
+    serializer = CustomerSerializer(customers, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def customer_create(request):
+    """
+    Create a new customer or retrieve an existing one.
+    """
+    serializer = CustomerSerializer(data=request.data)
+    if serializer.is_valid():
+        # Check if customer already exists
+        phone = serializer.validated_data.get('phone')
+        email = serializer.validated_data.get('email')
+        
+        if phone:
+            customer = Customer.objects.filter(phone=phone).first()
+            if customer:
+                return Response(CustomerSerializer(customer).data, status=status.HTTP_200_OK)
+
+        if email:
+            customer = Customer.objects.filter(email=email).first()
+            if customer:
+                return Response(CustomerSerializer(customer).data, status=status.HTTP_200_OK)
+
+        customer = serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['POST'])

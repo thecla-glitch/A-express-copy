@@ -9,17 +9,21 @@ import { Label } from '@/components/ui/core/label'
 import { Textarea } from '@/components/ui/core/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/core/select'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
-import { createTask } from '@/lib/api-client'
+import { createTask, createCustomer } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth-context'
 import { Checkbox } from '@/components/ui/core/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/feedback/alert-dialog";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
 import { useTechnicians, useManagers, useBrands, useLocations } from '@/hooks/use-data'
+import { useCustomers } from '@/hooks/use-customers'
+import { SimpleCombobox } from '@/components/ui/core/combobox'
+import { toast } from '@/hooks/use-toast'
 
 interface NewTaskFormProps {}
 
 interface FormData {
   title: string;
+  customer_id: string;
   customer_name: string
   customer_phone: string
   customer_email: string
@@ -60,14 +64,17 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [isCommissioned, setIsCommissioned] = useState(false)
+  const [customerSearch, setCustomerSearch] = useState('')
 
   const { data: technicians, isLoading: isLoadingTechnicians } = useTechnicians()
   const { data: managers, isLoading: isLoadingManagers } = useManagers()
   const { data: brands, isLoading: isLoadingBrands } = useBrands()
   const { data: locations, isLoading: isLoadingLocations } = useLocations()
+  const { data: customers, isLoading: isLoadingCustomers } = useCustomers(customerSearch)
 
   const [formData, setFormData] = useState<FormData>({
     title: '',
+    customer_id: '',
     customer_name: '',
     customer_phone: '',
     customer_email: '',
@@ -150,8 +157,23 @@ export function NewTaskForm({}: NewTaskFormProps) {
 
     setIsSubmitting(true)
     try {
+      let customerId = formData.customer_id;
+      if (!customerId) {
+        const response = await createCustomer({
+          name: formData.customer_name,
+          phone: formData.customer_phone,
+          email: formData.customer_email,
+        });
+        customerId = response.data.id;
+        toast({
+          title: 'Customer Created',
+          description: `Customer ${formData.customer_name} has been added to the database.`,
+        });
+      }
+
       const taskData = {
         ...formData,
+        customer: customerId,
         negotiated_by: formData.negotiated_by || null,
         commissioned_by: formData.is_commissioned ? formData.commissioned_by : 'Not Commissioned',
       };
@@ -178,6 +200,8 @@ export function NewTaskForm({}: NewTaskFormProps) {
 
   const canAssignTechnician = user && (user.role === 'Manager' || user.role === 'Administrator' || user.role === 'Front Desk')
 
+  const customerOptions = customers ? customers.map((c: any) => ({ label: c.name, value: c.id.toString() })) : [];
+
   return (
     <>
       <form onSubmit={handleSubmit} className='space-y-6 p-4'>
@@ -193,12 +217,25 @@ export function NewTaskForm({}: NewTaskFormProps) {
               />
             </FormField>
             <FormField id='customer_name' label='Customer Name' required error={errors.customer_name}>
-              <Input
-                id='customer_name'
+              <SimpleCombobox
+                options={customerOptions}
                 value={formData.customer_name}
-                onChange={(e) => handleInputChange('customer_name', e.target.value)}
-                className={errors.customer_name ? 'border-red-500' : ''}
-                placeholder="e.g. John Doe"
+                onChange={(value) => {
+                  const selectedCustomer = customers.find((c: any) => c.id.toString() === value)
+                  if(selectedCustomer){
+                    handleInputChange('customer_id', selectedCustomer.id)
+                    handleInputChange('customer_name', selectedCustomer.name)
+                    handleInputChange('customer_phone', selectedCustomer.phone)
+                    handleInputChange('customer_email', selectedCustomer.email)
+                  } else {
+                    handleInputChange('customer_id', '')
+                  }
+                }}
+                onInputChange={(value) => {
+                  handleInputChange('customer_name', value)
+                  setCustomerSearch(value)
+                }}
+                placeholder="Search or create customer..."
               />
             </FormField>
             <FormField id='customer_phone' label='Phone Number' required error={errors.customer_phone}>

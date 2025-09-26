@@ -119,23 +119,7 @@ export function LoginForm() {
             {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
-        <div className="mt-6 text-sm text-gray-600">
-          <p className="font-semibold mb-2">Demo Accounts:</p>
-          <div className="space-y-1">
-            <p>
-              <strong>Manager:</strong> manager / password
-            </p>
-            <p>
-              <strong>Admin:</strong> admin / password
-            </p>
-            <p>
-              <strong>Technician:</strong> tech1 / password
-            </p>
-            <p>
-              <strong>Front Desk:</strong> frontdesk / password
-            </p>
-          </div>
-        </div>
+
       </CardContent>
     </Card>
   )

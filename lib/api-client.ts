@@ -26,6 +26,7 @@ export const getTask = (id: string) => apiClient.get(`/tasks/${id}/`);
 export const createTask = (data: any) => apiClient.post('/tasks/', data);
 export const updateTask = (id: string, data: any) => apiClient.patch(`/tasks/${id}/`, data);
 export const deleteTask = (id: string) => apiClient.delete(`/tasks/${id}/`);
+export const createCustomer = (data: any) => apiClient.post('/customers/create/', data);
 
 export const getTaskActivities = (taskId: string) => apiClient.get(`/tasks/${taskId}/activities/`);
 export const addTaskActivity = (taskId: string, data: any) => apiClient.post(`/tasks/${taskId}/add-activity/`, data);

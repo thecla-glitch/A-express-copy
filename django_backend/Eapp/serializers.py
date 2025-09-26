@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, Location, Brand
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer
 from django.utils import timezone
 
 
@@ -10,6 +10,12 @@ class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model = Brand
         fields = ['id', 'name']
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ['id', 'name', 'email', 'phone', 'address']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -136,6 +142,7 @@ class TaskSerializer(serializers.ModelSerializer):
     approved_by_details = UserSerializer(source='approved_by', read_only=True)
     sent_out_by_details = UserSerializer(source='sent_out_by', read_only=True)
     brand_details = BrandSerializer(source='brand', read_only=True)
+    customer_details = CustomerSerializer(source='customer', read_only=True)
     activities = TaskActivitySerializer(many=True, read_only=True)
     payments = PaymentSerializer(many=True, read_only=True)
     outstanding_balance = serializers.SerializerMethodField()
@@ -150,7 +157,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'status', 'priority', 
             'assigned_to', 'assigned_to_details', 'created_by_details',
             'created_at', 'updated_at', 'due_date',
-            'customer_name', 'customer_phone', 'customer_email',
+            'customer', 'customer_details',
             'brand', 'brand_details', 'laptop_model', 'serial_number',
             'device_type', 'device_notes',
             'estimated_cost', 'total_cost', 'payment_status',
@@ -164,7 +171,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'qc_notes', 'qc_rejected_at', 'qc_rejected_by'
         )
         read_only_fields = ('created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments',
-                            'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details', 'sent_out_by_details')
+                            'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details', 'sent_out_by_details', 'customer_details')
         extra_kwargs = {
             'estimated_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
             'total_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
