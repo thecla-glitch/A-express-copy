@@ -29,6 +29,14 @@ export interface Brand {
   name: string;
 }
 
+export interface CostBreakdown {
+  id: number;
+  description: string;
+  amount: string;
+  cost_type: 'Additive' | 'Subtractive' | 'Inclusive';
+  created_at: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -67,6 +75,7 @@ export interface Task {
   outstanding_balance: number;
   is_commissioned: boolean;
   commissioned_by: string;
+  cost_breakdowns: CostBreakdown[];
 }
 
 export interface TaskActivity {
@@ -370,6 +379,30 @@ export class ApiClient {
 
   async getTaskPayments(taskId: string): Promise<ApiResponse<TaskPayment[]>> {
     return this.request<TaskPayment[]>(`/tasks/${taskId}/payments/`);
+  }
+
+  async getCostBreakdowns(taskId: string): Promise<ApiResponse<CostBreakdown[]>> {
+    return this.request<CostBreakdown[]>(`/tasks/${taskId}/cost-breakdowns/`);
+  }
+
+  async createCostBreakdown(taskId: string, costBreakdownData: any): Promise<ApiResponse<CostBreakdown>> {
+    return this.request<CostBreakdown>(`/tasks/${taskId}/cost-breakdowns/`, {
+      method: 'POST',
+      body: JSON.stringify(costBreakdownData),
+    });
+  }
+
+  async updateCostBreakdown(taskId: string, costBreakdownId: number, costBreakdownData: any): Promise<ApiResponse<CostBreakdown>> {
+    return this.request<CostBreakdown>(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(costBreakdownData),
+    });
+  }
+
+  async deleteCostBreakdown(taskId: string, costBreakdownId: number): Promise<ApiResponse> {
+    return this.request(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`, {
+      method: 'DELETE',
+    });
   }
 
   async getTaskActivities(taskId: string): Promise<ApiResponse<TaskActivity[]>> {

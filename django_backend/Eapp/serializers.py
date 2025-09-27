@@ -2,8 +2,14 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, CostBreakdown
 from django.utils import timezone
+
+
+class CostBreakdownSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CostBreakdown
+        fields = ['id', 'description', 'amount', 'cost_type', 'created_at']
 
 
 class BrandSerializer(serializers.ModelSerializer):
@@ -150,6 +156,8 @@ class TaskSerializer(serializers.ModelSerializer):
     workshop_location_details = LocationSerializer(source='workshop_location', read_only=True)
     workshop_technician_details = UserSerializer(source='workshop_technician', read_only=True)
     original_technician_details = UserSerializer(source='original_technician', read_only=True)
+    cost_breakdowns = CostBreakdownSerializer(many=True, read_only=True)
+    total_cost = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
@@ -168,18 +176,24 @@ class TaskSerializer(serializers.ModelSerializer):
             'workshop_status', 'workshop_location', 'workshop_technician', 'original_technician',
             'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details',
             'sent_out_by', 'sent_out_by_details',
-            'qc_notes', 'qc_rejected_at', 'qc_rejected_by'
+            'qc_notes', 'qc_rejected_at', 'qc_rejected_by',
+            'cost_breakdowns'
         )
         read_only_fields = ('created_at', 'updated_at', 'assigned_to_details', 'created_by_details', 'activities', 'payments',
                             'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details', 'sent_out_by_details')
         extra_kwargs = {
             'estimated_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
-            'total_cost': {'validators': [MinValueValidator(Decimal('0.00'))]},
         }
 
+    def get_total_cost(self, obj):
+        estimated_cost = obj.estimated_cost or Decimal('0.00')
+        additive_costs = sum(item.amount for item in obj.cost_breakdowns.filter(cost_type='Additive'))
+        subtractive_costs = sum(item.amount for item in obj.cost_breakdowns.filter(cost_type='Subtractive'))
+        return estimated_cost + additive_costs - subtractive_costs
+
     def get_outstanding_balance(self, obj):
-        total_cost = obj.total_cost or Decimal('0.00')
-        paid_sum = obj.paid_sum or Decimal('0.00')
+        total_cost = self.get_total_cost(obj)
+        paid_sum = sum(p.amount for p in obj.payments.all()) or Decimal('0.00')
         return total_cost - paid_sum
 
     def validate(self, data):

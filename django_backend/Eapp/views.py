@@ -6,11 +6,11 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, CostBreakdown
 from .serializers import (
     ChangePasswordSerializer, UserProfileUpdateSerializer, UserSerializer, 
     UserRegistrationSerializer, LoginSerializer, TaskSerializer,
-    TaskActivitySerializer, PaymentSerializer, LocationSerializer, BrandSerializer, CustomerSerializer
+    TaskActivitySerializer, PaymentSerializer, LocationSerializer, BrandSerializer, CustomerSerializer, CostBreakdownSerializer
 )
 from django.shortcuts import get_object_or_404
 from datetime import datetime
@@ -591,3 +591,17 @@ def list_workshop_technicians(request):
     technicians = User.objects.filter(is_workshop=True, is_active=True)
     serializer = UserSerializer(technicians, many=True, context={'request': request})
     return Response(serializer.data)
+
+class CostBreakdownViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows cost breakdowns to be viewed or edited.
+    """
+    serializer_class = CostBreakdownSerializer
+    permission_classes = [IsManager]
+
+    def get_queryset(self):
+        return CostBreakdown.objects.filter(task__title=self.kwargs['task_id'])
+
+    def perform_create(self, serializer):
+        task = get_object_or_404(Task, title=self.kwargs['task_id'])
+        serializer.save(task=task)

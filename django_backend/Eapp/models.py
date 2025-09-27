@@ -195,7 +195,6 @@ class Task(models.Model):
     laptop_model = models.CharField(max_length=100)
     serial_number = models.CharField(max_length=100, blank=True, default='Not Available')
     estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    total_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     payment_status = models.CharField(
         max_length=20,
         choices=PaymentStatus.choices,
@@ -337,3 +336,21 @@ class Location(models.Model):
 
     class Meta:
         ordering = ['name']
+
+class CostBreakdown(models.Model):
+    class CostType(models.TextChoices):
+        ADDITIVE = 'Additive', _('Additive')
+        SUBTRACTIVE = 'Subtractive', _('Subtractive')
+        INCLUSIVE = 'Inclusive', _('Inclusive')
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='cost_breakdowns')
+    description = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    cost_type = models.CharField(max_length=20, choices=CostType.choices, default=CostType.INCLUSIVE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.get_cost_type_display()} cost of {self.amount} for {self.task.title}'
+
+    class Meta:
+        ordering = ['created_at']

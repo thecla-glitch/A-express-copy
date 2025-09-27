@@ -40,6 +40,7 @@ import "react-day-picker/dist/style.css"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
 import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskPriorityOptions, useBrands } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CostBreakdown } from "./cost-breakdown";
 
 const paymentStatusOptions = ["Unpaid", "Partially Paid", "Fully Paid", "Refunded"];
 const paymentMethodOptions = ["Cash", "Credit Card", "Debit Card", "Check", "Digital Payment"];
@@ -65,7 +66,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
 
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
-  const [isEditingCost, setIsEditingCost] = useState(false);
   const [isEditingPaymentStatus, setIsEditingPaymentStatus] = useState(false);
   const [pendingPaymentStatus, setPendingPaymentStatus] = useState<string | null>(null);
   const [nextPaymentDate, setNextPaymentDate] = useState<Date | undefined>(undefined);
@@ -626,55 +626,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         <TabsContent value="financials" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             {/* Cost Breakdown */}
-            <Card className="border-gray-200">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-red-600" />
-                    Cost Breakdown
-                  </CardTitle>
-                  {canEditEstimatedCost && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditingCost(!isEditingCost)}
-                      className="border-gray-300 text-gray-600 bg-transparent"
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      {isEditingCost ? "Done" : "Edit"}
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <Label className="text-sm font-medium text-gray-600">Parts Cost</Label>
-                    <span className="font-medium text-gray-900">TSh {parseFloat(taskData.parts_cost || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <Label className="text-sm font-medium text-gray-600">Estimated Cost</Label>
-                    {isEditingCost ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={taskData.estimated_cost || ''}
-                        onChange={(e) => handleFieldUpdate("estimated_cost", e.target.value ? Number.parseFloat(e.target.value) : null)}
-                        className="w-24 text-right"
-                      />
-                    ) : (
-                      <span className="font-medium text-gray-900">TSh {parseFloat(taskData.estimated_cost || 0).toFixed(2)}</span>
-                    )}
-                  </div>
-                  <div className="border-t pt-3">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-base font-semibold text-gray-900">Total Cost</Label>
-                      <span className="text-xl font-bold text-red-600">TSh {parseFloat(taskData.total_cost || 0).toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <CostBreakdown task={taskData} />
 
             {/* Payment Status */}
             <Card className="border-gray-200">
