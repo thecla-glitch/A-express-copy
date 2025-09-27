@@ -34,6 +34,7 @@ export interface CostBreakdown {
   description: string;
   amount: string;
   cost_type: 'Additive' | 'Subtractive' | 'Inclusive';
+  category: string;
   created_at: string;
 }
 

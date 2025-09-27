@@ -41,6 +41,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/
 import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskPriorityOptions, useBrands } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CostBreakdown } from "./cost-breakdown";
+import { Combobox } from "@/components/ui/core/combobox";
 
 const paymentStatusOptions = ["Unpaid", "Partially Paid", "Fully Paid", "Refunded"];
 const paymentMethodOptions = ["Cash", "Credit Card", "Debit Card", "Check", "Digital Payment"];

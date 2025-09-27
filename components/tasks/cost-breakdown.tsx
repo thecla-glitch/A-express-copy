@@ -21,38 +21,30 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
-  const [newBreakdown, setNewBreakdown] = useState({ description: '', amount: '', cost_type: 'Inclusive' });
+  const [newBreakdown, setNewBreakdown] = useState({ amount: '', cost_type: 'Inclusive', category: '' });
 
-  const { data: costBreakdowns, isLoading } = useQuery<CostBreakdownType[]>({
-    queryKey: ['costBreakdowns', task.title],
-    queryFn: () => apiClient.getCostBreakdowns(task.title).then(res => res.data || []),
-  });
-
+  const costBreakdowns = task.cost_breakdowns || [];
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.createCostBreakdown(task.title, data),
+    mutationFn: (data: any) => apiClient.createCostBreakdown(task.id.toString(), data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['costBreakdowns', task.title] });
-      queryClient.invalidateQueries({ queryKey: ['task', task.title] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id.toString()] });
       setIsAdding(false);
-      setNewBreakdown({ description: '', amount: '', cost_type: 'Inclusive' });
+      setNewBreakdown({ amount: '', cost_type: 'Inclusive', category: '' });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiClient.deleteCostBreakdown(task.title, id),
+    mutationFn: (id: number) => apiClient.deleteCostBreakdown(task.id.toString(), id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['costBreakdowns', task.title] });
-      queryClient.invalidateQueries({ queryKey: ['task', task.title] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id.toString()] });
     },
   });
 
   const handleAdd = () => {
-    createMutation.mutate(newBreakdown);
+    createMutation.mutate({ ...newBreakdown, description: newBreakdown.category });
   };
 
   const isManager = user?.role === 'Manager';
-
-  if (isLoading) return <div>Loading cost breakdowns...</div>;
 
   return (
     <Card className="border-gray-200">
@@ -74,7 +66,7 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Description</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Type</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               {isManager && <TableHead></TableHead>}
@@ -106,11 +98,18 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
             {isAdding && (
               <TableRow>
                 <TableCell>
-                  <Input
-                    placeholder="Description"
-                    value={newBreakdown.description}
-                    onChange={(e) => setNewBreakdown({ ...newBreakdown, description: e.target.value })}
-                  />
+                  <Select
+                    value={newBreakdown.category}
+                    onValueChange={(value) => setNewBreakdown({ ...newBreakdown, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Discount">Discount</SelectItem>
+                      <SelectItem value="Commission">Commission</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell>
                   <Select value={newBreakdown.cost_type} onValueChange={(value) => setNewBreakdown({ ...newBreakdown, cost_type: value })}>

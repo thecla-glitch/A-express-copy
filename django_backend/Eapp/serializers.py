@@ -9,7 +9,7 @@ from django.utils import timezone
 class CostBreakdownSerializer(serializers.ModelSerializer):
     class Meta:
         model = CostBreakdown
-        fields = ['id', 'description', 'amount', 'cost_type', 'created_at']
+        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at']
 
 
 class BrandSerializer(serializers.ModelSerializer):
