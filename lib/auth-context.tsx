@@ -3,7 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import { API_CONFIG, getApiUrl } from "./config"
-import { apiClient } from "./api"
+import { login as apiLogin, getProfile } from "./api-client"
 
 interface User {
   id: number
@@ -86,11 +86,11 @@ const refreshAuth = async (): Promise<boolean> => {
       localStorage.setItem("auth_tokens", JSON.stringify(newTokens))
       
       // Also fetch updated user data
-      const userResponse = await apiClient.getProfile()
-      if (userResponse.data && !userResponse.error) {
-        const userData: User = userResponse.data as User
-        setUser(userData)
-        localStorage.setItem("auth_user", JSON.stringify(userData))
+      const userResponse = await getProfile();
+      if (userResponse.data) {
+        const userData: User = userResponse.data as User;
+        setUser(userData);
+        localStorage.setItem("auth_user", JSON.stringify(userData));
       }
       
       return true
@@ -106,29 +106,26 @@ const refreshAuth = async (): Promise<boolean> => {
 }
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const response = await apiClient.login(username, password)
+      const response = await apiLogin(username, password);
 
-      if (response.data && !response.error) {
+      if (response.data) {
         // Ensure response.data has the expected properties
-        const { user: userData, access, refresh } = response.data as { user: User; access: string; refresh: string }
+        const { user: userData, access, refresh } = response.data as { user: User; access: string; refresh: string };
 
-        setUser(userData)
-        setTokens({ access, refresh })
+        setUser(userData);
+        setTokens({ access, refresh });
 
-        // Set the token in the API client
-        apiClient.setToken(access)
+        localStorage.setItem("auth_user", JSON.stringify(userData));
+        localStorage.setItem("auth_tokens", JSON.stringify({ access, refresh }));
 
-        localStorage.setItem("auth_user", JSON.stringify(userData))
-        localStorage.setItem("auth_tokens", JSON.stringify({ access, refresh }))
-
-        return true
+        return true;
       }
-      return false
+      return false;
     } catch (error) {
-      console.error("Login error:", error)
-      return false
+      console.error("Login error:", error);
+      return false;
     }
-  }
+  };
 
   const logout = () => {
     setUser(null)

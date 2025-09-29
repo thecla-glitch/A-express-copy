@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { apiClient } from "./api"
+import { apiClient } from "./api-client"
 import { useAuth } from "./auth-context"
 
 export interface ProfileData {
