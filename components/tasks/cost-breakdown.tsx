@@ -21,22 +21,24 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
+  const [isOtherCategory, setIsOtherCategory] = useState(false);
   const [newBreakdown, setNewBreakdown] = useState({ amount: '', cost_type: 'Inclusive', category: '' });
 
   const costBreakdowns = task.cost_breakdowns || [];
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.createCostBreakdown(task.id.toString(), data),
+    mutationFn: (data: any) => apiClient.createCostBreakdown(task.title, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task', task.id.toString()] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.title] });
       setIsAdding(false);
+      setIsOtherCategory(false);
       setNewBreakdown({ amount: '', cost_type: 'Inclusive', category: '' });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiClient.deleteCostBreakdown(task.id.toString(), id),
+    mutationFn: (id: number) => apiClient.deleteCostBreakdown(task.title, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task', task.id.toString()] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.title] });
     },
   });
 
@@ -55,7 +57,12 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
             Cost Breakdown
           </CardTitle>
           {isManager && (
-            <Button variant="outline" size="sm" onClick={() => setIsAdding(!isAdding)} className="border-gray-300 text-gray-600 bg-transparent">
+            <Button variant="outline" size="sm" onClick={() => {
+              setIsAdding(!isAdding);
+              if (isAdding) {
+                setIsOtherCategory(false);
+              }
+            }} className="border-gray-300 text-gray-600 bg-transparent">
               <Plus className="h-3 w-3 mr-1" />
               {isAdding ? 'Cancel' : 'Add Item'}
             </Button>
@@ -83,8 +90,9 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
               <TableRow key={item.id}>
                 <TableCell>{item.description}</TableCell>
                 <TableCell>{item.cost_type}</TableCell>
-                <TableCell className={`text-right ${item.cost_type === 'Subtractive' ? 'text-red-600' : 'text-green-600'}`}>
-                  {item.cost_type === 'Subtractive' ? '-' : '+'}TSh {parseFloat(item.amount).toFixed(2)}
+                <TableCell 
+                  className={`text-right ${item.cost_type === 'Subtractive' ? 'text-red-600' : item.cost_type === 'Additive' ? 'text-green-600' : ''}`}>
+                  {item.cost_type === 'Subtractive' ? '- ' : item.cost_type === 'Additive' ? '+ ' : ''}TSh {parseFloat(item.amount).toFixed(2)}
                 </TableCell>
                 {isManager && (
                   <TableCell className="text-right">
@@ -98,18 +106,35 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
             {isAdding && (
               <TableRow>
                 <TableCell>
-                  <Select
-                    value={newBreakdown.category}
-                    onValueChange={(value) => setNewBreakdown({ ...newBreakdown, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Discount">Discount</SelectItem>
-                      <SelectItem value="Commission">Commission</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {isOtherCategory ? (
+                    <Input
+                      type="text"
+                      placeholder="Specify category..."
+                      value={newBreakdown.category}
+                      onChange={(e) => setNewBreakdown({ ...newBreakdown, category: e.target.value })}
+                    />
+                  ) : (
+                    <Select
+                      value={newBreakdown.category}
+                      onValueChange={(value) => {
+                        if (value === 'Other') {
+                          setIsOtherCategory(true);
+                          setNewBreakdown({ ...newBreakdown, category: '' });
+                        } else {
+                          setNewBreakdown({ ...newBreakdown, category: value });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Discount">Discount</SelectItem>
+                        <SelectItem value="Commission">Commission</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Select value={newBreakdown.cost_type} onValueChange={(value) => setNewBreakdown({ ...newBreakdown, cost_type: value })}>
