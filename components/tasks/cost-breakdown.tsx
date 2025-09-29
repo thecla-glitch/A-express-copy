@@ -74,7 +74,6 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Category</TableHead>
-              <TableHead>Type</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               {isManager && <TableHead></TableHead>}
             </TableRow>
@@ -82,14 +81,12 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
           <TableBody>
             <TableRow>
               <TableCell className="font-medium">Estimated Cost</TableCell>
-              <TableCell></TableCell>
               <TableCell className="text-right">TSh {parseFloat(task.estimated_cost || '0').toFixed(2)}</TableCell>
               {isManager && <TableCell></TableCell>}
             </TableRow>
             {costBreakdowns?.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>{item.description}</TableCell>
-                <TableCell>{item.cost_type}</TableCell>
                 <TableCell 
                   className={`text-right ${item.cost_type === 'Subtractive' ? 'text-red-600' : item.cost_type === 'Additive' ? 'text-green-600' : ''}`}>
                   {item.cost_type === 'Subtractive' ? '- ' : item.cost_type === 'Additive' ? '+ ' : ''}TSh {parseFloat(item.amount).toFixed(2)}
@@ -142,9 +139,9 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Inclusive">Inclusive</SelectItem>
-                      <SelectItem value="Additive">Additive</SelectItem>
-                      <SelectItem value="Subtractive">Subtractive</SelectItem>
+                      <SelectItem value="Inclusive">Include</SelectItem>
+                      <SelectItem value="Additive">Add</SelectItem>
+                      <SelectItem value="Subtractive">Subtract</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
