@@ -31,36 +31,20 @@ export function useUserManagement() {
     loadUsers()
   }, [])
 
-// Add this debug logging
-const loadUsers = async () => {
-  setIsLoading(true);
-  try {
-    // Get token from localStorage
-    const tokens = JSON.parse(localStorage.getItem("auth_tokens") || "{}");
-    const accessToken = tokens.access;
-    
-    console.log("Token from localStorage:", accessToken); // Debug log
-    
-    if (accessToken) {
-      apiClient.setToken(accessToken);
-      console.log("Making API request with token"); // Debug log
-      const response = await apiClient.listUsers();
-      
+  const loadUsers = async () => {
+    setIsLoading(true)
+    try {
+      const response = await apiClient.get("/users/")
       if (response.data) {
-        setUsers(Array.isArray(response.data) ? response.data : []);
-      } else if (response.status === 401) {
-        console.error("Unauthorized - token might be invalid or expired");
-        // Handle token refresh or redirect to login
+        setUsers(Array.isArray(response.data) ? response.data : [])
       }
-    } else {
-      console.error("No access token found");
+    } catch (error) {
+      console.error("Failed to load users:", error)
+      setError("Failed to load users")
+    } finally {
+      setIsLoading(false)
     }
-  } catch (error) {
-    console.error("Failed to load users:", error);
-  } finally {
-    setIsLoading(false);
   }
-};
 
   const createUser = async (userData: {
     username: string

@@ -64,7 +64,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
     const fetchStatusOptions = async () => {
       try {
         const response = await getTaskStatusOptions();
-        setStatusOptions(response.data.map((option: any) => option[0]));
+        setStatusOptions((response.data || []).map((option: any) => option[0]));
       } catch (error) {
         console.error("Error fetching status options:", error);
       }
