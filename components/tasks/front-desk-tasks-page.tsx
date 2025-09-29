@@ -24,8 +24,8 @@ export function FrontDeskTasksPage() {
   const handleApprove = useCallback(async (taskTitle: string) => {
     if (user) {
       updateTaskMutation.mutate({
-        taskId: taskTitle,
-        data: {
+        id: taskTitle,
+        updates: {
           status: "Ready for Pickup",
           approved_by: user.id,
           approved_at: new Date().toISOString(),
@@ -35,14 +35,14 @@ export function FrontDeskTasksPage() {
   }, [updateTaskMutation, user]);
 
   const handleReject = useCallback(async (taskTitle: string, notes: string) => {
-    updateTaskMutation.mutate({ taskId: taskTitle, data: { status: "In Progress", qc_notes: notes, workshop_status: null } });
+    updateTaskMutation.mutate({ id: taskTitle, updates: { status: "In Progress", qc_notes: notes, workshop_status: null } });
   }, [updateTaskMutation]);
 
   const handlePickedUp = useCallback(async (taskTitle: string) => {
     if (user) {
       updateTaskMutation.mutate({
-        taskId: taskTitle,
-        data: {
+        id: taskTitle,
+        updates: {
           status: "Picked Up",
           date_out: new Date().toISOString(),
           sent_out_by: user.id,

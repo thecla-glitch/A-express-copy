@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/feedback/dialog";
-import { useTasks } from "@/hooks/use-tasks";
+import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
 import { useTechnicians } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -37,37 +37,31 @@ export function ManagerTasksPage() {
     },
   });
 
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ taskTitle, data }: { taskTitle: string; data: any }) =>
-      updateTask(taskTitle, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    },
-  });
+  const updateTaskMutation = useUpdateTask();
 
   const handleRowClick = (task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
   };
 
   const handleProcessPickup = (taskTitle: string) => {
-    updateTaskMutation.mutate({ taskTitle, data: { status: "Completed", current_location: "Completed", payment_status: "Paid" } });
+    updateTaskMutation.mutate({ id: taskTitle, updates: { status: "Completed", current_location: "Completed", payment_status: "Paid" } });
     alert("Pickup processed successfully!");
   };
 
   const handleApprove = (taskTitle: string) => {
-    updateTaskMutation.mutate({ taskTitle, data: { status: "Completed" } });
+    updateTaskMutation.mutate({ id: taskTitle, updates: { status: "Completed" } });
   };
 
   const handleReject = (taskTitle: string, notes: string) => {
-    updateTaskMutation.mutate({ taskTitle, data: { status: "In Progress", qc_notes: notes } });
+    updateTaskMutation.mutate({ id: taskTitle, updates: { status: "In Progress", qc_notes: notes } });
   };
 
   const handleMarkAsPaid = (taskTitle: string) => {
-    updateTaskMutation.mutate({ taskTitle, data: { payment_status: "Paid", paid_date: new Date().toISOString() } });
+    updateTaskMutation.mutate({ id: taskTitle, updates: { payment_status: "Paid", paid_date: new Date().toISOString() } });
   };
 
   const handleTerminateTask = (taskTitle: string) => {
-    updateTaskMutation.mutate({ taskTitle, data: { status: "Terminated" } });
+    updateTaskMutation.mutate({ id: taskTitle, updates: { status: "Terminated" } });
   };
 
   if (isLoading) {
