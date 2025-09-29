@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getTasks, listUsersByRole } from "@/lib/api-client";
 import { UserResponse as User } from "@/lib/api";
 import { TasksDisplay } from "./tasks-display";
+import { ReturnTaskDialog } from "./return-task-dialog";
 
 export function TaskHistoryPage() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export function TaskHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [technicians, setTechnicians] = useState<User[]>([]);
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +48,11 @@ export function TaskHistoryPage() {
     router.push(`/dashboard/tasks/${task.id}`);
   };
 
+  const handleReturnTask = (task: any) => {
+    setSelectedTask(task);
+    setIsReturnDialogOpen(true);
+  };
+
   const historicalTasks = tasks.filter(task => ["Picked Up", "Completed", "Terminated"].includes(task.status));
 
   return (
@@ -60,8 +68,19 @@ export function TaskHistoryPage() {
         tasks={historicalTasks}
         technicians={technicians}
         onRowClick={handleRowClick}
-        showActions={false}
+        showActions={true}
+        isHistoryView={true}
+        onReturnTask={handleReturnTask}
+        isCompletedTab={true}
       />
+
+      {selectedTask && (
+        <ReturnTaskDialog
+          task={selectedTask}
+          isOpen={isReturnDialogOpen}
+          onClose={() => setIsReturnDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -7,15 +7,23 @@ import { Plus } from "lucide-react";
 import { TasksDisplay } from "./tasks-display";
 import { useTasks } from "@/hooks/use-tasks";
 import { useTechnicians } from "@/hooks/use-data";
+import { ReturnTaskDialog } from "./return-task-dialog";
 
 export function FrontDeskHistoryPage() {
   const router = useRouter();
   const { data: tasks, isLoading, isError, error } = useTasks();
   const { data: technicians } = useTechnicians();
   const [showAll, setShowAll] = useState(false);
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
 
   const handleRowClick = (task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
+  };
+
+  const handleReturnTask = (task: any) => {
+    setSelectedTask(task);
+    setIsReturnDialogOpen(true);
   };
 
   const filteredTasks = useMemo(() => {
@@ -71,8 +79,19 @@ export function FrontDeskHistoryPage() {
         tasks={filteredTasks}
         technicians={technicians || []}
         onRowClick={handleRowClick}
-        showActions={false}
+        showActions={true}
+        isHistoryView={true}
+        onReturnTask={handleReturnTask}
+        isCompletedTab={true}
       />
+
+      {selectedTask && (
+        <ReturnTaskDialog
+          task={selectedTask}
+          isOpen={isReturnDialogOpen}
+          onClose={() => setIsReturnDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

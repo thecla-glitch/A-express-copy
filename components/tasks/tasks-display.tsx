@@ -44,9 +44,11 @@ interface TasksDisplayProps {
   isPickupView?: boolean;
   onPickedUp?: (taskTitle: string) => void;
   onNotifyCustomer?: (taskTitle: string, customerName: string) => void;
+  isHistoryView?: boolean;
+  onReturnTask?: (task: any) => void;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -291,7 +293,18 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 {showActions && (
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
-                      {isPickupView ? (
+                      {isHistoryView && task.status === 'Picked Up' && new Date(task.updated_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onReturnTask?.(task);
+                          }}
+                        >
+                          Return
+                        </Button>
+                      ) : isPickupView ? (
                         <>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -392,6 +405,18 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                           >
                             Notify Customer
                           </Button>
+                          {isHistoryView && task.status === 'Picked Up' && new Date(task.updated_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onReturnTask?.(task);
+                              }}
+                            >
+                              Return
+                            </Button>
+                          )}
                         </>
                       ) : (
                         <>
