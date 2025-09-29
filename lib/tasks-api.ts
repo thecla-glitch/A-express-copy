@@ -10,12 +10,12 @@ export const getTaskStatusOptions = async () => {
     }
 };
 
-export const getTaskPriorityOptions = async () => {
+export const getTaskUrgencyOptions = async () => {
     try {
-        const response = await apiClient.get('/tasks/priority-options/');
+        const response = await apiClient.get('/tasks/urgency-options/');
         return response.data;
     } catch (error) {
-        console.error('Error fetching task priority options:', error);
+        console.error('Error fetching task urgency options:', error);
         throw error;
     }
 };

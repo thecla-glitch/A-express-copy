@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getTasks, getTask, listWorkshopLocations, listWorkshopTechnicians, updateTask, listUsersByRole, getBrands, getLocations } from '@/lib/api-client'
-import { getTaskStatusOptions, getTaskPriorityOptions } from '@/lib/tasks-api'
+import { getTaskStatusOptions, getTaskUrgencyOptions } from '@/lib/tasks-api'
 import { User } from "@/lib/use-user-management"
 import { Brand, Task } from '@/lib/api'
 
@@ -111,11 +111,11 @@ export function useTaskStatusOptions() {
     });
 }
 
-export function useTaskPriorityOptions() {
+export function useTaskUrgencyOptions() {
     return useQuery<string[][]>({
-        queryKey: ['taskPriorityOptions'],
+        queryKey: ['taskUrgencyOptions'],
         queryFn: async () => {
-            const response = await getTaskPriorityOptions();
+            const response = await getTaskUrgencyOptions();
             return response;
         },
     });

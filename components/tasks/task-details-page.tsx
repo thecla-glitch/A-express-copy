@@ -38,7 +38,7 @@ import { TaskActivityLog } from "./task-activity-log"
 import { DayPicker } from "react-day-picker"
 import "react-day-picker/dist/style.css"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
-import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskPriorityOptions, useBrands } from "@/hooks/use-data";
+import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskUrgencyOptions, useBrands } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CostBreakdown } from "./cost-breakdown";
 import { Combobox } from "@/components/ui/core/combobox";
@@ -59,7 +59,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { data: technicians } = useTechnicians();
   const { data: locations } = useLocations();
   const { data: statusOptions } = useTaskStatusOptions();
-  const { data: priorityOptions } = useTaskPriorityOptions();
+  const { data: urgencyOptions } = useTaskUrgencyOptions();
   const { data: brands } = useBrands();
 
   const [newNote, setNewNote] = useState("")
@@ -554,7 +554,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {priorityOptions?.map((priority) => (
+                        {urgencyOptions?.map((priority) => (
                           <SelectItem key={priority[0]} value={priority[0]}>
                             {priority[1]}
                           </SelectItem>

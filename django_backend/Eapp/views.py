@@ -558,8 +558,8 @@ def get_task_status_options(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
-def get_task_priority_options(request):
-    return Response(Task.Priority.choices)
+def get_task_urgency_options(request):
+    return Response(Task.Urgency.choices)
 
 class BrandViewSet(viewsets.ModelViewSet):
     """
