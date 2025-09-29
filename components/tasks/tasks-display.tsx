@@ -297,6 +297,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                         <Button
                           size="sm"
                           variant="outline"
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
                             onReturnTask?.(task);
