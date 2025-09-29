@@ -1,12 +1,19 @@
-import useSWR from 'swr'
+import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 
 export function useCustomers(query: string) {
-  const { data, error, isLoading } = useSWR(query ? `customers/search/?query=${query}` : null, apiClient.get)
+  const { data, isError, isLoading } = useQuery({
+    queryKey: ['customers', query],
+    queryFn: async () => {
+      const response = await apiClient.get(`customers/search/?query=${query}`);
+      return response.data;
+    },
+    enabled: !!query,
+  });
 
   return {
-    data: data?.data,
+    data,
     isLoading,
-    isError: error,
+    isError,
   }
 }

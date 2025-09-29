@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
 import { Plus } from "lucide-react";
 import { TasksDisplay } from "./tasks-display";
-import { useTasks, useTechnicians } from "@/hooks/use-data";
+import { useTasks } from "@/hooks/use-tasks";
+import { useTechnicians } from "@/hooks/use-data";
 
 export function FrontDeskHistoryPage() {
   const router = useRouter();

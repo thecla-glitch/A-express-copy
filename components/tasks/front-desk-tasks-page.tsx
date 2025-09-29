@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/core/button";
 import { Plus } from "lucide-react";
 import { TasksDisplay } from "./tasks-display";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
-import { useTasks, useTechnicians, useUpdateTask } from "@/hooks/use-data";
+import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
+import { useTechnicians } from "@/hooks/use-data";
 import { useAuth } from "@/lib/auth-context";
 
 export function FrontDeskTasksPage() {

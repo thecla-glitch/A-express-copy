@@ -49,25 +49,6 @@ export function useLocations() {
     })
   }
 
-export function useTasks() {
-    return useQuery<Task[]>({
-        queryKey: ['tasks'],
-        queryFn: async () => {
-            const response = await apiClient.get('/tasks/');
-            return response.data;
-        },
-    });
-}
-
-export function useUpdateTask() {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ taskId, data }: { taskId: string; data: any }) => updateTask(taskId, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        },
-    });
-}
 
 export function useInProgressTasks(isWorkshopView: boolean, userId: string | undefined) {
     return useQuery<Task[]>({

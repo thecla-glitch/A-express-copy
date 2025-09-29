@@ -16,7 +16,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/feedback/dialog";
-import { useTasks, useTechnicians } from "@/hooks/use-data";
+import { useTasks } from "@/hooks/use-tasks";
+import { useTechnicians } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function ManagerTasksPage() {
