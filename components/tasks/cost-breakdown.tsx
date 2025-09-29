@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api';
+import { createCostBreakdown, deleteCostBreakdown } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/layout/card";
 import { Button } from "@/components/ui/core/button";
@@ -26,7 +26,7 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
 
   const costBreakdowns = task.cost_breakdowns || [];
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.createCostBreakdown(task.title, data),
+    mutationFn: (data: any) => createCostBreakdown(task.title, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', task.title] });
       setIsAdding(false);
@@ -36,7 +36,7 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiClient.deleteCostBreakdown(task.title, id),
+    mutationFn: (id: number) => deleteCostBreakdown(task.title, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', task.title] });
     },

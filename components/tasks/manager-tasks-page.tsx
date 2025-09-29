@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { apiClient } from "@/lib/api";
+import { deleteTask, updateTask } from "@/lib/api-client";
 import { TasksDisplay } from "./tasks-display";
 import { BrandManager } from "../brands/brand-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
@@ -31,7 +31,7 @@ export function ManagerTasksPage() {
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
 
   const deleteTaskMutation = useMutation({
-    mutationFn: (taskTitle: string) => apiClient.deleteTask(taskTitle),
+    mutationFn: (taskTitle: string) => deleteTask(taskTitle),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
@@ -39,7 +39,7 @@ export function ManagerTasksPage() {
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskTitle, data }: { taskTitle: string; data: any }) =>
-      apiClient.updateTask(taskTitle, data),
+      updateTask(taskTitle, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },

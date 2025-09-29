@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, UserResponse as User } from "@/lib/api";
+import { getTasks, listUsersByRole } from "@/lib/api-client";
+import { UserResponse as User } from "@/lib/api";
 import { TasksDisplay } from "./tasks-display";
 
 export function TaskHistoryPage() {
@@ -16,18 +17,18 @@ export function TaskHistoryPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const tasksResponse = await apiClient.getTasks();
+        const tasksResponse = await getTasks();
         if (tasksResponse.data) {
           setTasks(tasksResponse.data);
-        } else if (tasksResponse.error) {
-          setError(tasksResponse.error);
+        } else {
+          setError("Failed to fetch tasks");
         }
 
-        const techResponse = await apiClient.listUsersByRole("Technician");
+        const techResponse = await listUsersByRole("Technician");
         if (techResponse.data) {
           setTechnicians(techResponse.data);
-        } else if (techResponse.error) {
-          setError(techResponse.error as string);
+        } else {
+          setError("Failed to fetch technicians");
         }
       } catch (error) {
         console.error("Error fetching data:", error);

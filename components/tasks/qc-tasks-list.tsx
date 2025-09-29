@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Badge } from "@/components/ui/core/badge"
-import { apiClient } from "@/lib/api"
+import { getTasks } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context"
 import { Laptop } from "lucide-react"
 
@@ -28,7 +28,7 @@ export function QCTasksList({ refresh }: { refresh: boolean }) {
     const fetchTasks = async () => {
       if (!user) return
       try {
-        const response = await apiClient.getTasks()
+        const response = await getTasks();
         if (response.data) {
             const qcTasks = response.data.filter((task: any) => task.status === "Ready for QC" && task.assigned_to === user.id);
             setTasks(qcTasks)

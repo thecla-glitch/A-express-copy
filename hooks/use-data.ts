@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient, getTasks, getTask, listWorkshopLocations, listWorkshopTechnicians, updateTask } from '@/lib/api-client'
+import { getTasks, getTask, listWorkshopLocations, listWorkshopTechnicians, updateTask, listUsersByRole, getBrands, getLocations } from '@/lib/api-client'
 import { getTaskStatusOptions, getTaskPriorityOptions } from '@/lib/tasks-api'
 import { User } from "@/lib/use-user-management"
 import { Brand, Task } from '@/lib/api'
@@ -13,40 +13,40 @@ export function useTechnicians() {
   return useQuery<User[]>({
     queryKey: ['technicians'],
     queryFn: async () => {
-      const response = await apiClient.get('/users/role/Technician/')
-      return response.data
+      const response = await listUsersByRole('Technician');
+      return response.data;
     },
-  })
+  });
 }
 
 export function useManagers() {
     return useQuery<User[]>({
       queryKey: ['managers'],
       queryFn: async () => {
-        const response = await apiClient.get('/users/role/Manager/')
-        return response.data
+        const response = await listUsersByRole('Manager');
+        return response.data;
       },
-    })
+    });
   }
 
 export function useBrands() {
   return useQuery<Brand[]>({
     queryKey: ['brands'],
     queryFn: async () => {
-      const response = await apiClient.get('/brands/')
-      return response.data
+      const response = await getBrands();
+      return response.data;
     },
-  })
+  });
 }
 
 export function useLocations() {
     return useQuery<Location[]>({
       queryKey: ['locations'],
       queryFn: async () => {
-        const response = await apiClient.get('/locations/')
-        return response.data
+        const response = await getLocations();
+        return response.data;
       },
-    })
+    });
   }
 
 

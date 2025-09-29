@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/core/button";
-import { apiClient, Brand } from "@/lib/api";
+import { getBrands, createBrand } from "@/lib/api-client";
+import { Brand } from "@/lib/api";
 import { Input } from "@/components/ui/core/input";
 
 export function BrandManager() {
@@ -17,23 +18,31 @@ export function BrandManager() {
 
     const fetchBrands = async () => {
         setLoading(true);
-        const res = await apiClient.getBrands();
-        if (res.data) {
-            setBrands(res.data);
-        } else {
-            setError(res.error || "Failed to fetch brands");
+        try {
+            const res = await getBrands();
+            if (res.data) {
+                setBrands(res.data);
+            } else {
+                setError("Failed to fetch brands");
+            }
+        } catch (err) {
+            setError("Failed to fetch brands");
         }
         setLoading(false);
     };
 
     const handleCreateBrand = async () => {
         if (newBrandName.trim() === "") return;
-        const res = await apiClient.createBrand({ name: newBrandName });
-        if (res.data) {
-            setBrands([...brands, res.data]);
-            setNewBrandName("");
-        } else {
-            setError(res.error || "Failed to create brand");
+        try {
+            const res = await createBrand({ name: newBrandName });
+            if (res.data) {
+                setBrands([...brands, res.data]);
+                setNewBrandName("");
+            } else {
+                setError("Failed to create brand");
+            }
+        } catch (err) {
+            setError("Failed to create brand");
         }
     };
 
