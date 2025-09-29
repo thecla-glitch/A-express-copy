@@ -9,12 +9,16 @@ import { useInWorkshopTasks } from "@/hooks/use-data"
 
 const getUrgencyBadge = (urgency: string) => {
   switch (urgency) {
-    case "High":
-      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">High</Badge>
-    case "Medium":
-      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Medium</Badge>
-    case "Low":
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Low</Badge>
+    case "Yupo":
+      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Yupo</Badge>
+    case "Katoka kidogo":
+      return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Katoka kidogo</Badge>
+    case "Kaacha":
+      return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Kaacha</Badge>
+    case "Expedited":
+      return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Expedited</Badge>
+    case "Ina Haraka":
+      return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Ina Haraka</Badge>
     default:
       return <Badge variant="secondary">{urgency}</Badge>
   }

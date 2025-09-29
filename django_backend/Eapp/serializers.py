@@ -169,7 +169,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'brand', 'brand_details', 'laptop_model', 'serial_number',
             'device_type', 'device_notes',
             'estimated_cost', 'total_cost', 'payment_status',
-            'current_location', 'urgency', 'date_in', 'approved_at', 'approved_by',
+            'current_location', 'date_in', 'approved_at', 'approved_by',
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
             'activities', 'payments', 'outstanding_balance', 'is_commissioned', 'commissioned_by',
             'partial_payment_amount',

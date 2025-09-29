@@ -47,9 +47,11 @@ interface FormErrors {
 }
 
 const URGENCY_OPTIONS = [
-  { value: 'Low', label: 'Low' },
-  { value: 'Medium', label: 'Medium' },
-  { value: 'High', label: 'High' },
+  { value: 'Yupo', label: 'Yupo' },
+  { value: 'Katoka kidogo', label: 'Katoka kidogo' },
+  { value: 'Kaacha', label: 'Kaacha' },
+  { value: 'Expedited', label: 'Expedited' },
+  { value: 'Ina Haraka', label: 'Ina Haraka' },
 ]
 
 const DEVICE_TYPE_OPTIONS = [
@@ -82,7 +84,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
     laptop_model: '',
     serial_number: '',
     description: '',
-    urgency: 'Medium',
+    urgency: 'Yupo',
     current_location: '',
     device_type: 'Full',
     device_notes: '',

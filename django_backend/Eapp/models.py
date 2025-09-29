@@ -146,10 +146,12 @@ class Task(models.Model):
         PICKED_UP = 'Picked Up', _('Picked Up')
         TERMINATED = 'Terminated', _('Terminated')
 
-    class Priority(models.TextChoices):
-        LOW = 'Low', _('Low')
-        MEDIUM = 'Medium', _('Medium')
-        HIGH = 'High', _('High')
+    class Urgency(models.TextChoices):
+        YUPO = 'Yupo', _('Yupo')
+        KATOKA_KIDOGO = 'Katoka kidogo', _('Katoka kidogo')
+        KAACHA = 'Kaacha', _('Kaacha')
+        EXPEDITED = 'Expedited', _('Expedited')
+        INA_HARAKA = 'Ina Haraka', _('Ina Haraka')
 
     class PaymentStatus(models.TextChoices):
         UNPAID = 'Unpaid', _('Unpaid')
@@ -174,11 +176,7 @@ class Task(models.Model):
         choices=Status.choices,
         default=Status.PENDING
     )
-    priority = models.CharField(
-        max_length=20,
-        choices=Priority.choices,
-        default=Priority.MEDIUM
-    )
+
     assigned_to = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks'
     )
@@ -201,7 +199,7 @@ class Task(models.Model):
         default=PaymentStatus.UNPAID
     )
     current_location = models.CharField(max_length=100)
-    urgency = models.CharField(max_length=20, choices=Priority.choices, default=Priority.MEDIUM)
+    priority = models.CharField(max_length=20, choices=Urgency.choices, default=Urgency.YUPO)
     date_in = models.DateField(default=get_current_date)
     approved_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(

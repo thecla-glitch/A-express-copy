@@ -75,7 +75,7 @@ const recentInteractions = [
     time: "5 minutes ago",
     status: "In Progress",
     type: "new",
-    priority: "High",
+    priority: "Kaacha",
   },
   {
     id: "T-1003",
@@ -85,7 +85,7 @@ const recentInteractions = [
     time: "12 minutes ago",
     status: "Awaiting Parts",
     type: "update",
-    priority: "Medium",
+    priority: "Katoka kidogo",
   },
   {
     id: "T-1020",
@@ -95,7 +95,7 @@ const recentInteractions = [
     time: "25 minutes ago",
     status: "In Progress",
     type: "inquiry",
-    priority: "Low",
+    priority: "Yupo",
   },
   {
     id: "T-1018",
@@ -105,7 +105,7 @@ const recentInteractions = [
     time: "1 hour ago",
     status: "Completed",
     type: "payment",
-    priority: "Medium",
+    priority: "Katoka kidogo",
   },
 ]
 
@@ -313,12 +313,16 @@ export function FrontDeskDashboard() {
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case "High":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">High</Badge>
-      case "Medium":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Medium</Badge>
-      case "Low":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Low</Badge>
+      case "Yupo":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Yupo</Badge>
+      case "Katoka kidogo":
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Katoka kidogo</Badge>
+      case "Kaacha":
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Kaacha</Badge>
+      case "Expedited":
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Expedited</Badge>
+      case "Ina Haraka":
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Ina Haraka</Badge>
       default:
         return <Badge variant="secondary">{priority}</Badge>
     }
