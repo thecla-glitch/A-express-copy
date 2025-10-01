@@ -21,7 +21,7 @@ class BrandSerializer(serializers.ModelSerializer):
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ['id', 'name', 'email', 'phone', 'address']
+        fields = ['id', 'name', 'email', 'phone', 'address', 'customer_type']
 
 
 class UserSerializer(serializers.ModelSerializer):

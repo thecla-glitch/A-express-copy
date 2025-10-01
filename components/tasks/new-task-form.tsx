@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/core/input'
 import { Label } from '@/components/ui/core/label'
 import { Textarea } from '@/components/ui/core/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/core/select'
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 import { createTask, createCustomer } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth-context'
@@ -27,6 +28,7 @@ interface FormData {
   customer_name: string
   customer_phone: string
   customer_email: string
+  customer_type?: string
   brand: string
   laptop_model: string
   serial_number: string
@@ -52,6 +54,11 @@ const URGENCY_OPTIONS = [
   { value: 'Kaacha', label: 'Kaacha' },
   { value: 'Expedited', label: 'Expedited' },
   { value: 'Ina Haraka', label: 'Ina Haraka' },
+]
+
+const CUSTOMER_TYPE_OPTIONS = [
+  { value: 'Normal', label: 'Normal' },
+  { value: 'Repairman', label: 'Repairman' },
 ]
 
 const DEVICE_TYPE_OPTIONS = [
@@ -80,6 +87,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
     customer_name: '',
     customer_phone: '',
     customer_email: '',
+    customer_type: 'Normal',
     brand: '',
     laptop_model: '',
     serial_number: '',
@@ -165,6 +173,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
           name: formData.customer_name,
           phone: formData.customer_phone,
           email: formData.customer_email,
+          customer_type: formData.customer_type,
         });
         customerId = response.data.id;
         toast({
@@ -229,6 +238,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                     handleInputChange('customer_name', selectedCustomer.name)
                     handleInputChange('customer_phone', selectedCustomer.phone)
                     handleInputChange('customer_email', selectedCustomer.email)
+                    handleInputChange('customer_type', selectedCustomer.customer_type)
                   } else {
                     handleInputChange('customer_id', '')
                   }
@@ -259,6 +269,24 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 className={errors.customer_email ? 'border-red-500' : ''}
                 placeholder="e.g. john.doe@example.com"
               />
+            </FormField>
+            <FormField id='customer_type' label='Customer Type'>
+              <Tabs
+                value={formData.customer_type}
+                onValueChange={(value) => handleInputChange('customer_type', value)}
+              >
+                <TabsList>
+                  {CUSTOMER_TYPE_OPTIONS.map((option) => (
+                    <TabsTrigger
+                      key={option.value}
+                      value={option.value}
+                      className='data-[state=active]:bg-red-600 data-[state=active]:text-white data-[state=inactive]:bg-gray-200'
+                    >
+                      {option.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </FormField>
             <div className='grid grid-cols-2 gap-4'>
               <FormField id='brand' label='Brand' error={errors.brand}>
