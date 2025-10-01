@@ -242,7 +242,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Customer Name</label>
-                  <p className="text-lg font-semibold text-gray-900">{task.customer_name}</p>
+                  <p className="text-lg font-semibold text-gray-900">{task.customer_details?.name}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Laptop Model</label>
@@ -434,27 +434,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {user.role !== 'Technician' && (
-            <Card className="border-gray-200">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900">Customer Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Name</label>
-                  <p className="text-gray-900">{task.customer_name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Phone</label>
-                  <p className="text-gray-900">{task.customer_phone}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Email</label>
-                  <p className="text-gray-900">{task.customer_email}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* Timeline */}
           <Card className="border-gray-200">

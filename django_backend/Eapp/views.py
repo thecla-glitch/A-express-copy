@@ -360,6 +360,12 @@ def task_detail(request, task_id):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        if 'status' in request.data and request.data['status'] == 'Pending' and user.role not in ['Manager', 'Front Desk']:
+            return Response(
+                {"error": "You do not have permission to return tasks."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         if 'status' in request.data and not is_manager:
             current_status = task.status
             new_status = request.data['status']
@@ -623,7 +629,7 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
     API endpoint that allows cost breakdowns to be viewed or edited.
     """
     serializer_class = CostBreakdownSerializer
-    permission_classes = [IsManager]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return CostBreakdown.objects.filter(task__title=self.kwargs['task_id'])

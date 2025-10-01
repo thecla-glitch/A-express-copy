@@ -19,3 +19,13 @@ export const getTaskUrgencyOptions = async () => {
         throw error;
     }
 };
+
+export const createCostBreakdown = async (taskId: string, costBreakdown: any) => {
+    try {
+        const response = await apiClient.post(`/tasks/${taskId}/cost-breakdowns/`, costBreakdown);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating cost breakdown:', error);
+        throw error;
+    }
+};

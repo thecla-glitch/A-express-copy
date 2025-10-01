@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getTasks, createTask, updateTask as apiUpdateTask } from '@/lib/api-client'
+import { getTasks, createTask, updateTask as apiUpdateTask, createCostBreakdown } from '@/lib/api-client'
 import { Task } from '@/lib/api'
 
 export function useTasks(filters?: {
@@ -32,6 +32,17 @@ export function useUpdateTask() {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', variables.id] });
+    },
+  });
+}
+
+export function useCreateCostBreakdown() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, costBreakdown }: { taskId: string, costBreakdown: any }) => createCostBreakdown(taskId, costBreakdown),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['task', variables.taskId] });
     },
   });
 }

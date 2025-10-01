@@ -10,10 +10,19 @@ import {
   DialogFooter,
 } from '@/components/ui/feedback/dialog';
 import { Button } from '@/components/ui/core/button';
-import { Input } from '@/components/ui/core/input';
+import { CurrencyInput } from '@/components/ui/core/currency-input';
 import { Label } from '@/components/ui/core/label';
 import { Textarea } from '@/components/ui/core/textarea';
-import { useUpdateTask } from '@/hooks/use-tasks';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/core/select';
+import { Checkbox } from '@/components/ui/core/checkbox';
+import { useUpdateTask, useCreateCostBreakdown } from '@/hooks/use-tasks';
+import { useTaskUrgencyOptions } from '@/hooks/use-data';
 
 interface ReturnTaskDialogProps {
   task: any;
@@ -23,16 +32,33 @@ interface ReturnTaskDialogProps {
 
 export function ReturnTaskDialog({ task, isOpen, onClose }: ReturnTaskDialogProps) {
   const [newIssueDescription, setNewIssueDescription] = useState('');
-  const [newEstimatedCost, setNewEstimatedCost] = useState('');
+  const [newEstimatedCost, setNewEstimatedCost] = useState<number | '' >('');
+  const [urgency, setUrgency] = useState('');
+  const [renegotiate, setRenegotiate] = useState(false);
   const updateTaskMutation = useUpdateTask();
+  const createCostBreakdownMutation = useCreateCostBreakdown();
+  const { data: urgencyOptions } = useTaskUrgencyOptions();
 
   const handleSubmit = () => {
+    if (renegotiate) {
+      const costDifference = (newEstimatedCost || 0) - task.total_cost;
+      createCostBreakdownMutation.mutate({
+        taskId: task.title,
+        costBreakdown: {
+          description: 'Renegotiation on Return',
+          amount: costDifference,
+          cost_type: costDifference > 0 ? 'Additive' : 'Subtractive',
+        },
+      });
+    }
+
     updateTaskMutation.mutate({
-      id: task.id,
+      id: task.title,
       updates: {
         status: 'Pending',
         issue_description: newIssueDescription || task.issue_description,
         estimated_cost: newEstimatedCost || task.estimated_cost,
+        urgency: urgency || task.urgency,
       },
     });
     onClose();
@@ -53,14 +79,34 @@ export function ReturnTaskDialog({ task, isOpen, onClose }: ReturnTaskDialogProp
               onChange={(e) => setNewIssueDescription(e.target.value)}
             />
           </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="renegotiate" checked={renegotiate} onCheckedChange={setRenegotiate} />
+            <Label htmlFor="renegotiate">Renegotiate</Label>
+          </div>
+          {renegotiate && (
+            <div>
+              <Label htmlFor="new-estimated-cost">New Estimated Cost</Label>
+              <CurrencyInput
+                id="new-estimated-cost"
+                value={newEstimatedCost}
+                onValueChange={(value) => setNewEstimatedCost(value)}
+              />
+            </div>
+          )}
           <div>
-            <Label htmlFor="new-estimated-cost">New Estimated Cost</Label>
-            <Input
-              id="new-estimated-cost"
-              type="number"
-              value={newEstimatedCost}
-              onChange={(e) => setNewEstimatedCost(e.target.value)}
-            />
+            <Label htmlFor="urgency">Urgency</Label>
+            <Select value={urgency} onValueChange={setUrgency}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select urgency" />
+              </SelectTrigger>
+              <SelectContent>
+                {urgencyOptions?.map((option: [string, string]) => (
+                  <SelectItem key={option[0]} value={option[0]}>
+                    {option[1]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>
