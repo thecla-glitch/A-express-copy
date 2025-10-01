@@ -1,7 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { apiClient } from "./api-client"
+import {
+  apiClient,
+  activateUser,
+  deactivateUser,
+  deleteUser as apiDeleteUser,
+  registerUser,
+  updateUser as apiUpdateUser,
+} from "./api-client"
 import { useAuth } from "./auth-context"
 import { toast } from "@/hooks/use-toast"
 
@@ -60,13 +67,13 @@ export function useUserManagement() {
     setError(null)
 
     try {
-      const response = await apiClient.registerUser(userData)
+      const response = await registerUser(userData)
 
-      if (response.error) {
-        setError(response.error)
+      if (response.data.error) {
+        setError(response.data.error)
         toast({
           title: "Error",
-          description: response.error,
+          description: response.data.error,
           variant: "destructive",
         })
         return false
@@ -98,13 +105,12 @@ export function useUserManagement() {
     setError(null)
 
     try {
-      const response = await apiClient.updateUser(userId, userData)
-
-      if (response.error) {
-        setError(response.error)
+      const response = await apiUpdateUser(userId, userData);
+      if (response.data.error) {
+        setError(response.data.error)
         toast({
           title: "Error",
-          description: response.error,
+          description: response.data.error,
           variant: "destructive",
         })
         return false
@@ -136,13 +142,13 @@ export function useUserManagement() {
     setError(null)
 
     try {
-      const response = await apiClient.deleteUser(userId)
+      const response = await apiDeleteUser(userId)
 
-      if (response.error) {
-        setError(response.error)
+      if (response.data.error) {
+        setError(response.data.error)
         toast({
           title: "Error",
-          description: response.error,
+          description: response.data.error,
           variant: "destructive",
         })
         return false
@@ -175,14 +181,14 @@ export function useUserManagement() {
 
     try {
       const response = isActive 
-        ? await apiClient.activateUser(userId)
-        : await apiClient.deactivateUser(userId)
+        ? await activateUser(userId)
+        : await deactivateUser(userId)
 
-      if (response.error) {
-        setError(response.error)
+      if (response.data.error) {
+        setError(response.data.error)
         toast({
           title: "Error",
-          description: response.error,
+          description: response.data.error,
           variant: "destructive",
         })
         return false

@@ -209,7 +209,7 @@ def deactivate_user(request, user_id):
     if user.id == request.user.id:
         return Response(
             {"error": "You cannot deactivate your own account."},
-            status=status.HTTP_4DELETED_FORBIDDEN
+            status=status.HTTP_403_FORBIDDEN
         )
     
     user.is_active = False
