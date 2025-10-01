@@ -169,8 +169,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>
       case "Awaiting Parts":
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Awaiting Parts</Badge>
-      case "Ready for QC":
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Ready for QC</Badge>
       case "Ready for Pickup":
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ready for Pickup</Badge>
       case "Completed":

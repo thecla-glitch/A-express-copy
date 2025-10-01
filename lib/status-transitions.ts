@@ -7,15 +7,13 @@ const transitions = {
     'Pending': ['Cancelled'],
     'In Progress': ['Cancelled'],
     'Awaiting Parts': ['Cancelled'],
-    'Ready for QC': ['Cancelled'],
   },
   'Technician': {
     'Pending': ['In Progress'],
-    'In Progress': ['Awaiting Parts', 'Ready for QC'],
+    'In Progress': ['Awaiting Parts', 'Completed'],
     'Awaiting Parts': ['In Progress'],
   },
   'Manager': {
-    'Ready for QC': ['Completed', 'In Progress'],
   },
 };
 

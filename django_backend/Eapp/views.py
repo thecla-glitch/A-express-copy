@@ -382,7 +382,6 @@ def task_detail(request, task_id):
                     'Ready for Pickup': ['Picked Up'],
                     'Pending': ['Terminated'],
                     'In Progress': ['Terminated'],
-                    'Awaiting Parts': ['Terminated'],
                 },
                 'Technician': {
                     'Pending': ['In Progress'],

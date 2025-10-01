@@ -131,7 +131,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
       "Pending": { label: "Pending", color: "bg-gray-100 text-gray-800" },
       "In Progress": { label: "In Progress", color: "bg-blue-100 text-blue-800" },
       "Awaiting Parts": { label: "Awaiting Parts", color: "bg-orange-100 text-orange-800" },
-      "Ready for QC": { label: "Ready for QC", color: "bg-purple-100 text-purple-800" },
       "Completed": { label: "Completed", color: "bg-green-100 text-green-800" },
       "Ready for Pickup": { label: "Ready for Pickup", color: "bg-green-100 text-green-800" },
       "Picked Up": { label: "Picked Up", color: "bg-purple-100 text-purple-800" },
