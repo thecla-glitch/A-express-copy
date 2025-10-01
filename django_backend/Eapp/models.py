@@ -224,8 +224,8 @@ class Task(models.Model):
     negotiated_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='negotiated_tasks'
     )
-    is_commissioned = models.BooleanField(default=False)
-    commissioned_by = models.CharField(max_length=100, blank=True)
+    is_referred = models.BooleanField(default=False)
+    referred_by = models.CharField(max_length=100, blank=True)
 
     # Workshop fields
     workshop_status = models.CharField(

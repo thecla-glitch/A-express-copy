@@ -323,10 +323,10 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Commissioned By</Label>
+                    <Label className="text-sm font-medium text-gray-600">Referred By</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-900">{taskData.commissioned_by || "Not commissioned"}</span>
+                      <span className="text-gray-900">{taskData.referred_by || "Not referred"}</span>
                     </div>
                   </div>
                   <div>

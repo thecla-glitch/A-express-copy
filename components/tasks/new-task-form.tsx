@@ -40,8 +40,8 @@ interface FormData {
   negotiated_by: string
   assigned_to?: string
   estimated_cost?: number
-  is_commissioned: boolean
-  commissioned_by: string
+  is_referred: boolean
+  referred_by: string
 }
 
 interface FormErrors {
@@ -72,7 +72,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
-  const [isCommissioned, setIsCommissioned] = useState(false)
+  const [isReferred, setIsReferred] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
 
   const { data: technicians, isLoading: isLoadingTechnicians } = useTechnicians()
@@ -99,8 +99,8 @@ export function NewTaskForm({}: NewTaskFormProps) {
     negotiated_by: '',
     assigned_to: '',
     estimated_cost: 0,
-    is_commissioned: false,
-    commissioned_by: ''
+    is_referred: false,
+    referred_by: ''
   })
   const [errors, setErrors] = useState<FormErrors>({})
 
@@ -186,7 +186,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
         ...formData,
         customer: customerId,
         negotiated_by: formData.negotiated_by || null,
-        commissioned_by: formData.is_commissioned ? formData.commissioned_by : 'Not Commissioned',
+        referred_by: formData.is_referred ? formData.referred_by : 'Not Referred',
       };
       await createTask(taskData)
       setSubmitSuccess(true)
@@ -435,20 +435,20 @@ export function NewTaskForm({}: NewTaskFormProps) {
               </FormField>
             )}
           <div className="flex items-center space-x-2">
-            <Checkbox id="is_commissioned" checked={isCommissioned} onCheckedChange={(checked) => { setIsCommissioned(!!checked); handleInputChange('is_commissioned', !!checked); }} />
+            <Checkbox id="is_referred" checked={isReferred} onCheckedChange={(checked) => { setIsReferred(!!checked); handleInputChange('is_referred', !!checked); }} />
               <label
-                htmlFor="is_commissioned"
+                htmlFor="is_referred"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Commissioned
+                Referred
               </label>
             </div>
-            {isCommissioned && (
-              <FormField id='commissioned_by' label='Commissioned By'>
+            {isReferred && (
+              <FormField id='referred_by' label='Referred By'>
                 <Input
-                  id='commissioned_by'
-                  value={formData.commissioned_by}
-                  onChange={(e) => handleInputChange('commissioned_by', e.target.value)}
+                  id='referred_by'
+                  value={formData.referred_by}
+                  onChange={(e) => handleInputChange('referred_by', e.target.value)}
                   placeholder="e.g. Jane Smith"
                 />
               </FormField>
