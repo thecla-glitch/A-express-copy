@@ -373,21 +373,32 @@ def task_detail(request, task_id):
             if new_status == 'Picked Up':
                 request.data['sent_out_by'] = user.id
                 request.data['date_out'] = timezone.now()
-
-            if new_status == 'Completed':
+            elif new_status == 'Completed':
                 TaskActivity.objects.create(
                     task=task,
                     user=user,
                     type=TaskActivity.ActivityType.STATUS_UPDATE,
                     message=f"Task marked as Completed."
                 )
-            
+            elif new_status == 'In Progress' and user.role == 'Front Desk':
+                technician_id = request.data.get('assigned_to')
+                if technician_id:
+                    technician = get_object_or_404(User, id=technician_id, role='Technician')
+                    task.assigned_to = technician
+                    TaskActivity.objects.create(
+                        task=task,
+                        user=user,
+                        type=TaskActivity.ActivityType.STATUS_UPDATE,
+                        message=f"Task assigned to {technician.get_full_name()}."
+                    )
+
             allowed_transitions = {
                 'Front Desk': {
-                    'Completed': ['Ready for Pickup','In Progress'],
-                    'Ready for Pickup': ['Picked Up'],
+                    'Completed': ['Ready for Pickup', 'In Progress', 'Pending'],
+                    'Ready for Pickup': ['Picked Up', 'Pending', 'In Progress'],
+                    'Picked Up': ['In Progress'],
                     'Pending': ['Terminated'],
-                    'In Progress': ['Terminated'],
+                    'In Progress': ['Terminated', 'Pending'],
                 },
                 'Technician': {
                     'Pending': ['In Progress'],

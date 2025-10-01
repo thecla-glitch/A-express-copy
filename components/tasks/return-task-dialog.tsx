@@ -22,7 +22,9 @@ import {
 } from '@/components/ui/core/select';
 import { Checkbox } from '@/components/ui/core/checkbox';
 import { useUpdateTask, useCreateCostBreakdown } from '@/hooks/use-tasks';
-import { useTaskUrgencyOptions } from '@/hooks/use-data';
+import { useTaskUrgencyOptions, useTechnicians } from '@/hooks/use-data';
+import { useMutation } from '@tanstack/react-query';
+import { addTaskActivity } from '@/lib/api-client';
 
 interface ReturnTaskDialogProps {
   task: any;
@@ -34,10 +36,16 @@ export function ReturnTaskDialog({ task, isOpen, onClose }: ReturnTaskDialogProp
   const [newIssueDescription, setNewIssueDescription] = useState('');
   const [newEstimatedCost, setNewEstimatedCost] = useState<number | '' >('');
   const [urgency, setUrgency] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
   const [renegotiate, setRenegotiate] = useState(false);
   const updateTaskMutation = useUpdateTask();
   const createCostBreakdownMutation = useCreateCostBreakdown();
   const { data: urgencyOptions } = useTaskUrgencyOptions();
+  const { data: technicians } = useTechnicians();
+
+  const addTaskActivityMutation = useMutation({ 
+    mutationFn: (data: any) => addTaskActivity(task.title, data)
+  });
 
   const handleSubmit = () => {
     if (renegotiate) {
@@ -52,13 +60,17 @@ export function ReturnTaskDialog({ task, isOpen, onClose }: ReturnTaskDialogProp
       });
     }
 
+    if (newIssueDescription) {
+      addTaskActivityMutation.mutate({ type: 'note', message: `Returned with new issue: ${newIssueDescription}` });
+    }
+
     updateTaskMutation.mutate({
       id: task.title,
       updates: {
-        status: 'Pending',
-        issue_description: newIssueDescription || task.issue_description,
+        status: 'In Progress',
         estimated_cost: newEstimatedCost || task.estimated_cost,
         urgency: urgency || task.urgency,
+        assigned_to: assignedTo || task.assigned_to,
       },
     });
     onClose();
@@ -103,6 +115,21 @@ export function ReturnTaskDialog({ task, isOpen, onClose }: ReturnTaskDialogProp
                 {urgencyOptions?.map((option: [string, string]) => (
                   <SelectItem key={option[0]} value={option[0]}>
                     {option[1]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="assigned-to">Assign Technician</Label>
+            <Select value={assignedTo} onValueChange={setAssignedTo}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select technician" />
+              </SelectTrigger>
+              <SelectContent>
+                {technicians?.map((technician: any) => (
+                  <SelectItem key={technician.id} value={technician.id}>
+                    {technician.first_name} {technician.last_name}
                   </SelectItem>
                 ))}
               </SelectContent>

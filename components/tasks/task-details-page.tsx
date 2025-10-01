@@ -462,6 +462,28 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                 </div>
               </CardContent>
             </Card>
+            {/* Returned Issue Descriptions */}
+            {taskData.activities?.filter((activity: any) => activity.message.startsWith('Returned with new issue:')).length > 0 && (
+              <Card className="border-gray-200">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold text-gray-900">Returned Issue Descriptions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {taskData.activities
+                      .filter((activity: any) => activity.message.startsWith('Returned with new issue:'))
+                      .map((activity: any) => (
+                        <div key={activity.id} className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                          <p className="text-gray-900 leading-relaxed">{activity.message.replace('Returned with new issue: ', '')}</p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Reported by {activity.user?.full_name || 'System'} on {new Date(activity.timestamp).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
         </TabsContent>
 
 
