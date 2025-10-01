@@ -146,6 +146,18 @@ class Customer(models.Model):
         ordering = ['name']
 
 
+class Referrer(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+
+
 class Task(models.Model):
     class Status(models.TextChoices):
         PENDING = 'Pending', _('Pending')
@@ -225,7 +237,9 @@ class Task(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='negotiated_tasks'
     )
     is_referred = models.BooleanField(default=False)
-    referred_by = models.CharField(max_length=100, blank=True)
+    referred_by = models.ForeignKey(
+        'Referrer', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_tasks'
+    )
 
     # Workshop fields
     workshop_status = models.CharField(

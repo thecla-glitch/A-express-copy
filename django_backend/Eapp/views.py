@@ -1,4 +1,4 @@
-from rest_framework import status, permissions, viewsets
+from rest_framework import status, permissions, viewsets, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -6,12 +6,13 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, CostBreakdown
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown
 from .serializers import (
-    ChangePasswordSerializer, UserProfileUpdateSerializer, UserSerializer, 
-    UserRegistrationSerializer, LoginSerializer, TaskSerializer,
-    TaskActivitySerializer, PaymentSerializer, LocationSerializer, BrandSerializer, CustomerSerializer, CostBreakdownSerializer
+    UserSerializer, TaskSerializer, TaskActivitySerializer, PaymentSerializer, 
+    LocationSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, CostBreakdownSerializer,
+    UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer
 )
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from datetime import datetime
 from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk
@@ -542,6 +543,32 @@ def send_customer_update(request, task_id):
         return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CustomerSearchView(generics.ListAPIView):
+    serializer_class = CustomerSerializer
+
+    def get_queryset(self):
+        query = self.request.query_params.get('query', '')
+        if query:
+            return Customer.objects.filter(
+                Q(name__icontains=query) |
+                Q(phone__icontains=query)
+            ).order_by('name')
+        return Customer.objects.none()
+
+
+class ReferrerSearchView(generics.ListAPIView):
+    serializer_class = ReferrerSerializer
+
+    def get_queryset(self):
+        query = self.request.query_params.get('query', '')
+        if query:
+            return Referrer.objects.filter(
+                Q(name__icontains=query) |
+                Q(phone__icontains=query)
+            ).order_by('name')
+        return Referrer.objects.none()
+
 
 class LocationViewSet(viewsets.ModelViewSet):
     """

@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescript
 import { CurrencyInput } from "@/components/ui/core/currency-input";
 import { useTechnicians, useManagers, useBrands, useLocations } from '@/hooks/use-data'
 import { useCustomers } from '@/hooks/use-customers'
+import { useReferrers } from '@/hooks/use-referrers'
 import { SimpleCombobox } from '@/components/ui/core/combobox'
 import { toast } from '@/hooks/use-toast'
 
@@ -74,12 +75,14 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [isReferred, setIsReferred] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
+  const [referrerSearch, setReferrerSearch] = useState('')
 
   const { data: technicians, isLoading: isLoadingTechnicians } = useTechnicians()
   const { data: managers, isLoading: isLoadingManagers } = useManagers()
   const { data: brands, isLoading: isLoadingBrands } = useBrands()
   const { data: locations, isLoading: isLoadingLocations } = useLocations()
   const { data: customers, isLoading: isLoadingCustomers } = useCustomers(customerSearch)
+  const { data: referrers, isLoading: isLoadingReferrers } = useReferrers(referrerSearch)
 
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -186,12 +189,16 @@ export function NewTaskForm({}: NewTaskFormProps) {
         ...formData,
         customer: customerId,
         negotiated_by: formData.negotiated_by || null,
-        referred_by: formData.is_referred ? formData.referred_by : 'Not Referred',
+        referred_by: formData.is_referred ? formData.referred_by : null,
       };
       await createTask(taskData)
       setSubmitSuccess(true)
-    } catch (error) {
-      console.error('Error creating task:', error.response.data)
+    } catch (error: any) {
+      if (error.response) {
+        console.error('Error creating task:', error.response.data)
+      } else {
+        console.error('Error creating task:', error)
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -212,6 +219,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const canAssignTechnician = user && (user.role === 'Manager' || user.role === 'Administrator' || user.role === 'Front Desk')
 
   const customerOptions = customers ? customers.map((c: any) => ({ label: c.name, value: c.id.toString() })) : [];
+  const referrerOptions = referrers ? referrers.map((r: any) => ({ label: r.name, value: r.id.toString() })) : [];
 
   return (
     <>
@@ -362,7 +370,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
             <FormField id='estimated_cost' label='Estimated Cost (TSh)'>
               <CurrencyInput
                 id='estimated_cost'
-                value={formData.estimated_cost}
+                value={formData.estimated_cost ?? 0}
                 onValueChange={(value) => handleInputChange('estimated_cost', value)}
                 placeholder="e.g. 150,000"
               />
@@ -395,7 +403,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 </SelectContent>
               </Select>
             </FormField>
-  		  <FormField id='negotiated_by' label='Negotiated By'>
+  <FormField id='negotiated_by' label='Negotiated By'>
               {user?.role === 'Manager' ? (
                   <Input
                       id='negotiated_by'
@@ -445,11 +453,22 @@ export function NewTaskForm({}: NewTaskFormProps) {
             </div>
             {isReferred && (
               <FormField id='referred_by' label='Referred By'>
-                <Input
-                  id='referred_by'
+                <SimpleCombobox
+                  options={referrerOptions}
                   value={formData.referred_by}
-                  onChange={(e) => handleInputChange('referred_by', e.target.value)}
-                  placeholder="e.g. Jane Smith"
+                  onChange={(value) => {
+                    const selectedReferrer = referrers.find((r: any) => r.id.toString() === value)
+                    if(selectedReferrer){
+                      handleInputChange('referred_by', selectedReferrer.name)
+                    } else {
+                      handleInputChange('referred_by', value)
+                    }
+                  }}
+                  onInputChange={(value) => {
+                    handleInputChange('referred_by', value)
+                    setReferrerSearch(value)
+                  }}
+                  placeholder="Search or create referrer..."
                 />
               </FormField>
             )}

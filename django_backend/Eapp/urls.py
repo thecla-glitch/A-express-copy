@@ -27,7 +27,8 @@ urlpatterns = [
     path('users/role/<str:role>/', views.list_users_by_role, name='list_users_by_role'),
 
     # Customer endpoints
-    path('customers/search/', views.customer_search, name='customer_search'),
+    path('customers/search/', views.CustomerSearchView.as_view(), name='customer-search'),
+    path('referrers/search/', views.ReferrerSearchView.as_view(), name='referrer-search'),
     path('customers/create/', views.customer_create, name='customer_create'),
     
     # Task management endpoints

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, CostBreakdown
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown
 from django.utils import timezone
 
 
@@ -22,6 +22,12 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = ['id', 'name', 'email', 'phone', 'address', 'customer_type']
+
+
+class ReferrerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Referrer
+        fields = ['id', 'name', 'phone']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -148,6 +154,8 @@ class TaskSerializer(serializers.ModelSerializer):
     approved_by_details = UserSerializer(source='approved_by', read_only=True)
     sent_out_by_details = UserSerializer(source='sent_out_by', read_only=True)
     brand_details = BrandSerializer(source='brand', read_only=True)
+    referred_by = serializers.CharField(source='referred_by.name', allow_blank=True, allow_null=True, required=False)
+    referred_by_details = ReferrerSerializer(source='referred_by', read_only=True)
     customer_details = CustomerSerializer(source='customer', read_only=True)
     activities = TaskActivitySerializer(many=True, read_only=True)
     payments = PaymentSerializer(many=True, read_only=True)
@@ -171,7 +179,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'estimated_cost', 'total_cost', 'payment_status',
             'current_location', 'date_in', 'approved_at', 'approved_by',
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
-            'activities', 'payments', 'outstanding_balance', 'is_referred', 'referred_by',
+            'activities', 'payments', 'outstanding_balance', 'is_referred', 'referred_by', 'referred_by_details',
             'partial_payment_amount',
             'workshop_status', 'workshop_location', 'workshop_technician', 'original_technician',
             'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details',
@@ -206,6 +214,15 @@ class TaskSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        referred_by_data = validated_data.pop('referred_by', None)
+        is_referred = validated_data.get('is_referred', False)
+
+        if is_referred and referred_by_data:
+            referrer, _ = Referrer.objects.get_or_create(name=referred_by_data.get('name'))
+            validated_data['referred_by'] = referrer
+        else:
+            validated_data['referred_by'] = None
+
         if validated_data.get('assigned_to'):
             validated_data['status'] = 'In Progress'
         else:
@@ -223,6 +240,15 @@ class TaskSerializer(serializers.ModelSerializer):
         return task
 
     def update(self, instance, validated_data):
+        referred_by_data = validated_data.pop('referred_by', None)
+        is_referred = validated_data.get('is_referred', instance.is_referred)
+
+        if is_referred and referred_by_data:
+            referrer, _ = Referrer.objects.get_or_create(name=referred_by_data.get('name'))
+            validated_data['referred_by'] = referrer
+        elif not is_referred:
+            validated_data['referred_by'] = None
+
         if 'assigned_to' in validated_data:
             if validated_data['assigned_to']:
                 validated_data['status'] = 'In Progress'
