@@ -199,7 +199,7 @@ class Task(models.Model):
         default=PaymentStatus.UNPAID
     )
     current_location = models.CharField(max_length=100)
-    priority = models.CharField(max_length=20, choices=Urgency.choices, default=Urgency.YUPO)
+    urgency = models.CharField(max_length=20, choices=Urgency.choices, default=Urgency.YUPO)
     date_in = models.DateField(default=get_current_date)
     approved_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(

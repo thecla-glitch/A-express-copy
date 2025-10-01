@@ -58,8 +58,8 @@ admin.site.register(User, UserAdmin)
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('title', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'created_at')
-    list_filter = ('status', 'priority', 'assigned_to', 'created_by')
+    list_display = ('title', 'status', 'urgency', 'assigned_to', 'created_by', 'due_date', 'created_at')
+    list_filter = ('status', 'urgency', 'assigned_to', 'created_by')
     search_fields = ('title', 'description')
     autocomplete_fields = ['assigned_to', 'created_by']
     date_hierarchy = 'created_at'
