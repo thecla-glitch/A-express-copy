@@ -373,6 +373,12 @@ def task_detail(request, task_id):
             if new_status == 'Picked Up':
                 request.data['sent_out_by'] = user.id
                 request.data['date_out'] = timezone.now()
+                TaskActivity.objects.create(
+                    task=task,
+                    user=user,
+                    type=TaskActivity.ActivityType.PICKED_UP,
+                    message="Task has been picked up by the customer."
+                )
             elif new_status == 'Completed':
                 TaskActivity.objects.create(
                     task=task,

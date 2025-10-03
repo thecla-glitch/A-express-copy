@@ -230,11 +230,20 @@ class TaskSerializer(serializers.ModelSerializer):
 
         device_notes = validated_data.get('device_notes', None)
         task = super().create(validated_data)
+
+        # Log the intake activity
+        TaskActivity.objects.create(
+            task=task,
+            user=task.created_by,
+            type=TaskActivity.ActivityType.INTAKE,
+            message="Task has been taken in."
+        )
+
         if device_notes:
             TaskActivity.objects.create(
                 task=task,
                 user=task.created_by,
-                type=TaskActivity.ActivityType.NOTE,
+                type=TaskActivity.ActivityType.DEVICE_NOTE,
                 message=f"Device Notes: {device_notes}"
             )
         return task

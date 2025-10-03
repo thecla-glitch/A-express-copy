@@ -78,14 +78,17 @@ export function TaskActivityLog({ taskId }: TaskActivityLogProps) {
         return <Undo2 className={`${iconClass} text-yellow-500`} />
       case "assignment":
         return <User className={`${iconClass} text-teal-500`} />
-      case "device_info":
-        return <HardDrive className={`${iconClass} text-indigo-500`} />
+
+      case "device_note":
+        return <FileText className={`${iconClass} text-gray-500`} />
       case "intake_form":
         return <FileText className={`${iconClass} text-cyan-500`} />
       case "workshop_transfer":
         return <Truck className={`${iconClass} text-lime-500`} />
       case "repair_start":
         return <Wrench className={`${iconClass} text-rose-500`} />
+      case "picked_up":
+        return <Truck className={`${iconClass} text-green-500`} />
       default:
         return <Info className={`${iconClass} text-gray-400`} />
     }
