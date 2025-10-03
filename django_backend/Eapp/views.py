@@ -434,12 +434,7 @@ def task_detail(request, task_id):
             workshop_location = Location.objects.get(id=workshop_location_id)
             task.current_location = workshop_location.name
 
-            TaskActivity.objects.create(
-                task=task,
-                user=user,
-                type=TaskActivity.ActivityType.WORKSHOP,
-                message=f"Task sent to workshop technician {workshop_technician.get_full_name()} at {workshop_location.name}."
-            )
+
 
         if 'workshop_status' in request.data and request.data['workshop_status'] in ['Solved', 'Not Solved']:
             if task.original_location:

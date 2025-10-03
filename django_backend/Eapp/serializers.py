@@ -273,6 +273,16 @@ class TaskSerializer(serializers.ModelSerializer):
                 method='Partial Payment'  # Or any other appropriate method
             )
 
+        if 'workshop_location' in validated_data and 'workshop_technician' in validated_data:
+            workshop_technician = validated_data.get('workshop_technician')
+            workshop_location = validated_data.get('workshop_location')
+            TaskActivity.objects.create(
+                task=instance,
+                user=self.context['request'].user,
+                type=TaskActivity.ActivityType.WORKSHOP,
+                message=f"Task sent to workshop technician {workshop_technician.get_full_name()} at {workshop_location.name}."
+            )
+
         if 'qc_notes' in validated_data:
             instance.qc_rejected_at = timezone.now()
             instance.qc_rejected_by = self.context['request'].user
