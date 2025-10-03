@@ -58,11 +58,14 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         }
 
     def update(self, instance, validated_data):
-        # Handle partial updates
+        # Handle partial updates, especially for the profile picture
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            if attr == 'profile_picture':
+                instance.profile_picture = value
+            else:
+                setattr(instance, attr, value)
         instance.save()
-        return instance   
+        return instance
     
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(required=True)

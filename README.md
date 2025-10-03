@@ -80,6 +80,8 @@ The application will be available at `http://localhost:3000`.
 
 ## User Roles
 
+For a detailed description of the user roles and their permissions, please see the [Role-Based Access Control Documentation](./docs/roles-documentation.md).
+
 - **Admin:** Has full access to the system, including user management, settings, and system logs.
 - **Manager:** Can manage tasks, users, and view reports.
 - **Front-desk:** Can create tasks, manage customers, and handle customer communication.
