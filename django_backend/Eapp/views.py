@@ -386,6 +386,13 @@ def task_detail(request, task_id):
                     type=TaskActivity.ActivityType.STATUS_UPDATE,
                     message=f"Task marked as Completed."
                 )
+            elif new_status == 'Ready for Pickup':
+                TaskActivity.objects.create(
+                    task=task,
+                    user=user,
+                    type=TaskActivity.ActivityType.STATUS_UPDATE,
+                    message="Task has been approved and is ready for pickup."
+                )
             elif new_status == 'In Progress' and user.role == 'Front Desk':
                 technician_id = request.data.get('assigned_to')
                 if technician_id:
