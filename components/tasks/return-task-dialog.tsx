@@ -61,7 +61,7 @@ export function ReturnTaskDialog({ task, isOpen, onClose }: ReturnTaskDialogProp
     }
 
     if (newIssueDescription) {
-      addTaskActivityMutation.mutate({ type: 'note', message: `Returned with new issue: ${newIssueDescription}` });
+      addTaskActivityMutation.mutate({ type: 'returned', message: newIssueDescription });
     }
 
     updateTaskMutation.mutate({

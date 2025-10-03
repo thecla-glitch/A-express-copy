@@ -311,6 +311,7 @@ class TaskActivity(models.Model):
         INTAKE = 'intake', _('Intake')
         WORKSHOP = 'workshop', _('Workshop')
         REJECTED = 'rejected', _('Rejected')
+        RETURNED = 'returned', _('Returned')
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='activities')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)

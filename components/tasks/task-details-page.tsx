@@ -591,61 +591,10 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
         {/* History Tab */}
         <TabsContent value="history" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-1">
           <TaskActivityLog taskId={taskId} />
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-red-600" />
-                Dates & Milestones
-              </CardTitle>
-              <CardDescription>Key dates and milestones for this repair task</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-full">
-                      <Calendar className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Date In</Label>
-                      <p className="text-gray-900 font-medium">{taskData.date_in}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 rounded-full">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Approved Date</Label>
-                      <p className="text-gray-900 font-medium">{taskData.approved_date || "Not approved"}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-full">
-                      <DollarSign className="h-4 w-4 text-purple-600" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
-                      <p className="text-gray-900 font-medium">{taskData.paid_date || "Not paid"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-100 rounded-full">
-                      <Clock className="h-4 w-4 text-orange-600" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Date Out</Label>
-                      <p className="text-gray-900 font-medium">{taskData.date_out || "Not completed"}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          </div>
+          </TabsContent>
 
         {/* Financials Tab */}
         <TabsContent value="financials" className="space-y-6">
