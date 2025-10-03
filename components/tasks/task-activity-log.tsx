@@ -107,7 +107,7 @@ export function TaskActivityLog({ taskId }: TaskActivityLogProps) {
         <CardTitle>Task Activity Timeline</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[450px]">
+        <ScrollArea>
           {loading ? (
             <p>Loading activities...</p>
           ) : activities.length === 0 ? (
