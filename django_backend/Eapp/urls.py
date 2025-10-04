@@ -54,6 +54,9 @@ urlpatterns = [
     path('technicians/', views.list_technicians, name='list_technicians'),
     path('workshop-locations/', views.list_workshop_locations, name='list_workshop_locations'),
     path('workshop-technicians/', views.list_workshop_technicians, name='list_workshop_technicians'),
+
+    # Revenue overview endpoint
+    path('revenue-overview/', views.revenue_overview, name='revenue_overview'),
     
     path('', include(router.urls)),
 ]
