@@ -1,6 +1,10 @@
 "use client"
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card";
 import { RevenueOverview } from "./revenue-overview";
+import { ClipboardList, Users, Calendar, UserCog, CreditCard, FileText, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/core/button";
+
 
 export function ManagerDashboard() {
   return (

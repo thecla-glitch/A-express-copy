@@ -192,29 +192,23 @@ export function PaymentsOverview() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Task Status</TableHead>
                       <TableHead>Task ID</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Reference</TableHead>
-                      <TableHead className='text-right'>Actions</TableHead>
+                      <TableHead className='text-right'>Task Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredPayments?.map((payment: Payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell>{getStatusBadge(payment.task_status)}</TableCell>
                         <TableCell>{payment.task_title}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>{payment.method_name}</TableCell>
                         <TableCell>{payment.date}</TableCell>
                         <TableCell>{payment.reference}</TableCell>
-                        <TableCell className='text-right'>
-                          <Button variant='ghost' size='sm'>
-                            View Details
-                          </Button>
-                        </TableCell>
+                        <TableCell className='text-right'>{getStatusBadge(payment.task_status)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
