@@ -16,9 +16,9 @@ const unpaidTasks = [
     customerName: "Jane Doe",
     laptopModel: 'HP Spectre x360',
     completedDate: "2024-01-16",
-    totalAmount: "$450.00",
-    paidAmount: "$200.00",
-    balance: "$250.00",
+    totalAmount: "TSh 450.00",
+    paidAmount: "TSh 200.00",
+    balance: "TSh 250.00",
     status: "Completed",
   },
   {
@@ -26,9 +26,9 @@ const unpaidTasks = [
     customerName: "Peter Jones",
     laptopModel: "Lenovo Yoga",
     completedDate: "2024-01-15",
-    totalAmount: "$320.00",
-    paidAmount: "$100.00",
-    balance: "$220.00",
+    totalAmount: "TSh 320.00",
+    paidAmount: "TSh 100.00",
+    balance: "TSh 220.00",
     status: "Completed",
   },
 ]
@@ -50,7 +50,7 @@ export default function AccountantDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
+            <div className="text-2xl font-bold">TSh 45,231.89</div>
             <p className="text-xs text-muted-foreground">+20.1% from last month</p>
           </CardContent>
         </Card>
@@ -60,7 +60,7 @@ export default function AccountantDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$5,780.50</div>
+            <div className="text-2xl font-bold">TSh 5,780.50</div>
             <p className="text-xs text-muted-foreground">From 23 clients</p>
           </CardContent>
         </Card>

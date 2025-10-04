@@ -666,3 +666,11 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
         return super().get_permissions()
+
+class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows payments to be viewed.
+    """
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]

@@ -15,7 +15,7 @@ export function KPICards() {
     },
     {
       title: "Revenue This Month",
-      value: `$${data?.kpiData.revenueThisMonth.toLocaleString() || "12,450"}`,
+      value: `TSh ${data?.kpiData.revenueThisMonth.toLocaleString() || "12,450"}`,
       icon: DollarSign,
       trend: "+8% from last month",
       isHighlight: true,

@@ -9,6 +9,7 @@ router = DefaultRouter()
 router.register(r'locations', views.LocationViewSet, basename='location')
 router.register(r'brands', views.BrandViewSet, basename='brand')
 router.register(r'payment-methods', views.PaymentMethodViewSet)
+router.register(r'payments', views.PaymentViewSet, basename='payment')
 
 urlpatterns = [
     # Authentication endpoints

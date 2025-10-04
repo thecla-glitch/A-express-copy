@@ -9,60 +9,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs"
 import { Search, Download, DollarSign, TrendingUp, Clock, CheckCircle } from "lucide-react"
+import { usePayments } from "@/hooks/use-payments"
 
-// Mock data for payments
-const mockPayments = [
-  {
-    id: "PAY-001",
-    customer: "John Smith",
-    amount: 150.0,
-    method: "Credit Card",
-    status: "completed",
-    date: "2024-01-15",
-    taskId: "TASK-001",
-    description: "Screen replacement",
-  },
-  {
-    id: "PAY-002",
-    customer: "Sarah Johnson",
-    amount: 85.5,
-    method: "Cash",
-    status: "completed",
-    date: "2024-01-15",
-    taskId: "TASK-002",
-    description: "Battery replacement",
-  },
-  {
-    id: "PAY-003",
-    customer: "Mike Wilson",
-    amount: 200.0,
-    method: "Debit Card",
-    status: "pending",
-    date: "2024-01-14",
-    taskId: "TASK-003",
-    description: "Motherboard repair",
-  },
-  {
-    id: "PAY-004",
-    customer: "Emily Davis",
-    amount: 75.0,
-    method: "Credit Card",
-    status: "completed",
-    date: "2024-01-14",
-    taskId: "TASK-004",
-    description: "Keyboard replacement",
-  },
-  {
-    id: "PAY-005",
-    customer: "David Brown",
-    amount: 120.0,
-    method: "Cash",
-    status: "refunded",
-    date: "2024-01-13",
-    taskId: "TASK-005",
-    description: "Hard drive replacement",
-  },
-]
+interface Payment {
+  id: any;
+  task: number;
+  task_title: string;
+  task_status: string;
+  amount: string;
+  date: string;
+  method: number;
+  method_name: string;
+  reference: string | null;
+}
 
 const paymentStats = {
   totalRevenue: 4250.5,
@@ -76,12 +35,13 @@ export function PaymentsOverview() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [methodFilter, setMethodFilter] = useState("all")
 
-  const filteredPayments = mockPayments.filter((payment) => {
-    const matchesSearch =
-      payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.id.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || payment.status === statusFilter
-    const matchesMethod = methodFilter === "all" || payment.method === methodFilter
+  const { data: payments, isLoading, isError } = usePayments()
+
+  const filteredPayments = payments?.filter((payment: Payment) => {
+    const matchesSearch = 
+      payment.id && String(payment.id).toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" // Assuming status is not available in the new model
+    const matchesMethod = methodFilter === "all" || payment.method_name.toLowerCase() === methodFilter.toLowerCase()
 
     return matchesSearch && matchesStatus && matchesMethod
   })
@@ -97,6 +57,14 @@ export function PaymentsOverview() {
       default:
         return <Badge>{status}</Badge>
     }
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (isError) {
+    return <div>Error fetching payments.</div>
   }
 
   return (
@@ -120,7 +88,7 @@ export function PaymentsOverview() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${paymentStats.totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">TSh {paymentStats.totalRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">+12% from last month</p>
           </CardContent>
         </Card>
@@ -131,7 +99,7 @@ export function PaymentsOverview() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${paymentStats.todayRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">TSh {paymentStats.todayRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">+5% from yesterday</p>
           </CardContent>
         </Card>
@@ -217,28 +185,24 @@ export function PaymentsOverview() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Payment ID</TableHead>
-                      <TableHead>Customer</TableHead>
+                      <TableHead>Task Status</TableHead>
+                      <TableHead>Task Title</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead>Task ID</TableHead>
-                      <TableHead>Description</TableHead>
+                      <TableHead>Reference</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPayments.map((payment) => (
+                    {filteredPayments?.map((payment: Payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell className="font-medium">{payment.id}</TableCell>
-                        <TableCell>{payment.customer}</TableCell>
-                        <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                        <TableCell>{payment.method}</TableCell>
-                        <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                        <TableCell>{getStatusBadge(payment.task_status)}</TableCell>
+                        <TableCell>{payment.task_title}</TableCell>
+                        <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
+                        <TableCell>{payment.method_name}</TableCell>
                         <TableCell>{payment.date}</TableCell>
-                        <TableCell>{payment.taskId}</TableCell>
-                        <TableCell>{payment.description}</TableCell>
+                        <TableCell>{payment.reference}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm">
                             View Details
@@ -246,123 +210,6 @@ export function PaymentsOverview() {
                         </TableCell>
                       </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="completed" className="space-y-4">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Payment ID</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Task ID</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayments
-                      .filter((p) => p.status === "completed")
-                      .map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell className="font-medium">{payment.id}</TableCell>
-                          <TableCell>{payment.customer}</TableCell>
-                          <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                          <TableCell>{payment.method}</TableCell>
-                          <TableCell>{payment.date}</TableCell>
-                          <TableCell>{payment.taskId}</TableCell>
-                          <TableCell>{payment.description}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">
-                              View Receipt
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="pending" className="space-y-4">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Payment ID</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Task ID</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayments
-                      .filter((p) => p.status === "pending")
-                      .map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell className="font-medium">{payment.id}</TableCell>
-                          <TableCell>{payment.customer}</TableCell>
-                          <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                          <TableCell>{payment.method}</TableCell>
-                          <TableCell>{payment.date}</TableCell>
-                          <TableCell>{payment.taskId}</TableCell>
-                          <TableCell>{payment.description}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm">
-                              Process Payment
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="refunded" className="space-y-4">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Payment ID</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Task ID</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayments
-                      .filter((p) => p.status === "refunded")
-                      .map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell className="font-medium">{payment.id}</TableCell>
-                          <TableCell>{payment.customer}</TableCell>
-                          <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                          <TableCell>{payment.method}</TableCell>
-                          <TableCell>{payment.date}</TableCell>
-                          <TableCell>{payment.taskId}</TableCell>
-                          <TableCell>{payment.description}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">
-                              View Refund
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
                   </TableBody>
                 </Table>
               </div>
