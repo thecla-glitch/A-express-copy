@@ -56,7 +56,7 @@ export default function AccountantTasksPage() {
     )
   }
 
-  const unpaidTasks = tasks?.filter(task => task.payment_status !== "Paid" && task.status !== "Picked Up") || [];
+  const unpaidTasks = tasks?.filter(task => task.payment_status !== "Fully Paid" && task.status !== "Picked Up") || [];
 
   return (
     <div className="flex-1 space-y-6 p-6">

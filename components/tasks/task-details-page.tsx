@@ -42,6 +42,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/
 import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskUrgencyOptions, useBrands } from "@/hooks/use-data";
 import { usePaymentMethods } from "@/hooks/use-payment-methods";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { CostBreakdown } from "./cost-breakdown";
 import { Combobox } from "@/components/ui/core/combobox";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
@@ -65,6 +66,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { data: urgencyOptions } = useTaskUrgencyOptions();
   const { data: brands } = useBrands();
   const { data: paymentMethods, refetch: refetchPaymentMethods } = usePaymentMethods();
+  const { toast } = useToast();
 
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState<number | "">("")
@@ -94,13 +96,14 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const isManager = user?.role === "Manager"
   const isTechnician = user?.role === "Technician"
   const isFrontDesk = user?.role === "Front Desk"
+  const isAccountant = user?.role === "Accountant"
 
   const canEditCustomer = isAdmin || isManager || isFrontDesk
   const canEditTechnician = isAdmin || isManager
   const canEditStatus = isAdmin || isTechnician;
   const canEditLocation = isAdmin || isManager;
   const canEditUrgency = isAdmin || isManager || isFrontDesk;
-  const canEditFinancials = isAdmin || isManager
+  const canEditFinancials = isAdmin || isManager || isAccountant
   const canMarkComplete = isAdmin || isTechnician
   const canMarkPickedUp = isAdmin || isFrontDesk
 
@@ -123,6 +126,18 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     setNewPaymentAmount("")
     setNewPaymentMethod("")
   }
+
+  const handleMarkAsPickedUp = () => {
+    if (taskData?.payment_status !== 'Fully Paid') {
+      toast({
+        title: "Payment Required",
+        description: "This task cannot be marked as picked up until it is fully paid. Please contact the manager for assistance.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateTaskMutation.mutate({ field: 'status', value: 'Picked Up' });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -241,7 +256,11 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
             </Button>
           )}
           {canMarkPickedUp && (
-            <Button className="bg-red-600 hover:bg-red-700 text-white">
+            <Button 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleMarkAsPickedUp}
+              disabled={taskData.status !== 'Ready for Pickup' || taskData.payment_status !== 'Fully Paid'}
+            >
               <CheckCircle className="h-4 w-4 mr-2" />
               Mark as Picked Up
             </Button>
@@ -545,7 +564,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">Urgency Level</Label>
-                    <Select value={taskData.urgency || ''} onValueChange={(value) => handleFieldUpdate("urgency", value)}>
+                    <Select value={taskData.urgency || ''} onValueChange={(value) => handleFieldUpdate("urgency", value)} disabled={!canEditUrgency}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

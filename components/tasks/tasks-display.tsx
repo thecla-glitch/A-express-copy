@@ -241,6 +241,8 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
               <TableHead className="font-semibold text-gray-900">Device</TableHead>
               {isManagerView ? (
                 <TableHead className="font-semibold text-gray-900">Location</TableHead>
+              ) : isAccountantView ? (
+                <TableHead className="font-semibold text-gray-900">Outstanding Balance</TableHead>
               ) : (
                 <TableHead className="font-semibold text-gray-900">Issue</TableHead>
               )}
@@ -275,6 +277,10 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 {isManagerView ? (
                   <TableCell className="text-gray-600 max-w-xs truncate">
                     {task.current_location}
+                  </TableCell>
+                ) : isAccountantView ? (
+                  <TableCell className="text-gray-600 max-w-xs truncate">
+                    TSh {task.outstanding_balance}
                   </TableCell>
                 ) : (
                   <TableCell className="text-gray-600 max-w-xs truncate">
@@ -322,6 +328,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                                 size="sm"
                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                                 onClick={(e) => e.stopPropagation()}
+                                disabled={task.payment_status !== 'Fully Paid'}
                               >
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 Picked Up
@@ -336,7 +343,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onPickedUp?.(task.title)}>
+                                <AlertDialogAction onClick={() => onPickedUp?.(task)}>
                                   Confirm
                                 </AlertDialogAction>
                               </AlertDialogFooter>

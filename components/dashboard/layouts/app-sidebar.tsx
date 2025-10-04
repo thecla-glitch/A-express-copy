@@ -212,6 +212,11 @@ const navigationItems = {
       icon: Wrench,
     },
     {
+      title: "History",
+      url: "/dashboard/accountant/history",
+      icon: FileText,
+    },
+    {
       title: "Payments",
       url: "/dashboard/payments",
       icon: CreditCard,

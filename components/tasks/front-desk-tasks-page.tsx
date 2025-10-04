@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { TasksDisplay } from "./tasks-display";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
 import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
+import { useToast } from "@/hooks/use-toast";
 import { useTechnicians } from "@/hooks/use-data";
 import { useAuth } from "@/lib/auth-context";
 
@@ -16,6 +17,7 @@ export function FrontDeskTasksPage() {
   const { data: tasks, isLoading, isError, error } = useTasks();
   const { data: technicians } = useTechnicians();
   const updateTaskMutation = useUpdateTask();
+  const { toast } = useToast();
 
   const handleRowClick = useCallback((task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
@@ -38,10 +40,18 @@ export function FrontDeskTasksPage() {
     updateTaskMutation.mutate({ id: taskTitle, updates: { status: "In Progress", qc_notes: notes, workshop_status: null } });
   }, [updateTaskMutation]);
 
-  const handlePickedUp = useCallback(async (taskTitle: string) => {
+  const handlePickedUp = useCallback(async (task: any) => {
+    if (task.payment_status !== 'Fully Paid') {
+      toast({
+        title: "Payment Required",
+        description: "This task cannot be marked as picked up until it is fully paid. Please contact the manager for assistance.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (user) {
       updateTaskMutation.mutate({
-        id: taskTitle,
+        id: task.title,
         updates: {
           status: "Picked Up",
           date_out: new Date().toISOString(),
@@ -49,7 +59,7 @@ export function FrontDeskTasksPage() {
         },
       });
     }
-  }, [updateTaskMutation, user]);
+  }, [updateTaskMutation, user, toast]);
 
   const handleNotifyCustomer = useCallback((taskTitle: string, customerName: string) => {
     alert(`Notifying ${customerName} for task ${taskTitle}`);
