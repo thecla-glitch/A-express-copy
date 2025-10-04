@@ -138,9 +138,11 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
+    method_name = serializers.CharField(source='method.name', read_only=True)
+
     class Meta:
         model = Payment
-        fields = ('id', 'amount', 'date', 'method', 'reference')
+        fields = ('id', 'amount', 'date', 'method', 'method_name', 'reference')
         extra_kwargs = {
             'amount': {'validators': [MinValueValidator(Decimal('0.00'))]},
         }

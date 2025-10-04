@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { deleteTask, updateTask } from "@/lib/api-client";
+import { deleteTask, addTaskPayment } from "@/lib/api-client";
 import { TasksDisplay } from "./tasks-display";
-import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
+import { useTasks } from "@/hooks/use-tasks";
 import { useTechnicians } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 export default function AccountantTasksPage() {
   const { user } = useAuth();
@@ -17,19 +18,24 @@ export default function AccountantTasksPage() {
   const { data: tasks, isLoading, isError, error } = useTasks();
   const { data: technicians } = useTechnicians();
 
-  const updateTaskMutation = useUpdateTask();
+  const addTaskPaymentMutation = useMutation({
+    mutationFn: ({ taskId, amount, methodId }: { taskId: string; amount: number; methodId: number }) => 
+      addTaskPayment(taskId, { amount, method: methodId, date: new Date().toISOString().split('T')[0] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      toast({
+        title: "Payment Added",
+        description: "The payment has been added successfully.",
+      });
+    },
+  });
 
   const handleRowClick = (task: any) => {
     router.push(`/dashboard/tasks/${task.title}`);
   };
 
-  const handleAddPayment = (taskId: string, amount: number, paymentMethod: string) => {
-    updateTaskMutation.mutate({
-      id: taskId,
-      updates: {
-        payments: [{ amount, method: paymentMethod, date: new Date().toISOString() }],
-      },
-    });
+  const handleAddPayment = (taskId: string, amount: number, paymentMethodId: number) => {
+    addTaskPaymentMutation.mutate({ taskId, amount, methodId: paymentMethodId });
   };
 
   if (isLoading) {

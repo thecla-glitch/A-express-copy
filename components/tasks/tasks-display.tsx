@@ -48,7 +48,7 @@ interface TasksDisplayProps {
   isHistoryView?: boolean;
   onReturnTask?: (task: any) => void;
   isAccountantView?: boolean;
-  onAddPayment?: (taskId: string, amount: number, paymentMethod: string) => void;
+  onAddPayment?: (taskId: string, amount: number, paymentMethodId: number) => void;
 }
 
 export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask, isAccountantView, onAddPayment }: TasksDisplayProps) {
@@ -545,8 +545,8 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
             setIsAddPaymentDialogOpen(false);
             setSelectedTaskToPay(null);
           }}
-          onSubmit={(amount, method) => {
-            onAddPayment?.(selectedTaskToPay.id, amount, method);
+          onSubmit={(amount, methodId) => {
+            onAddPayment?.(selectedTaskToPay.title, amount, methodId);
             setIsAddPaymentDialogOpen(false);
             setSelectedTaskToPay(null);
           }}

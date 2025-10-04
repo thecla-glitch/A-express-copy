@@ -18,12 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/core/select';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface AddPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (amount: number, method: string) => void;
+  onSubmit: (amount: number, methodId: number) => void;
   taskTitle: string;
 }
 
@@ -34,11 +34,19 @@ export default function AddPaymentDialog({
   taskTitle,
 }: AddPaymentDialogProps) {
   const [amount, setAmount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [paymentMethodId, setPaymentMethodId] = useState<string | undefined>(undefined);
   const { data: paymentMethods } = usePaymentMethods();
 
+  useEffect(() => {
+    if (paymentMethods && paymentMethods.length > 0 && !paymentMethodId) {
+      setPaymentMethodId(String(paymentMethods[0].id));
+    }
+  }, [paymentMethods, paymentMethodId]);
+
   const handleSubmit = () => {
-    onSubmit(amount, paymentMethod);
+    if (paymentMethodId) {
+      onSubmit(amount, parseInt(paymentMethodId, 10));
+    }
   };
 
   return (
@@ -63,13 +71,13 @@ export default function AddPaymentDialog({
             <Label htmlFor="payment-method" className="text-right">
               Payment Method
             </Label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+            <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a payment method" />
               </SelectTrigger>
               <SelectContent>
                 {paymentMethods?.map((method) => (
-                  <SelectItem key={method.id} value={method.name}>
+                  <SelectItem key={method.id} value={String(method.id)}>
                     {method.name}
                   </SelectItem>
                 ))}

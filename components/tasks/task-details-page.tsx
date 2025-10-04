@@ -44,8 +44,9 @@ import { usePaymentMethods } from "@/hooks/use-payment-methods";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CostBreakdown } from "./cost-breakdown";
 import { Combobox } from "@/components/ui/core/combobox";
+import { CurrencyInput } from "@/components/ui/core/currency-input";
 
-const paymentStatusOptions = ["Unpaid", "Partially Paid", "Fully Paid", "Refunded"];
+
 
 
 interface TaskDetailsPageProps {
@@ -66,15 +67,12 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { data: paymentMethods, refetch: refetchPaymentMethods } = usePaymentMethods();
 
   const [newNote, setNewNote] = useState("")
-  const [newPaymentAmount, setNewPaymentAmount] = useState("")
+  const [newPaymentAmount, setNewPaymentAmount] = useState<number | "">("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
 
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
-  const [isEditingPaymentStatus, setIsEditingPaymentStatus] = useState(false);
-  const [pendingPaymentStatus, setPendingPaymentStatus] = useState<string | null>(null);
-  const [nextPaymentDate, setNextPaymentDate] = useState<Date | undefined>(undefined);
-  const [partialPaymentAmount, setPartialPaymentAmount] = useState<string>("");
-  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+
+
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ field, value }: { field: string; value: any }) =>
@@ -105,7 +103,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const canEditFinancials = isAdmin || isManager
   const canMarkComplete = isAdmin || isTechnician
   const canMarkPickedUp = isAdmin || isFrontDesk
-  const canEditPaymentStatus = isManager || isFrontDesk;
+
   const canEditEstimatedCost = isManager || (isTechnician && taskData && !taskData.assigned_to);
 
 
@@ -117,47 +115,11 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     }
   }
 
-  const handleSavePaymentStatus = async () => {
-    if (!pendingPaymentStatus) {
-      setIsEditingPaymentStatus(false);
-      return;
-    }
 
-    const payload: { payment_status: string; paid_date?: string, next_payment_date?: string | null, partial_payment_amount?: string } = {
-      payment_status: pendingPaymentStatus,
-    };
-
-    if (pendingPaymentStatus === 'Partially Paid') {
-      if (parseFloat(partialPaymentAmount) > parseFloat(taskData.estimated_cost)) {
-        alert("Payment amount cannot be more than the estimated cost.");
-        return;
-      }
-      payload.partial_payment_amount = partialPaymentAmount;
-      payload.next_payment_date = nextPaymentDate ? nextPaymentDate.toISOString().split('T')[0] : null;
-    } else {
-      payload.next_payment_date = null;
-    }
-
-    if (pendingPaymentStatus === 'Fully Paid') {
-      payload.paid_date = new Date().toISOString().split('T')[0];
-    }
-
-    updateTaskMutation.mutate({ field: 'payment_status', value: payload });
-    setPendingPaymentStatus(null);
-    setIsEditingPaymentStatus(false);
-    setPartialPaymentAmount("");
-  };
-
-  const handleCancelPaymentStatus = () => {
-    setPendingPaymentStatus(null);
-    setNextPaymentDate(taskData.next_payment_date ? new Date(taskData.next_payment_date) : undefined);
-    setIsEditingPaymentStatus(false);
-    setPartialPaymentAmount("");
-  }
 
   const handleAddPayment = async () => {
     if (!newPaymentAmount || !newPaymentMethod || !taskData) return
-    addTaskPaymentMutation.mutate({ amount: newPaymentAmount, method: newPaymentMethod });
+    addTaskPaymentMutation.mutate({ amount: newPaymentAmount, method: parseInt(newPaymentMethod, 10), date: new Date().toISOString().split('T')[0] });
     setNewPaymentAmount("")
     setNewPaymentMethod("")
   }
@@ -200,6 +162,21 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     }
   }
 
+  const getPaymentStatusBadge = (paymentStatus: string) => {
+    switch (paymentStatus) {
+      case "Unpaid":
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">{paymentStatus}</Badge>
+      case "Partially Paid":
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{paymentStatus}</Badge>
+      case "Fully Paid":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{paymentStatus}</Badge>
+      case "Refunded":
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{paymentStatus}</Badge>
+      default:
+        return <Badge variant="secondary">{paymentStatus}</Badge>
+    }
+  }
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "status_update":
@@ -219,16 +196,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     }
   }
 
-  const getFilteredPaymentStatusOptions = () => {
-    if (!taskData) return paymentStatusOptions;
-    if (taskData.payment_status === 'Fully Paid') {
-      return ['Fully Paid', 'Refunded'];
-    }
-    if (taskData.payment_status === 'Partially Paid') {
-      return ['Partially Paid', 'Fully Paid', 'Refunded'];
-    }
-    return paymentStatusOptions;
-  };
+
 
   if (isLoading) {
     return <div>Loading...</div>
@@ -261,6 +229,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
               <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">{taskData.workshop_status}</Badge>
             )}
             {getUrgencyBadge(taskData.urgency)}
+            {getPaymentStatusBadge(taskData.payment_status)}
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -605,120 +574,10 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
         {/* Financials Tab */}
         <TabsContent value="financials" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Cost Breakdown */}
+          <div className="grid gap-6 md:grid-cols-1">
             <CostBreakdown task={taskData} />
 
-            {/* Payment Status */}
-            <Card className="border-gray-200">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-red-600" />
-                    Payment Status
-                  </CardTitle>
-                  {canEditPaymentStatus && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditingPaymentStatus(!isEditingPaymentStatus)}
-                      className="border-gray-300 text-gray-600 bg-transparent"
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      {isEditingPaymentStatus ? "Done" : "Edit"}
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {isEditingPaymentStatus ? (
-                    <>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Payment Status</Label>
-                        <Select
-                          value={pendingPaymentStatus || taskData.payment_status || ''}
-                          onValueChange={setPendingPaymentStatus}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getFilteredPaymentStatusOptions().map((status) => (
-                              <SelectItem key={status} value={status}>
-                                {status}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {(pendingPaymentStatus === 'Partially Paid') && (
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Payment Amount</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={partialPaymentAmount}
-                            onChange={(e) => setPartialPaymentAmount(e.target.value)}
-                            className="mt-1"
-                          />
-                        </div>
-                      )}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
-                        <p className="text-gray-900 mt-1">{taskData.paid_date ? new Date(taskData.paid_date).toLocaleString() : "Not paid"}</p>
-                      </div>
-                      {(pendingPaymentStatus === 'Partially Paid' || (!pendingPaymentStatus && taskData.payment_status === 'Partially Paid')) && (
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Next Payment Date</Label>
-                          <Popover open={isDatePickerVisible} onOpenChange={setIsDatePickerVisible}>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant={"outline"}
-                                className="w-full justify-start text-left font-normal mt-1"
-                              >
-                                <Calendar className="mr-2 h-4 w-4" />
-                                {nextPaymentDate ? nextPaymentDate.toLocaleDateString() : <span>Pick a date</span>}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <DayPicker
-                                mode="single"
-                                selected={nextPaymentDate}
-                                onSelect={setNextPaymentDate}
-                                disabled={(date) =>
-                                  date < new Date() || date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Payment Status</Label>
-                      <p className="text-gray-900 font-medium mt-1">{taskData.payment_status}</p>
-                      <Label className="text-sm font-medium text-gray-600">Paid Date</Label>
-                      <p className="text-gray-900 mt-1">{taskData.paid_date ? new Date(taskData.paid_date).toLocaleString() : "Not paid"}</p>
-                      {taskData.payment_status === 'Partially Paid' && (
-                        <div>
-                          <Label className="text-sm font-medium text-gray-600">Next Payment Date</Label>
-                          <p className="text-gray-900 mt-1">{taskData.next_payment_date}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-              {isEditingPaymentStatus && (
-                <CardFooter className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={handleCancelPaymentStatus}>Cancel</Button>
-                  <Button size="sm" onClick={handleSavePaymentStatus}>Save</Button>
-                </CardFooter>
-              )}
-            </Card>
+
           </div>
 
           {/* Payment History */}
@@ -728,12 +587,10 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                 <CardTitle className="text-xl font-semibold text-gray-900">Payment History</CardTitle>
                 {canEditFinancials && (
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      step="0.01"
+                    <CurrencyInput
                       placeholder="Amount"
                       value={newPaymentAmount}
-                      onChange={(e) => setNewPaymentAmount(e.target.value)}
+                      onValueChange={(value) => setNewPaymentAmount(value || "")}
                       className="w-24"
                     />
                     <Select value={newPaymentMethod} onValueChange={setNewPaymentMethod}>
@@ -742,7 +599,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       </SelectTrigger>
                       <SelectContent>
                         {paymentMethods?.map((method) => (
-                          <SelectItem key={method.id} value={method.name}>
+                          <SelectItem key={method.id} value={String(method.id)}>
                             {method.name}
                           </SelectItem>
                         ))}
@@ -775,7 +632,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium text-green-600">TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                       <TableCell>{payment.date}</TableCell>
-                      <TableCell>{payment.method}</TableCell>
+                      <TableCell>{payment.method_name}</TableCell>
                       <TableCell className="font-mono text-sm">{payment.reference}</TableCell>
                     </TableRow>
                   ))}
