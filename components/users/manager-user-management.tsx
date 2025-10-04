@@ -119,6 +119,7 @@ export function ManagerUserManagement() {
   const technicians = users.filter((user) => user.role === "Technician").length
   const frontDesk = users.filter((user) => user.role === "Front Desk").length
   const managers = users.filter((user) => user.role === "Manager").length
+  const accountants = users.filter((user) => user.role === "Accountant").length
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
@@ -182,6 +183,16 @@ export function ManagerUserManagement() {
           <CardContent>
             <div className="text-2xl font-bold">{frontDesk}</div>
             <p className="text-xs text-muted-foreground">Customer service</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Accountants</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{accountants}</div>
+            <p className="text-xs text-muted-foreground">Finance staff</p>
           </CardContent>
         </Card>
       </div>
@@ -288,6 +299,7 @@ export function ManagerUserManagement() {
                             <SelectItem value="Manager">Manager</SelectItem>
                             <SelectItem value="Technician">Technician</SelectItem>
                             <SelectItem value="Front Desk">Front Desk</SelectItem>
+                            <SelectItem value="Accountant">Accountant</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -363,7 +375,7 @@ export function ManagerUserManagement() {
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={user.role === "Manager" ? "bg-blue-100 text-blue-800" : user.role === "Technician" ? "bg-green-100 text-green-800" : "bg-purple-100 text-purple-800"}>
+                    <Badge variant="outline" className={user.role === "Manager" ? "bg-blue-100 text-blue-800" : user.role === "Technician" ? "bg-green-100 text-green-800" : user.role === "Accountant" ? "bg-yellow-100 text-yellow-800" : "bg-purple-100 text-purple-800"}>
                       {user.role}
                     </Badge>
                   </TableCell>
@@ -459,6 +471,7 @@ export function ManagerUserManagement() {
                                       <SelectItem value="Manager">Manager</SelectItem>
                                       <SelectItem value="Technician">Technician</SelectItem>
                                       <SelectItem value="Front Desk">Front Desk</SelectItem>
+                                      <SelectItem value="Accountant">Accountant</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>

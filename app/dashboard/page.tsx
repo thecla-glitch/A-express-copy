@@ -6,6 +6,7 @@ import { AdminDashboard } from "@/components/dashboard/overviews/admin-dashboard
 import { ManagerDashboard } from "@/components/dashboard/overviews/manager-dashboard"
 import { TechnicianDashboard } from "@/components/dashboard/overviews/technician-dashboard"
 import { FrontDeskDashboard } from "@/components/dashboard/overviews/front-desk-dashboard"
+import AccountantDashboard from "@/components/dashboard/overviews/accountant-dashboard"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
@@ -41,6 +42,8 @@ export default function DashboardPage() {
         return <TechnicianDashboard />
       case "Front Desk":
         return <FrontDeskDashboard />
+      case "Accountant":
+        return <AccountantDashboard />
       default:
         return <div>Unknown role</div>
     }

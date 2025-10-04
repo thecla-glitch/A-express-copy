@@ -200,6 +200,33 @@ const navigationItems = {
       icon: User,
     },
   ],
+  Accountant: [
+    {
+      title: "Dashboard",
+      url: "/dashboard/accountant",
+      icon: Home,
+    },
+    {
+      title: "Tasks",
+      url: "/dashboard/accountant/tasks",
+      icon: Wrench,
+    },
+    {
+      title: "Payments",
+      url: "/dashboard/payments",
+      icon: CreditCard,
+    },
+    {
+      title: "Reports",
+      url: "/dashboard/reports",
+      icon: FileText,
+    },
+    {
+      title: "Profile",
+      url: "/dashboard/profile",
+      icon: User,
+    },
+  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -216,6 +243,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         return "/dashboard/manager"
       case "Technician":
         return "/dashboard/technician"
+      case "Accountant":
+        return "/dashboard/accountant"
       case "Front Desk":
         return "/dashboard"
       default:

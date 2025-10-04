@@ -46,9 +46,10 @@ interface TasksDisplayProps {
   onNotifyCustomer?: (taskTitle: string, customerName: string) => void;
   isHistoryView?: boolean;
   onReturnTask?: (task: any) => void;
+  isAccountantView?: boolean;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask, isAccountantView }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -398,6 +399,18 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                             </DialogContent>
                           </Dialog>
                         </>
+                      ) : isAccountantView ? (
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTaskToPay(task);
+                            setIsPaidConfirmOpen(true);
+                          }}
+                        >
+                          Mark as Paid
+                        </Button>
                       ) : isCompletedTab ? (
                         <>
                           <Button

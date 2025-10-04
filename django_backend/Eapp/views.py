@@ -15,7 +15,7 @@ from .serializers import (
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from datetime import datetime
-from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk
+from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant
 
 
 @api_view(['GET'])
@@ -96,7 +96,7 @@ def get_user_profile(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminOrManagerOrFrontDesk])
+@permission_classes([IsAdminOrManagerOrFrontDeskOrAccountant])
 def list_users(request):
     users = User.objects.all()
     serializer = UserSerializer(users, many=True, context={'request': request})
@@ -236,7 +236,7 @@ def activate_user(request, user_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminOrManagerOrFrontDesk])
+@permission_classes([IsAdminOrManagerOrFrontDeskOrAccountant])
 def list_users_by_role(request, role):
     valid_roles = [choice[0] for choice in User.Role.choices]
     if role not in valid_roles:
@@ -429,6 +429,13 @@ def task_detail(request, task_id):
                     status=status.HTTP_403_FORBIDDEN
                 )
 
+        if user.role == 'Accountant' and 'payment_status' in request.data:
+            task.payment_status = request.data['payment_status']
+            if request.data['payment_status'] == 'Fully Paid':
+                task.paid_date = timezone.now().date()
+            task.save()
+            return Response(TaskSerializer(task, context={'request': request}).data)
+
         if 'workshop_location' in request.data and 'workshop_technician' in request.data:
             task.original_location = task.current_location
             task.workshop_status = 'In Workshop'
@@ -508,7 +515,7 @@ def task_payments(request, task_id):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def add_task_payment(request, task_id):
-    if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
+    if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
         return Response(
             {"error": "You do not have permission to add payments."},
             status=status.HTTP_403_FORBIDDEN

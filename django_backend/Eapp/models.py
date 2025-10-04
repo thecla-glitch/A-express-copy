@@ -40,6 +40,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         MANAGER = 'Manager', _('Manager')
         FRONT_DESK = 'Front Desk', _('Front Desk')
         TECHNICIAN = 'Technician', _('Technician')
+        ACCOUNTANT = 'Accountant', _('Accountant')
     
     profile_picture = models.ImageField(
         upload_to=user_profile_picture_path,
