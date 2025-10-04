@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   CheckCircle,
   CreditCard,
+  Trash2,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { updateTask, addTaskPayment } from "@/lib/api-client"
@@ -39,12 +40,13 @@ import { DayPicker } from "react-day-picker"
 import "react-day-picker/dist/style.css"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
 import { useTask, useTechnicians, useLocations, useTaskStatusOptions, useTaskUrgencyOptions, useBrands } from "@/hooks/use-data";
+import { usePaymentMethods } from "@/hooks/use-payment-methods";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CostBreakdown } from "./cost-breakdown";
 import { Combobox } from "@/components/ui/core/combobox";
 
 const paymentStatusOptions = ["Unpaid", "Partially Paid", "Fully Paid", "Refunded"];
-const paymentMethodOptions = ["Cash", "Credit Card", "Debit Card", "Check", "Digital Payment"];
+
 
 interface TaskDetailsPageProps {
   taskId: string
@@ -61,6 +63,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { data: statusOptions } = useTaskStatusOptions();
   const { data: urgencyOptions } = useTaskUrgencyOptions();
   const { data: brands } = useBrands();
+  const { data: paymentMethods, refetch: refetchPaymentMethods } = usePaymentMethods();
 
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState("")
@@ -233,6 +236,10 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
   if (isError) {
     return <div>Error: {error.message}</div>
+  }
+
+  if (!taskData) {
+    return <div>Loading task details...</div>;
   }
 
   return (
@@ -734,9 +741,9 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                         <SelectValue placeholder="Method" />
                       </SelectTrigger>
                       <SelectContent>
-                        {paymentMethodOptions.map((method) => (
-                          <SelectItem key={method} value={method}>
-                            {method}
+                        {paymentMethods?.map((method) => (
+                          <SelectItem key={method.id} value={method.name}>
+                            {method.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -65,3 +65,8 @@ export const updateCostBreakdown = (taskId: any, costBreakdownId: any, costBreak
 export const deleteCostBreakdown = (taskId: string, costBreakdownId: number) => apiClient.delete(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`);
 export const getBrands = () => apiClient.get('/brands/');
 export const createBrand = (brandData: { name: string; }) => apiClient.post('/brands/', brandData);
+
+export const getPaymentMethods = () => apiClient.get('/payment-methods/');
+export const createPaymentMethod = (paymentMethodData: { name: string; }) => apiClient.post('/payment-methods/', paymentMethodData);
+export const updatePaymentMethod = (paymentMethodId: number, paymentMethodData: { name: string; }) => apiClient.patch(`/payment-methods/${paymentMethodId}/`, paymentMethodData);
+export const deletePaymentMethod = (paymentMethodId: number) => apiClient.delete(`/payment-methods/${paymentMethodId}/`);

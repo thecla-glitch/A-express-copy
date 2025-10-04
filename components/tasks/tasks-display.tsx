@@ -26,6 +26,7 @@ import { getTaskStatusOptions } from "@/lib/tasks-api";
 
 import { Textarea } from "@/components/ui/core/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/feedback/dialog";
+import AddPaymentDialog from "./add-payment-dialog";
 
 interface TasksDisplayProps {
   tasks: any[];
@@ -37,7 +38,7 @@ interface TasksDisplayProps {
   onApprove?: (taskTitle: string) => void;
   onReject?: (taskTitle: string, notes: string) => void;
   isCompletedTab?: boolean;
-  onMarkAsPaid?: (taskTitle: string) => void;
+
   onTerminateTask?: (taskTitle: string) => void;
   isManagerView?: boolean;
   isFrontDeskCompletedView?: boolean;
@@ -47,9 +48,10 @@ interface TasksDisplayProps {
   isHistoryView?: boolean;
   onReturnTask?: (task: any) => void;
   isAccountantView?: boolean;
+  onAddPayment?: (taskId: string, amount: number, paymentMethod: string) => void;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onMarkAsPaid, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask, isAccountantView }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask, isAccountantView, onAddPayment }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -62,6 +64,8 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
   const [isPaidConfirmOpen, setIsPaidConfirmOpen] = useState(false);
   const [taskToPay, setTaskToPay] = useState<any | null>(null);
+  const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
+  const [selectedTaskToPay, setSelectedTaskToPay] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchStatusOptions = async () => {
@@ -405,11 +409,11 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                           className="bg-green-600 hover:bg-green-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setTaskToPay(task);
-                            setIsPaidConfirmOpen(true);
+                            setSelectedTaskToPay(task);
+                            setIsAddPaymentDialogOpen(true);
                           }}
                         >
-                          Mark as Paid
+                          Add Payment
                         </Button>
                       ) : isCompletedTab ? (
                         <>
@@ -533,29 +537,23 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
           </div>
         )}
       </div>
-      <AlertDialog open={isPaidConfirmOpen} onOpenChange={setIsPaidConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
-            <AlertDialogDescription>
-              Has the customer {taskToPay?.customer_details?.name} paid for this task?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setTaskToPay(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (taskToPay && onMarkAsPaid) {
-                  onMarkAsPaid(taskToPay.title);
-                }
-                setTaskToPay(null);
-              }}
-            >
-              Confirm
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+      {selectedTaskToPay && (
+        <AddPaymentDialog
+          isOpen={isAddPaymentDialogOpen}
+          onClose={() => {
+            setIsAddPaymentDialogOpen(false);
+            setSelectedTaskToPay(null);
+          }}
+          onSubmit={(amount, method) => {
+            onAddPayment?.(selectedTaskToPay.id, amount, method);
+            setIsAddPaymentDialogOpen(false);
+            setSelectedTaskToPay(null);
+          }}
+          taskTitle={selectedTaskToPay.title}
+        />
+      )}
+
     </div>
   )
 }

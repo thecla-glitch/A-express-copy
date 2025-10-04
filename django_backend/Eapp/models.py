@@ -329,18 +329,22 @@ class TaskActivity(models.Model):
         ordering = ['-timestamp']
 
 
+class PaymentMethod(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+
+
 class Payment(models.Model):
-    class PaymentMethod(models.TextChoices):
-        CASH = 'Cash', _('Cash')
-        CREDIT_CARD = 'Credit Card', _('Credit Card')
-        DEBIT_CARD = 'Debit Card', _('Debit Card')
-        CHECK = 'Check', _('Check')
-        DIGITAL_PAYMENT = 'Digital Payment', _('Digital Payment')
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date = models.DateField(default=get_current_date)
-    method = models.CharField(max_length=20, choices=PaymentMethod.choices)
+    method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
     reference = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):

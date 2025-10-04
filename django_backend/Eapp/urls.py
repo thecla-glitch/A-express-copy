@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import (
 router = DefaultRouter()
 router.register(r'locations', views.LocationViewSet, basename='location')
 router.register(r'brands', views.BrandViewSet, basename='brand')
+router.register(r'payment-methods', views.PaymentMethodViewSet)
 
 urlpatterns = [
     # Authentication endpoints
@@ -42,8 +43,7 @@ urlpatterns = [
     path('tasks/<path:task_id>/payments/', views.task_payments, name='task_payments'),
     path('tasks/<path:task_id>/add-payment/', views.add_task_payment, name='add_task_payment'),
     path('tasks/<path:task_id>/send-update/', views.send_customer_update, name='send_customer_update'),
-    path('tasks/<path:task_id>/cost-breakdowns/', views.CostBreakdownViewSet.as_view({'get': 'list', 'post': 'create'}), name='task-cost-breakdown-list'),
-    path('tasks/<path:task_id>/cost-breakdowns/<int:pk>/', views.CostBreakdownViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='task-cost-breakdown-detail'),
+
     path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
     path('tasks/urgency-options/', views.get_task_urgency_options, name='get_task_urgency_options'),
     path('tasks/<path:task_id>/', views.task_detail, name='task_detail'),

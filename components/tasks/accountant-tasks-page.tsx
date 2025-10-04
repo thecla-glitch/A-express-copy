@@ -23,8 +23,13 @@ export default function AccountantTasksPage() {
     router.push(`/dashboard/tasks/${task.title}`);
   };
 
-  const handleMarkAsPaid = (taskTitle: string) => {
-    updateTaskMutation.mutate({ id: taskTitle, updates: { payment_status: "Paid", paid_date: new Date().toISOString() } });
+  const handleAddPayment = (taskId: string, amount: number, paymentMethod: string) => {
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates: {
+        payments: [{ amount, method: paymentMethod, date: new Date().toISOString() }],
+      },
+    });
   };
 
   if (isLoading) {
@@ -63,7 +68,7 @@ export default function AccountantTasksPage() {
         technicians={technicians || []}
         onRowClick={handleRowClick}
         showActions={true}
-        onMarkAsPaid={handleMarkAsPaid}
+        onAddPayment={handleAddPayment}
         isAccountantView={true}
       />
     </div>

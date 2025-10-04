@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod
 from django.utils import timezone
 
 
@@ -129,6 +129,12 @@ class TaskActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskActivity
         fields = ('id', 'user', 'timestamp', 'type', 'message')
+
+
+class PaymentMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentMethod
+        fields = '__all__'
 
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -270,10 +276,11 @@ class TaskSerializer(serializers.ModelSerializer):
         partial_payment_amount = validated_data.pop('partial_payment_amount', None)
 
         if partial_payment_amount is not None:
+            payment_method, _ = PaymentMethod.objects.get_or_create(name='Partial Payment')
             Payment.objects.create(
                 task=instance,
                 amount=partial_payment_amount,
-                method='Partial Payment'  # Or any other appropriate method
+                method=payment_method
             )
 
         if 'workshop_location' in validated_data and 'workshop_technician' in validated_data:

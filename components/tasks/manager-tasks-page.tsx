@@ -19,6 +19,7 @@ import {
 import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
 import { useTechnicians } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import ManagePaymentMethodsDialog from "./manage-payment-methods-dialog";
 
 export function ManagerTasksPage() {
   const { user } = useAuth();
@@ -29,6 +30,7 @@ export function ManagerTasksPage() {
   const { data: technicians } = useTechnicians();
 
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [isManagePaymentMethodsDialogOpen, setIsManagePaymentMethodsDialogOpen] = useState(false);
 
   const deleteTaskMutation = useMutation({
     mutationFn: (taskTitle: string) => deleteTask(taskTitle),
@@ -106,6 +108,20 @@ export function ManagerTasksPage() {
                 <DialogTitle>Manage Brands</DialogTitle>
               </DialogHeader>
               <BrandManager />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isManagePaymentMethodsDialogOpen} onOpenChange={setIsManagePaymentMethodsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Payment Methods
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Manage Payment Methods</DialogTitle>
+              </DialogHeader>
+              <ManagePaymentMethodsDialog onClose={() => setIsManagePaymentMethodsDialogOpen(false)} />
             </DialogContent>
           </Dialog>
           <Button asChild className="bg-red-600 hover:bg-red-700 text-white">

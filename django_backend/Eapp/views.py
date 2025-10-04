@@ -6,7 +6,9 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown
+from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod
+from .serializers import UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, TaskSerializer, TaskActivitySerializer, PaymentSerializer, LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer
+from .permissions import IsManager, IsTechnician, IsFrontDesk
 from .serializers import (
     UserSerializer, TaskSerializer, TaskActivitySerializer, PaymentSerializer, 
     LocationSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, CostBreakdownSerializer,
@@ -649,16 +651,18 @@ def list_workshop_technicians(request):
     serializer = UserSerializer(technicians, many=True, context={'request': request})
     return Response(serializer.data)
 
-class CostBreakdownViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows cost breakdowns to be viewed or edited.
-    """
-    serializer_class = CostBreakdownSerializer
+class TaskActivityViewSet(viewsets.ModelViewSet):
+    queryset = TaskActivity.objects.all()
+    serializer_class = TaskActivitySerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return CostBreakdown.objects.filter(task__title=self.kwargs['task_id'])
 
-    def perform_create(self, serializer):
-        task = get_object_or_404(Task, title=self.kwargs['task_id'])
-        serializer.save(task=task)
+class PaymentMethodViewSet(viewsets.ModelViewSet):
+    queryset = PaymentMethod.objects.all()
+    serializer_class = PaymentMethodSerializer
+    permission_classes = [permissions.IsAuthenticated, IsManager]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return super().get_permissions()
