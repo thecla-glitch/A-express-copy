@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { getMediaUrl } from "@/lib/config";
 import { apiClient } from "@/lib/api-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Badge } from "@/components/ui/core/badge"
@@ -128,7 +129,7 @@ export function TaskActivityLog({ taskId }: TaskActivityLogProps) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={activity.user?.profile_picture_url} alt="Avatar" />
+                          <AvatarImage src={getMediaUrl(activity.user?.profile_picture_url)} alt="Avatar" />
                           <AvatarFallback>{activity.user?.full_name?.substring(0, 2) || "S"}</AvatarFallback>
                         </Avatar>
                         <div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getMediaUrl } from "@/lib/config";
 import { apiClient } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/layout/card'
 import { Button } from '@/components/ui/core/button'
@@ -80,7 +81,7 @@ export function TaskNotes({ taskId }: TaskNotesProps) {
                 notes.map((note) => (
                   <div key={note.id} className='flex items-start gap-4'>
                     <Avatar className='h-9 w-9'>
-                      <AvatarImage src={note.user?.profile_picture_url} alt='Avatar' />
+                      <AvatarImage src={getMediaUrl(note.user?.profile_picture_url)} alt='Avatar' />
                       <AvatarFallback>{note.user?.full_name?.substring(0, 2) || 'S'}</AvatarFallback>
                     </Avatar>
                     <div className='grid gap-1'>

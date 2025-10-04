@@ -137,7 +137,6 @@ def upload_profile_picture(request):
     serializer = UserProfileUpdateSerializer(
         user, 
         data=request.data, 
-        files=request.FILES,  # Pass files explicitly
         partial=True, 
         context={'request': request}
     )
