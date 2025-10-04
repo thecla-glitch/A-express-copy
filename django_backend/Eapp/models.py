@@ -237,6 +237,7 @@ class Task(models.Model):
     negotiated_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='negotiated_tasks'
     )
+    is_debt = models.BooleanField(default=False)
     is_referred = models.BooleanField(default=False)
     referred_by = models.ForeignKey(
         'Referrer', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_tasks'

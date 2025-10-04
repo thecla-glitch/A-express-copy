@@ -355,6 +355,14 @@ def task_detail(request, task_id):
             else:
                 return Response(customer_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        if 'is_debt' in request.data and request.data['is_debt'] is True:
+            TaskActivity.objects.create(
+                task=task,
+                user=user,
+                type=TaskActivity.ActivityType.STATUS_UPDATE,
+                message="Task marked as debt."
+            )
+
         if user.role == 'Front Desk' and 'current_location' in request.data:
             return Response(
                 {"error": "Front Desk users cannot change the task location."},

@@ -127,8 +127,17 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
     setNewPaymentMethod("")
   }
 
+  const handleMarkAsDebt = () => {
+    updateTaskMutation.mutate({ field: 'is_debt', value: true }, {
+      onSuccess: () => {
+        toast({ title: "Task Marked as Debt", description: `Task ${taskData?.title} has been marked as debt.` });
+        addTaskActivity(taskId, { message: `Task marked as debt by ${user?.username}` });
+      }
+    });
+  };
+
   const handleMarkAsPickedUp = () => {
-    if (taskData?.payment_status !== 'Fully Paid') {
+    if (taskData?.payment_status !== 'Fully Paid' && !taskData.is_debt) {
       toast({
         title: "Payment Required",
         description: "This task cannot be marked as picked up until it is fully paid. Please contact the manager for assistance.",
@@ -249,6 +258,15 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <SendCustomerUpdateDialog taskId={taskId} customerEmail={taskData.customer_details?.email} />
+          {isManager && taskData.payment_status !== 'Fully Paid' && (
+            <Button 
+              className="bg-yellow-500 hover:bg-yellow-600 text-white"
+              onClick={handleMarkAsDebt}
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Mark as Debt
+            </Button>
+          )}
           {canMarkComplete && (
             <Button className="bg-red-600 hover:bg-red-700 text-white">
               <CheckCircle className="h-4 w-4 mr-2" />
@@ -259,7 +277,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
             <Button 
               className="bg-red-600 hover:bg-red-700 text-white"
               onClick={handleMarkAsPickedUp}
-              disabled={taskData.status !== 'Ready for Pickup' || taskData.payment_status !== 'Fully Paid'}
+              disabled={taskData.status !== 'Ready for Pickup' || (taskData.payment_status !== 'Fully Paid' && !taskData.is_debt)}
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               Mark as Picked Up

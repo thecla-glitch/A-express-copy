@@ -193,7 +193,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'estimated_cost', 'total_cost', 'payment_status',
             'current_location', 'date_in', 'approved_at', 'approved_by',
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
-            'activities', 'payments', 'outstanding_balance', 'is_referred', 'referred_by', 'referred_by_details',
+            'activities', 'payments', 'outstanding_balance', 'is_referred', 'is_debt', 'referred_by', 'referred_by_details',
             'partial_payment_amount',
             'workshop_status', 'workshop_location', 'workshop_technician', 'original_technician',
             'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details',
