@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useState, useEffect, SetStateAction } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
+import { Button } from "@/components/ui/core/button"
+import { Input } from "@/components/ui/core/input"
+import { Label } from "@/components/ui/core/label"
+import { Badge } from "@/components/ui/core/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table"
 import {
   Dialog,
   DialogContent,
@@ -28,15 +28,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Users, UserPlus, Search, Edit, Trash2, Shield, Activity, Clock, Loader2 } from "lucide-react"
+} from "@/components/ui/feedback/alert-dialog"
+import { Users, UserPlus, Search, Edit, Trash2, Shield, Activity, Clock, Loader2, MapPin } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { useUserManagement } from "@/lib/use-user-management"
+import { LocationsManager } from "../locations/locations-manager";
 
 export function ManagerUserManagement() {
   const { users, isLoading, createUser, updateUser, deleteUser, toggleUserStatus } = useUserManagement()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isLocationsModalOpen, setIsLocationsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null)
   const [newUser, setNewUser] = useState({
     username: "",
@@ -46,6 +48,7 @@ export function ManagerUserManagement() {
     phone: "",
     role: "Technician" as const,
     password: "",
+    is_workshop: false,
   })
 
   const filteredUsers = users.filter(
@@ -77,6 +80,7 @@ export function ManagerUserManagement() {
         phone: "",
         role: "Technician",
         password: "",
+        is_workshop: false,
       })
       setIsAddDialogOpen(false)
     }
@@ -91,6 +95,7 @@ export function ManagerUserManagement() {
       email: editingUser.email,
       phone: editingUser.phone,
       role: editingUser.role,
+      is_workshop: editingUser.is_workshop,
     })
 
     if (success) {
@@ -114,6 +119,7 @@ export function ManagerUserManagement() {
   const technicians = users.filter((user) => user.role === "Technician").length
   const frontDesk = users.filter((user) => user.role === "Front Desk").length
   const managers = users.filter((user) => user.role === "Manager").length
+  const accountants = users.filter((user) => user.role === "Accountant").length
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
@@ -179,6 +185,16 @@ export function ManagerUserManagement() {
             <p className="text-xs text-muted-foreground">Customer service</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Accountants</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{accountants}</div>
+            <p className="text-xs text-muted-foreground">Finance staff</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* User Management Table */}
@@ -189,111 +205,139 @@ export function ManagerUserManagement() {
               <CardTitle>Team Management</CardTitle>
               <CardDescription>Manage your team members and their access levels</CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Team Member
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Team Member</DialogTitle>
-                  <DialogDescription>Create a new user account for your team member.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="username">Username *</Label>
-                      <Input
-                        id="username"
-                        value={newUser.username}
-                        onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                        placeholder="Enter username"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={newUser.email}
-                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                        placeholder="Enter email address"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="first_name">First Name *</Label>
-                      <Input
-                        id="first_name"
-                        value={newUser.first_name}
-                        onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })}
-                        placeholder="Enter first name"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="last_name">Last Name *</Label>
-                      <Input
-                        id="last_name"
-                        value={newUser.last_name}
-                        onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })}
-                        placeholder="Enter last name"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={newUser.phone}
-                        onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="role">Role *</Label>
-                      <Select
-                        value={newUser.role}
-                        onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Manager">Manager</SelectItem>
-                          <SelectItem value="Technician">Technician</SelectItem>
-                          <SelectItem value="Front Desk">Front Desk</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">Password *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={newUser.password}
-                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      placeholder="Enter password"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancel
+            <div className="flex gap-4">
+              <Dialog open={isLocationsModalOpen} onOpenChange={setIsLocationsModalOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Locations
                   </Button>
-                  <Button onClick={handleAddUser} disabled={isLoading}>
-                    {isLoading ? "Adding..." : "Add User"}
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Manage Locations</DialogTitle>
+                  </DialogHeader>
+                  <LocationsManager />
+                </DialogContent>
+              </Dialog>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Team Member
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Add New Team Member</DialogTitle>
+                    <DialogDescription>Create a new user account for your team member.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="username">Username *</Label>
+                        <Input
+                          id="username"
+                          value={newUser.username}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, username: e.target.value })}
+                          placeholder="Enter username"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={newUser.email}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, email: e.target.value })}
+                          placeholder="Enter email address"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="first_name">First Name *</Label>
+                        <Input
+                          id="first_name"
+                          value={newUser.first_name}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, first_name: e.target.value })}
+                          placeholder="Enter first name"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="last_name">Last Name *</Label>
+                        <Input
+                          id="last_name"
+                          value={newUser.last_name}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, last_name: e.target.value })}
+                          placeholder="Enter last name"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          value={newUser.phone}
+                          onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, phone: e.target.value })}
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="role">Role *</Label>
+                        <Select
+                          value={newUser.role}
+                          onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Manager">Manager</SelectItem>
+                            <SelectItem value="Technician">Technician</SelectItem>
+                            <SelectItem value="Front Desk">Front Desk</SelectItem>
+                            <SelectItem value="Accountant">Accountant</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {newUser.role === "Technician" && (
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="is_workshop"
+                          checked={newUser.is_workshop}
+                          onCheckedChange={(checked) => setNewUser({ ...newUser, is_workshop: checked })}
+                        />
+                        <Label htmlFor="is_workshop">Workshop</Label>
+                      </div>
+                    )}
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="password">Password *</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={newUser.password}
+                        onChange={(e: { target: { value: any } }) => setNewUser({ ...newUser, password: e.target.value })}
+                        placeholder="Enter password"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddUser} disabled={isLoading}>
+                      {isLoading ? "Adding..." : "Add User"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <div className="relative flex-1 max-w-sm">
@@ -302,7 +346,7 @@ export function ManagerUserManagement() {
                 placeholder="Search team members..."
                 className="pl-8"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: { target: { value: SetStateAction<string> } }) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
@@ -316,6 +360,7 @@ export function ManagerUserManagement() {
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Workshop</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Login</TableHead>
                 <TableHead>Created</TableHead>
@@ -330,9 +375,16 @@ export function ManagerUserManagement() {
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={user.role === "Manager" ? "bg-blue-100 text-blue-800" : user.role === "Technician" ? "bg-green-100 text-green-800" : "bg-purple-100 text-purple-800"}>
+                    <Badge variant="outline" className={user.role === "Manager" ? "bg-blue-100 text-blue-800" : user.role === "Technician" ? "bg-green-100 text-green-800" : user.role === "Accountant" ? "bg-yellow-100 text-yellow-800" : "bg-purple-100 text-purple-800"}>
                       {user.role}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {user.role === "Technician" && (
+                      <Badge variant={user.is_workshop ? "default" : "secondary"}>
+                        {user.is_workshop ? "Yes" : "No"}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
@@ -373,7 +425,7 @@ export function ManagerUserManagement() {
                                   <Input
                                     id="edit-first_name"
                                     value={editingUser.first_name}
-                                    onChange={(e) => setEditingUser({ ...editingUser, first_name: e.target.value })}
+                                    onChange={(e: { target: { value: any } }) => setEditingUser({ ...editingUser, first_name: e.target.value })}
                                   />
                                 </div>
                                 <div className="grid gap-2">
@@ -381,7 +433,7 @@ export function ManagerUserManagement() {
                                   <Input
                                     id="edit-last_name"
                                     value={editingUser.last_name}
-                                    onChange={(e) => setEditingUser({ ...editingUser, last_name: e.target.value })}
+                                    onChange={(e: { target: { value: any } }) => setEditingUser({ ...editingUser, last_name: e.target.value })}
                                   />
                                 </div>
                               </div>
@@ -392,7 +444,7 @@ export function ManagerUserManagement() {
                                   <Input
                                     id="edit-email"
                                     value={editingUser.email}
-                                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                                    onChange={(e: { target: { value: any } }) => setEditingUser({ ...editingUser, email: e.target.value })}
                                   />
                                 </div>
                                 <div className="grid gap-2">
@@ -400,26 +452,39 @@ export function ManagerUserManagement() {
                                   <Input
                                     id="edit-phone"
                                     value={editingUser.phone || ""}
-                                    onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                                    onChange={(e: { target: { value: any } }) => setEditingUser({ ...editingUser, phone: e.target.value })}
                                   />
                                 </div>
                               </div>
 
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-role">Role</Label>
-                                <Select
-                                  value={editingUser.role}
-                                  onValueChange={(value: any) => setEditingUser({ ...editingUser, role: value })}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Manager">Manager</SelectItem>
-                                    <SelectItem value="Technician">Technician</SelectItem>
-                                    <SelectItem value="Front Desk">Front Desk</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-role">Role</Label>
+                                  <Select
+                                    value={editingUser.role}
+                                    onValueChange={(value: any) => setEditingUser({ ...editingUser, role: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Manager">Manager</SelectItem>
+                                      <SelectItem value="Technician">Technician</SelectItem>
+                                      <SelectItem value="Front Desk">Front Desk</SelectItem>
+                                      <SelectItem value="Accountant">Accountant</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                {editingUser.role === "Technician" && (
+                                  <div className="flex items-center space-x-2">
+                                    <Switch
+                                      id="edit-is_workshop"
+                                      checked={editingUser.is_workshop}
+                                      onCheckedChange={(checked) => setEditingUser({ ...editingUser, is_workshop: checked })}
+                                    />
+                                    <Label htmlFor="edit-is_workshop">Workshop</Label>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}

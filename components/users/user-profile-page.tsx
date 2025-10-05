@@ -231,20 +231,7 @@ export function UserProfilePage() {
   }
 
 
-  const getDepartmentFromRole = (role: string): string => {
-    switch (role) {
-      case "Administrator":
-        return "Administration"
-      case "Manager":
-        return "Management"
-      case "Technician":
-        return "Technical Services"
-      case "Front Desk":
-        return "Customer Service"
-      default:
-        return role
-    }
-  }
+
 
   const profilePictureUrl = user?.profile_picture
     ? getMediaUrl(user.profile_picture)
@@ -401,7 +388,7 @@ export function UserProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
+
                     {/* <Input
                       id="address"
                       value={formData.address}
@@ -411,7 +398,6 @@ export function UserProfilePage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
                   {/* <Textarea
                     id="bio"
                     value={formData.bio}
@@ -443,16 +429,7 @@ export function UserProfilePage() {
                     {user?.id ? formatEmployeeId(user?.id) : "EMP-000"}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <Settings className="h-4 w-4 text-gray-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Department</p>
-                    {user?.role ? getDepartmentFromRole(user.role) : "Not Assigned"}
 
-                  </div>
-                </div>
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-gray-100 rounded-lg">
                     <Calendar className="h-4 w-4 text-gray-600" />

@@ -1,38 +1,72 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { useState } from "react"
-import { useAuth } from "@/lib/auth-context"
-import { Button } from "@/components/ui/core/button"
-import { Input } from "@/components/ui/core/input"
-import { Label } from "@/components/ui/core/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
-import { Alert, AlertDescription } from "@/components/ui/feedback/alert"
-import { useRouter } from "next/navigation"
+import { useState } from 'react'
+import { useAuth } from '@/lib/auth-context'
+import { Button } from '@/components/ui/core/button'
+import { Input } from '@/components/ui/core/input'
+import { Label } from '@/components/ui/core/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/layout/card'
+import { Alert, AlertDescription } from '@/components/ui/feedback/alert'
+import { useRouter } from 'next/navigation'
 
 export function LoginForm() {
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [errors, setErrors] = useState({ username: '', password: '', form: '' })
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
 
+  const validate = () => {
+    const newErrors = { username: '', password: '', form: '' }
+    if (!username) {
+      newErrors.username = 'Username is required.'
+    }
+    if (!password) {
+      newErrors.password = 'Password is required.'
+    }
+    setErrors(newErrors)
+    return !newErrors.username && !newErrors.password
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
+    if (!validate()) {
+      return
+    }
+
     setIsLoading(true)
+    setErrors({ username: '', password: '', form: '' })
 
     try {
       const success = await login(username, password)
       if (success) {
-        router.push("/dashboard")
+        router.push('/dashboard')
       } else {
-        setError("Invalid username or password")
+        setErrors({ ...errors, form: 'Invalid username or password' })
       }
-    } catch (err) {
-      setError("An error occurred during login")
+    } catch (err: any) {
+      if (err.response && err.response.data && typeof err.response.data === 'object') {
+        const errorData = err.response.data
+        const newErrors = { username: '', password: '', form: '' }
+        if (errorData.username) {
+          newErrors.username = errorData.username.join(' ')
+        }
+        if (errorData.password) {
+          newErrors.password = errorData.password.join(' ')
+        }
+        if (errorData.detail) {
+          newErrors.form = errorData.detail
+        }
+        if (!newErrors.username && !newErrors.password && !newErrors.form) {
+          newErrors.form = 'An unexpected error occurred.'
+        }
+        setErrors(newErrors)
+      } else {
+        setErrors({ ...errors, form: 'An error occurred during login' })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -59,11 +93,11 @@ export function LoginForm() {
             <Input
               id="username"
               type="text"
-              placeholder="Enter your username"
+              placeholder="e.g. john.doe"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              required
             />
+            {errors.username && <p className="text-sm text-red-500">{errors.username}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -73,35 +107,19 @@ export function LoginForm() {
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
             />
+            {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
           </div>
-          {error && (
+          {errors.form && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{errors.form}</AlertDescription>
             </Alert>
           )}
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
-        <div className="mt-6 text-sm text-gray-600">
-          <p className="font-semibold mb-2">Demo Accounts:</p>
-          <div className="space-y-1">
-            <p>
-              <strong>Manager:</strong> manager / password
-            </p>
-            <p>
-              <strong>Admin:</strong> admin / password
-            </p>
-            <p>
-              <strong>Technician:</strong> tech1 / password
-            </p>
-            <p>
-              <strong>Front Desk:</strong> frontdesk / password
-            </p>
-          </div>
-        </div>
+
       </CardContent>
     </Card>
   )

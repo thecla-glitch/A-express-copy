@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
 import { useAuth } from "@/lib/auth-context"
 import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout"
-import { TechnicianTasksPage } from "@/components/tasks/technician-tasks-page"
+import { TechnicianDashboard } from "@/components/dashboard/overviews/technician-dashboard"
 
-export default function TechnicianPage() {
-  const { isAuthenticated, user } = useAuth()
+export default function TechnicianDashboardPage() {
+  const { isAuthenticated } = useAuth()
 
   if (!isAuthenticated) {
     return null
@@ -13,7 +13,7 @@ export default function TechnicianPage() {
 
   return (
     <DashboardLayout>
-      <TechnicianTasksPage />
+      <TechnicianDashboard />
     </DashboardLayout>
   )
 }

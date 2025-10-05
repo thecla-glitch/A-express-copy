@@ -92,8 +92,7 @@ export function CustomersOverview() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231</div>
-            <p className="text-xs text-muted-foreground">+8% from last month</p>
+                            <div className="text-2xl font-bold">TSh 45,231</div>            <p className="text-xs text-muted-foreground">+8% from last month</p>
           </CardContent>
         </Card>
 
@@ -177,7 +176,7 @@ export function CustomersOverview() {
                   </TableCell>
                   <TableCell>{customer.phone}</TableCell>
                   <TableCell>{customer.totalOrders}</TableCell>
-                  <TableCell>${customer.totalSpent}</TableCell>
+                  <TableCell>TSh {customer.totalSpent}</TableCell>
                   <TableCell>{customer.lastVisit}</TableCell>
                   <TableCell>
                     <Badge variant={customer.status === "Active" ? "default" : "secondary"}>{customer.status}</Badge>

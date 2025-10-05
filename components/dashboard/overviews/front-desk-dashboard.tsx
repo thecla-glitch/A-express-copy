@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
 import { Input } from "@/components/ui/core/input"
@@ -75,7 +75,7 @@ const recentInteractions = [
     time: "5 minutes ago",
     status: "In Progress",
     type: "new",
-    priority: "High",
+    priority: "Kaacha",
   },
   {
     id: "T-1003",
@@ -85,7 +85,7 @@ const recentInteractions = [
     time: "12 minutes ago",
     status: "Awaiting Parts",
     type: "update",
-    priority: "Medium",
+    priority: "Katoka kidogo",
   },
   {
     id: "T-1020",
@@ -95,7 +95,7 @@ const recentInteractions = [
     time: "25 minutes ago",
     status: "In Progress",
     type: "inquiry",
-    priority: "Low",
+    priority: "Yupo",
   },
   {
     id: "T-1018",
@@ -105,7 +105,7 @@ const recentInteractions = [
     time: "1 hour ago",
     status: "Completed",
     type: "payment",
-    priority: "Medium",
+    priority: "Katoka kidogo",
   },
 ]
 
@@ -257,15 +257,15 @@ export function FrontDeskDashboard() {
     )
   }, [searchQuery])
 
-  const handleInitiatePickup = (taskId: string, customerName: string) => {
+  const handleInitiatePickup = useCallback((taskId: string, customerName: string) => {
     alert(`Initiating pickup process for ${taskId} - ${customerName}`)
-  }
+  }, [])
 
-  const handleCallCustomer = (phoneNumber: string, customerName: string) => {
+  const handleCallCustomer = useCallback((phoneNumber: string, customerName: string) => {
     alert(`Calling ${customerName} at ${phoneNumber}`)
-  }
+  }, [])
 
-  const handleCreateTask = () => {
+  const handleCreateTask = useCallback(() => {
     // In a real app, this would submit to an API
     alert(`New task created for ${newTaskForm.customerName}`)
     setNewTaskForm({
@@ -277,7 +277,7 @@ export function FrontDeskDashboard() {
       priority: "Medium",
       notes: "",
     })
-  }
+  }, [newTaskForm.customerName])
 
   const getInteractionIcon = (type: string) => {
     switch (type) {
@@ -313,12 +313,16 @@ export function FrontDeskDashboard() {
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case "High":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">High</Badge>
-      case "Medium":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Medium</Badge>
-      case "Low":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Low</Badge>
+      case "Yupo":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Yupo</Badge>
+      case "Katoka kidogo":
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Katoka kidogo</Badge>
+      case "Kaacha":
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Kaacha</Badge>
+      case "Expedited":
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Expedited</Badge>
+      case "Ina Haraka":
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Ina Haraka</Badge>
       default:
         return <Badge variant="secondary">{priority}</Badge>
     }
@@ -390,7 +394,7 @@ export function FrontDeskDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -431,9 +435,23 @@ export function FrontDeskDashboard() {
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <a href="/dashboard/tasks">View Tasks</a>
+              <a href="/dashboard/front-desk/tasks">View Tasks</a>
             </Button>
           </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    History
+                </CardTitle>
+                <CardDescription>View completed and picked up tasks.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button asChild className="w-full">
+                    <a href="/dashboard/front-desk/history">View History</a>
+                </Button>
+            </CardContent>
         </Card>
       </div>
 
@@ -492,9 +510,11 @@ export function FrontDeskDashboard() {
                     <p className="text-gray-600 text-sm mb-4">
                       Start a new repair task for walk-in customers or phone inquiries
                     </p>
-                    <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white">
-                      <Plus className="h-5 w-5 mr-2" />
-                      New Task
+                    <Button asChild size="lg" className="bg-red-600 hover:bg-red-700 text-white">
+                      <a href="/dashboard/tasks/new">
+                        <Plus className="h-5 w-5 mr-2" />
+                        New Task
+                      </a>
                     </Button>
                   </div>
                   <div className="p-4 bg-red-100 rounded-full">

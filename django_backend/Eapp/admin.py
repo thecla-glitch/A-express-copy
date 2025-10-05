@@ -1,13 +1,13 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User
+from .models import User, Task
 from django.utils.html import format_html
 
 class UserAdmin(BaseUserAdmin):
     
     list_display = ('id', 'username', 'email', 'first_name', 'last_name', 
-                   'role', 'is_active', 'is_staff', 'last_login', 'created_at', 
-                   'profile_picture_thumbnail')  # Added profile_picture_thumbnail
+                    'role', 'is_active', 'is_staff', 'last_login', 'created_at', 
+                    'profile_picture_thumbnail')  # Added profile_picture_thumbnail
     list_filter = ('role', 'is_active', 'is_staff', 'created_at')
     
     # Custom method to display profile picture thumbnail in list view
@@ -24,7 +24,7 @@ class UserAdmin(BaseUserAdmin):
         (None, {'fields': ('username', 'password')}),
         ('Personal Info', {'fields': ('first_name', 'last_name', 'email', 'phone', 'profile_picture')}),  # Added profile_picture
         ('Role & Permissions', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 
-                                         'groups', 'user_permissions')}),
+                                            'groups', 'user_permissions')}),
         ('Important Dates', {'fields': ('last_login', 'created_at')}),
     )
     
@@ -32,7 +32,7 @@ class UserAdmin(BaseUserAdmin):
         (None, {
             'classes': ('wide',),
             'fields': ('username', 'email', 'first_name', 'last_name', 'phone', 
-                      'role', 'password1', 'password2', 'is_active', 'is_staff', 'profile_picture'),  # Added profile_picture
+                        'role', 'password1', 'password2', 'is_active', 'is_staff', 'profile_picture'),  # Added profile_picture
         }),
     )
     
@@ -54,3 +54,12 @@ class UserAdmin(BaseUserAdmin):
 
 # Register your model
 admin.site.register(User, UserAdmin)
+
+
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ('title', 'status', 'urgency', 'assigned_to', 'created_by', 'due_date', 'created_at')
+    list_filter = ('status', 'urgency', 'assigned_to', 'created_by')
+    search_fields = ('title', 'description')
+    autocomplete_fields = ['assigned_to', 'created_by']
+    date_hierarchy = 'created_at'

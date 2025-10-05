@@ -1,504 +1,530 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/core/button'
+import { Input } from '@/components/ui/core/input'
+import { Label } from '@/components/ui/core/label'
+import { Textarea } from '@/components/ui/core/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/core/select'
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/layout/tabs";
+import { AlertTriangle, CheckCircle } from 'lucide-react'
+import { createTask, createCustomer } from '@/lib/api-client'
+import { useAuth } from '@/lib/auth-context'
+import { Checkbox } from '@/components/ui/core/checkbox'
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/feedback/alert-dialog";
+import { CurrencyInput } from "@/components/ui/core/currency-input";
+import { useTechnicians, useManagers, useBrands, useLocations } from '@/hooks/use-data'
+import { useCustomers } from '@/hooks/use-customers'
+import { useReferrers } from '@/hooks/use-referrers'
+import { SimpleCombobox } from '@/components/ui/core/combobox'
+import { toast } from '@/hooks/use-toast'
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
-import { Button } from "@/components/ui/core/button"
-import { Input } from "@/components/ui/core/input"
-import { Label } from "@/components/ui/core/label"
-import { Textarea } from "@/components/ui/core/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select"
-import { ArrowLeft, User, Laptop, ClipboardList, AlertTriangle, CheckCircle } from "lucide-react"
+interface NewTaskFormProps {}
 
 interface FormData {
-  customerName: string
-  phoneNumber: string
-  email: string
-  laptopMake: string
-  laptopModel: string
-  serialNumber: string
-  issueDescription: string
-  urgencyLevel: string
-  currentLocation: string
+  title: string;
+  customer_id: string;
+  customer_name: string
+  customer_phone: string
+  customer_email: string
+  customer_type?: string
+  brand: string
+  laptop_model: string
+  serial_number: string
+  description: string
+  urgency: string
+  current_location: string
+  device_type: string
+  device_notes: string
+  negotiated_by: string
+  assigned_to?: string
+  estimated_cost?: number
+  is_referred: boolean
+  referred_by: string
 }
 
 interface FormErrors {
-  customerName?: string
-  phoneNumber?: string
-  email?: string
-  laptopMake?: string
-  laptopModel?: string
-  serialNumber?: string
-  issueDescription?: string
-  urgencyLevel?: string
-  currentLocation?: string
+  [key: string]: string | undefined
 }
 
-const urgencyOptions = [
-  { value: "low", label: "Low - Non-urgent repair" },
-  { value: "medium", label: "Medium - Standard priority" },
-  { value: "high", label: "High - Urgent repair needed" },
+const URGENCY_OPTIONS = [
+  { value: 'Yupo', label: 'Yupo' },
+  { value: 'Katoka kidogo', label: 'Katoka kidogo' },
+  { value: 'Kaacha', label: 'Kaacha' },
+  { value: 'Expedited', label: 'Expedited' },
+  { value: 'Ina Haraka', label: 'Ina Haraka' },
 ]
 
-const locationOptions = [
-  { value: "front-desk-intake", label: "Front Desk Intake" },
-  { value: "diagnostic-station", label: "Diagnostic Station" },
-  { value: "repair-bay-1", label: "Repair Bay 1" },
-  { value: "repair-bay-2", label: "Repair Bay 2" },
-  { value: "parts-storage", label: "Parts Storage" },
-  { value: "quality-control", label: "Quality Control" },
+const CUSTOMER_TYPE_OPTIONS = [
+  { value: 'Normal', label: 'Normal' },
+  { value: 'Repairman', label: 'Repairman' },
 ]
 
-export function NewTaskForm() {
+const DEVICE_TYPE_OPTIONS = [
+  { value: 'Full', label: 'Full' },
+  { value: 'Not Full', label: 'Not Full' },
+  { value: 'Motherboard Only', label: 'Motherboard Only' },
+]
+
+export function NewTaskForm({}: NewTaskFormProps) {
+  const { user } = useAuth()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [isReferred, setIsReferred] = useState(false)
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [referrerSearch, setReferrerSearch] = useState('')
+
+  const { data: technicians, isLoading: isLoadingTechnicians } = useTechnicians()
+  const { data: managers, isLoading: isLoadingManagers } = useManagers()
+  const { data: brands, isLoading: isLoadingBrands } = useBrands()
+  const { data: locations, isLoading: isLoadingLocations } = useLocations()
+  const { data: customers, isLoading: isLoadingCustomers } = useCustomers(customerSearch)
+  const { data: referrers, isLoading: isLoadingReferrers } = useReferrers(referrerSearch)
+
   const [formData, setFormData] = useState<FormData>({
-    customerName: "",
-    phoneNumber: "",
-    email: "",
-    laptopMake: "",
-    laptopModel: "",
-    serialNumber: "",
-    issueDescription: "",
-    urgencyLevel: "",
-    currentLocation: "front-desk-intake", // Default value
+    title: '',
+    customer_id: '',
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
+    customer_type: 'Normal',
+    brand: '',
+    laptop_model: '',
+    serial_number: '',
+    description: '',
+    urgency: 'Yupo',
+    current_location: '',
+    device_type: 'Full',
+    device_notes: '',
+    negotiated_by: '',
+    assigned_to: '',
+    estimated_cost: 0,
+    is_referred: false,
+    referred_by: ''
   })
   const [errors, setErrors] = useState<FormErrors>({})
+
+  useEffect(() => {
+    if (locations && locations.length > 0) {
+        setFormData(prev => ({...prev, current_location: locations[0].name}))
+    }
+  }, [locations])
+
+  useEffect(() => {
+    if (user?.role === 'Manager') {
+        setFormData(prev => ({...prev, negotiated_by: user.id.toString()}))
+    }
+  }, [user])
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
 
-    // Customer Name validation
-    if (!formData.customerName.trim()) {
-      newErrors.customerName = "Customer name is required"
-    }
-
-    // Phone Number validation
-    if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required"
+    if (!formData.customer_name.trim()) newErrors.customer_name = 'Name is required'
+    
+    if (!formData.customer_phone.trim()) {
+        newErrors.customer_phone = 'Phone is required'
     } else {
-      const phoneRegex = /^$$\d{3}$$\s\d{3}-\d{4}$/
-      if (!phoneRegex.test(formData.phoneNumber)) {
-        newErrors.phoneNumber = "Phone number must be in format (555) 123-4567"
-      }
+        const phoneRegex = /^0\s?\d{3}\s?\d{3}\s?\d{3}$/;
+        if (!phoneRegex.test(formData.customer_phone)) {
+            newErrors.customer_phone = 'Invalid phone number format. Example: 0XXX XXX XXX'
+        }
     }
 
-    // Email validation (optional but must be valid if provided)
-    if (formData.email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(formData.email)) {
-        newErrors.email = "Please enter a valid email address"
-      }
+    if (!formData.brand && !formData.laptop_model.trim()) {
+        newErrors.brand = 'Either brand or model is required';
+        newErrors.laptop_model = 'Either brand or model is required';
     }
 
-    // Serial Number validation
-    if (!formData.serialNumber.trim()) {
-      newErrors.serialNumber = "Laptop serial number is required"
-    }
-
-    // Issue Description validation
-    if (!formData.issueDescription.trim()) {
-      newErrors.issueDescription = "Issue description is required"
-    } else if (formData.issueDescription.trim().length < 10) {
-      newErrors.issueDescription = "Issue description must be at least 10 characters"
-    }
-
-    // Urgency Level validation
-    if (!formData.urgencyLevel) {
-      newErrors.urgencyLevel = "Please select an urgency level"
-    }
-
-    // Current Location validation
-    if (!formData.currentLocation) {
-      newErrors.currentLocation = "Please select a current location"
+    if (!formData.description.trim()) newErrors.description = 'Description is required'
+    if (!formData.urgency) newErrors.urgency = 'Urgency is required'
+    if (!formData.current_location) newErrors.current_location = 'Location is required'
+    if ((formData.device_type === 'Not Full' || formData.device_type === 'Motherboard Only') && !formData.device_notes.trim()) {
+        newErrors.device_notes = 'Device notes are required for this device type'
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, "")
-
-    // Format as (XXX) XXX-XXXX
-    if (digits.length >= 6) {
-      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`
-    } else if (digits.length >= 3) {
-      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
-    } else {
-      return digits
-    }
-  }
-
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    if (field === "phoneNumber") {
-      value = formatPhoneNumber(value)
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-
-    // Clear error for this field when user starts typing
+  const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
+    setFormData(prev => {
+        const newFormData = { ...prev, [field]: value };
+        if (field === 'device_type' && value === 'Motherboard Only') {
+            newFormData.laptop_model = 'Motherboard';
+        } else if (field === 'device_type' && prev.laptop_model === 'Motherboard') {
+            newFormData.laptop_model = '';
+        }
+        return newFormData;
+    })
     if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: undefined,
-      }))
+      setErrors(prev => ({ ...prev, [field]: undefined }))
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!validateForm()) {
-      return
-    }
+    if (!validateForm()) return
 
     setIsSubmitting(true)
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      let customerId = formData.customer_id;
+      if (!customerId) {
+        const response = await createCustomer({
+          name: formData.customer_name,
+          phone: formData.customer_phone,
+          email: formData.customer_email,
+          customer_type: formData.customer_type,
+        });
+        customerId = response.data.id;
+        toast({
+          title: 'Customer Created',
+          description: `Customer ${formData.customer_name} has been added to the database.`,
+        });
+      }
 
-      // Generate a mock task ID
-      const taskId = `T-${Math.floor(Math.random() * 9000) + 1000}`
-
+      const taskData = {
+        ...formData,
+        customer: customerId,
+        negotiated_by: formData.negotiated_by || null,
+        referred_by: formData.is_referred ? formData.referred_by : null,
+      };
+      await createTask(taskData)
       setSubmitSuccess(true)
-
-      // Redirect to task list after a short delay
-      setTimeout(() => {
-        router.push("/dashboard/tasks")
-      }, 2000)
-    } catch (error) {
-      console.error("Error creating task:", error)
+    } catch (error: any) {
+      if (error.response) {
+        console.error('Error creating task:', error.response.data)
+      } else {
+        console.error('Error creating task:', error)
+      }
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleCancel = () => {
-    router.push("/dashboard/tasks")
+  const handleSuccessRedirect = () => {
+    if (user?.role === 'Manager') {
+      router.push('/dashboard/manager/tasks')
+    }
+    else if (user?.role === 'Front Desk') {
+      router.push('/dashboard/front-desk/tasks')
+    }
+    else {
+      router.push('/dashboard/tasks')
+    }
   }
 
-  if (submitSuccess) {
-    return (
-      <div className="flex-1 space-y-6 p-6">
-        <div className="max-w-2xl mx-auto">
-          <Card className="border-green-200 bg-green-50">
-            <CardContent className="p-8 text-center">
-              <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-green-800 mb-2">Task Created Successfully!</h2>
-              <p className="text-green-700 mb-4">
-                The new repair task has been created and added to the system. You will be redirected to the tasks list
-                shortly.
-              </p>
-              <Button onClick={() => router.push("/dashboard/tasks")} className="bg-green-600 hover:bg-green-700">
-                Go to Tasks List
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+  const canAssignTechnician = user && (user.role === 'Manager' || user.role === 'Administrator' || user.role === 'Front Desk')
+
+  const customerOptions = customers ? customers.map((c: any) => ({ label: c.name, value: c.id.toString() })) : [];
+  const referrerOptions = referrers ? referrers.map((r: any) => ({ label: r.name, value: r.id.toString() })) : [];
 
   return (
-    <div className="flex-1 space-y-6 p-6">
-      {/* Header Section */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600" onClick={handleCancel}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Tasks
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Create New Task</h1>
-        <p className="text-gray-600 mt-2">Enter all required information to create a new repair task</p>
-      </div>
-
-      {/* Form */}
-      <div className="max-w-2xl mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Customer Information Section */}
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <User className="h-5 w-5 text-red-600" />
-                Customer Information
-              </CardTitle>
-              <CardDescription>Enter the customer's contact details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customerName" className="text-gray-700 font-medium">
-                  Customer Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="customerName"
-                  type="text"
-                  placeholder="Enter customer's full name"
-                  value={formData.customerName}
-                  onChange={(e) => handleInputChange("customerName", e.target.value)}
-                  className={`h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 ${
-                    errors.customerName ? "border-red-300 bg-red-50" : ""
-                  }`}
-                />
-                {errors.customerName && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {errors.customerName}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber" className="text-gray-700 font-medium">
-                  Phone Number <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  placeholder="(555) 123-4567"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                  className={`h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 ${
-                    errors.phoneNumber ? "border-red-300 bg-red-50" : ""
-                  }`}
-                  maxLength={14}
-                />
-                <p className="text-xs text-gray-500">Format: (555) 123-4567</p>
-                {errors.phoneNumber && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {errors.phoneNumber}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700 font-medium">
-                  Email Address <span className="text-gray-400">(Optional)</span>
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="customer@example.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className={`h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 ${
-                    errors.email ? "border-red-300 bg-red-50" : ""
-                  }`}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Laptop Details Section */}
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Laptop className="h-5 w-5 text-red-600" />
-                Laptop Details
-              </CardTitle>
-              <CardDescription>Provide information about the laptop being repaired</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="laptopMake" className="text-gray-700 font-medium">
-                    Make
-                  </Label>
-                  <Input
-                    id="laptopMake"
-                    type="text"
-                    placeholder="e.g., Apple, Dell, HP, Lenovo"
-                    value={formData.laptopMake}
-                    onChange={(e) => handleInputChange("laptopMake", e.target.value)}
-                    className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="laptopModel" className="text-gray-700 font-medium">
-                    Model
-                  </Label>
-                  <Input
-                    id="laptopModel"
-                    type="text"
-                    placeholder='e.g., MacBook Pro 13", XPS 15'
-                    value={formData.laptopModel}
-                    onChange={(e) => handleInputChange("laptopModel", e.target.value)}
-                    className="h-11 border-gray-300 focus:border-red-500 focus:ring-red-500"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="serialNumber" className="text-gray-700 font-medium">
-                  Laptop Serial Number <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="serialNumber"
-                  type="text"
-                  placeholder="Enter the laptop's serial number"
-                  value={formData.serialNumber}
-                  onChange={(e) => handleInputChange("serialNumber", e.target.value)}
-                  className={`h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 ${
-                    errors.serialNumber ? "border-red-300 bg-red-50" : ""
-                  }`}
-                />
-                <p className="text-xs text-gray-500">Usually found on the bottom of the laptop or in system settings</p>
-                {errors.serialNumber && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {errors.serialNumber}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Issue & Initial Assessment Section */}
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-red-600" />
-                Issue & Initial Assessment
-              </CardTitle>
-              <CardDescription>Describe the problem and set initial task parameters</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="issueDescription" className="text-gray-700 font-medium">
-                  Initial Issue Description <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="issueDescription"
-                  placeholder="Describe the problem in detail. Include any error messages, symptoms, or customer observations..."
-                  value={formData.issueDescription}
-                  onChange={(e) => handleInputChange("issueDescription", e.target.value)}
-                  className={`min-h-[120px] border-gray-300 focus:border-red-500 focus:ring-red-500 resize-none ${
-                    errors.issueDescription ? "border-red-300 bg-red-50" : ""
-                  }`}
-                  rows={5}
-                />
-                <p className="text-xs text-gray-500">
-                  Minimum 10 characters. Be as detailed as possible to help technicians understand the issue.
-                </p>
-                {errors.issueDescription && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {errors.issueDescription}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="urgencyLevel" className="text-gray-700 font-medium">
-                  Urgency Level <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.urgencyLevel}
-                  onValueChange={(value) => handleInputChange("urgencyLevel", value)}
-                >
-                  <SelectTrigger
-                    className={`h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 ${
-                      errors.urgencyLevel ? "border-red-300 bg-red-50" : ""
-                    }`}
-                  >
-                    <SelectValue placeholder="Select urgency level" />
+    <>
+      <form onSubmit={handleSubmit} className='space-y-6 p-4'>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+          <div className='space-y-4'>
+            <h3 className='text-lg font-medium text-gray-900'>Customer & Device</h3>
+            <FormField id='title' label='Task ID' required error={errors.title}>
+              <Input
+                id='title'
+                value="Will be generated on creation"
+                readOnly
+                className='bg-gray-100'
+              />
+            </FormField>
+            <FormField id='customer_name' label='Customer Name' required error={errors.customer_name}>
+              <SimpleCombobox
+                options={customerOptions}
+                value={formData.customer_name}
+                onChange={(value) => {
+                  const selectedCustomer = customers.find((c: any) => c.id.toString() === value)
+                  if(selectedCustomer){
+                    handleInputChange('customer_id', selectedCustomer.id)
+                    handleInputChange('customer_name', selectedCustomer.name)
+                    handleInputChange('customer_phone', selectedCustomer.phone)
+                    handleInputChange('customer_email', selectedCustomer.email)
+                    handleInputChange('customer_type', selectedCustomer.customer_type)
+                  } else {
+                    handleInputChange('customer_id', '')
+                  }
+                }}
+                onInputChange={(value) => {
+                  handleInputChange('customer_name', value)
+                  setCustomerSearch(value)
+                }}
+                placeholder="Search or create customer..."
+              />
+            </FormField>
+            <FormField id='customer_phone' label='Phone Number' required error={errors.customer_phone}>
+              <Input
+                id='customer_phone'
+                type='text'
+                value={formData.customer_phone}
+                onChange={(e) => handleInputChange('customer_phone', e.target.value)}
+                className={errors.customer_phone ? 'border-red-500' : ''}
+                placeholder="e.g. 0712 345 678"
+              />
+            </FormField>
+            <FormField id='customer_email' label='Email Address' error={errors.customer_email}>
+              <Input
+                id='customer_email'
+                type='email'
+                value={formData.customer_email}
+                onChange={(e) => handleInputChange('customer_email', e.target.value)}
+                className={errors.customer_email ? 'border-red-500' : ''}
+                placeholder="e.g. john.doe@example.com"
+              />
+            </FormField>
+            <FormField id='customer_type' label='Customer Type'>
+              <Tabs
+                value={formData.customer_type}
+                onValueChange={(value) => handleInputChange('customer_type', value)}
+              >
+                <TabsList>
+                  {CUSTOMER_TYPE_OPTIONS.map((option) => (
+                    <TabsTrigger
+                      key={option.value}
+                      value={option.value}
+                      className='data-[state=active]:bg-red-600 data-[state=active]:text-white data-[state=inactive]:bg-gray-200'
+                    >
+                      {option.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </FormField>
+            <div className='grid grid-cols-2 gap-4'>
+              <FormField id='brand' label='Brand' error={errors.brand}>
+                <Select value={formData.brand} onValueChange={(value) => handleInputChange('brand', value)} disabled={isLoadingBrands}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select brand" />
                   </SelectTrigger>
                   <SelectContent>
-                    {urgencyOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                    {brands?.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id.toString()}>
+                        {brand.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.urgencyLevel && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {errors.urgencyLevel}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="currentLocation" className="text-gray-700 font-medium">
-                  Current Physical Location <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.currentLocation}
-                  onValueChange={(value) => handleInputChange("currentLocation", value)}
-                >
-                  <SelectTrigger
-                    className={`h-11 border-gray-300 focus:border-red-500 focus:ring-red-500 ${
-                      errors.currentLocation ? "border-red-300 bg-red-50" : ""
-                    }`}
-                  >
-                    <SelectValue placeholder="Select current location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locationOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500">Where is the laptop currently located in the shop?</p>
-                {errors.currentLocation && (
-                  <p className="text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {errors.currentLocation}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-4 pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-              className="px-8 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-8 py-2 bg-red-600 hover:bg-red-700 text-white font-medium"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Creating Task...
-                </div>
-              ) : (
-                "Create Task"
-              )}
-            </Button>
+              </FormField>
+              <FormField id='laptop_model' label='Model' error={errors.laptop_model}>
+                <Input
+                  id='laptop_model'
+                  value={formData.laptop_model}
+                  onChange={(e) => handleInputChange('laptop_model', e.target.value)}
+                  readOnly={formData.device_type === 'Motherboard Only'}
+                  placeholder="e.g. MacBook Pro 14-inch"
+                />
+              </FormField>
+            </div>
+            <FormField id='serial_number' label='Serial Number' error={errors.serial_number}>
+              <Input
+                id='serial_number'
+                value={formData.serial_number}
+                onChange={(e) => handleInputChange('serial_number', e.target.value)}
+                className={errors.serial_number ? 'border-red-500' : ''}
+                placeholder="e.g. C02G812JHC85"
+              />
+            </FormField>
           </div>
-        </form>
-      </div>
-    </div>
+
+          <div className='space-y-4'>
+            <h3 className='text-lg font-medium text-gray-900'>Issue Details</h3>
+            <FormField id='description' label='Issue Description' required error={errors.description}>
+              <Textarea
+                id='description'
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                rows={canAssignTechnician ? 4 : 7}
+                className={errors.description ? 'border-red-500' : ''}
+                placeholder="e.g. The laptop is not turning on. No signs of life."
+              />
+            </FormField>
+            <FormField id='device_type' label='Device Type'>
+              <Select value={formData.device_type} onValueChange={(value) => handleInputChange('device_type', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select device type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEVICE_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField id='device_notes' label='Device Notes' required={formData.device_type === 'Not Full' || formData.device_type === 'Motherboard Only'} error={errors.device_notes}>
+                <Textarea
+                  id='device_notes'
+                  value={formData.device_notes}
+                  onChange={(e) => handleInputChange('device_notes', e.target.value)}
+                  className={errors.device_notes ? 'border-red-500' : ''}
+                  placeholder="e.g. Customer brought only the motherboard and the screen."
+                />
+              </FormField>
+            <FormField id='estimated_cost' label='Estimated Cost (TSh)'>
+              <CurrencyInput
+                id='estimated_cost'
+                value={formData.estimated_cost ?? 0}
+                onValueChange={(value) => handleInputChange('estimated_cost', value)}
+                placeholder="e.g. 150,000"
+              />
+            </FormField>
+            <FormField id='urgency' label='Urgency' required error={errors.urgency}>
+              <Select value={formData.urgency} onValueChange={(value) => handleInputChange('urgency', value)}>
+                <SelectTrigger className={errors.urgency ? 'border-red-500' : ''}>
+                  <SelectValue placeholder='Set urgency' />
+                </SelectTrigger>
+                <SelectContent>
+                  {URGENCY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField id='current_location' label='Initial Location' required error={errors.current_location}>
+              <Select value={formData.current_location} onValueChange={(value) => handleInputChange('current_location', value)} disabled={isLoadingLocations}>
+                <SelectTrigger className={errors.current_location ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations?.map((location) => (
+                    <SelectItem key={location.id} value={location.name}>
+                      {location.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+  <FormField id='negotiated_by' label='Negotiated By'>
+              {user?.role === 'Manager' ? (
+                  <Input
+                      id='negotiated_by'
+                      value={`${user.first_name} ${user.last_name}`}
+                      readOnly
+                      className='bg-gray-100'
+                  />
+              ) : (
+                  <Select value={formData.negotiated_by} onValueChange={(value) => handleInputChange('negotiated_by', value)} disabled={isLoadingManagers}>
+                      <SelectTrigger>
+                          <SelectValue placeholder="Select manager" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {managers?.map((manager) => (
+                              <SelectItem key={manager.id} value={manager.id.toString()}>
+                                  {manager.first_name} {manager.last_name}
+                              </SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+              )}
+              </FormField>
+            {canAssignTechnician && (
+              <FormField id='assigned_to' label='Assign Technician'>
+                <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)} disabled={isLoadingTechnicians}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select technician" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {technicians?.map((technician) => (
+                      <SelectItem key={technician.id} value={technician.id.toString()}>
+                        {technician.first_name} {technician.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+          <div className="flex items-center space-x-2">
+            <Checkbox id="is_referred" checked={isReferred} onCheckedChange={(checked) => { setIsReferred(!!checked); handleInputChange('is_referred', !!checked); }} />
+              <label
+                htmlFor="is_referred"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Referred
+              </label>
+            </div>
+            {isReferred && (
+              <FormField id='referred_by' label='Referred By'>
+                <SimpleCombobox
+                  options={referrerOptions}
+                  value={formData.referred_by}
+                  onChange={(value) => {
+                    const selectedReferrer = referrers.find((r: any) => r.id.toString() === value)
+                    if(selectedReferrer){
+                      handleInputChange('referred_by', selectedReferrer.name)
+                    } else {
+                      handleInputChange('referred_by', value)
+                    }
+                  }}
+                  onInputChange={(value) => {
+                    handleInputChange('referred_by', value)
+                    setReferrerSearch(value)
+                  }}
+                  placeholder="Search or create referrer..."
+                />
+              </FormField>
+            )}
+          </div>
+        </div>
+
+        <div className='flex justify-end gap-4 pt-4'>
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            Back
+          </Button>
+          <Button type='submit' disabled={isSubmitting} className='bg-red-600 hover:bg-red-700 text-white'>
+            {isSubmitting ? 'Creating...' : 'Create Task'}
+          </Button>
+        </div>
+      </form>
+      <AlertDialog open={submitSuccess} onOpenChange={setSubmitSuccess}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Task Created!</AlertDialogTitle>
+            <AlertDialogDescription>
+              The new task has been added to the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleSuccessRedirect}>Go to Tasks</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
+
+const FormField = ({
+  id,
+  label,
+  required = false,
+  error,
+  children,
+}: {
+  id: string
+  label: string
+  required?: boolean
+  error?: string
+  children: React.ReactNode
+}) => (
+  <div className='space-y-1.5'>
+    <Label htmlFor={id} className='font-medium'>
+      {label}
+      {required && <span className='text-red-500 ml-1'>*</span>}
+    </Label>
+    {children}
+    {error && (
+      <p className='text-sm text-red-600 flex items-center gap-1'>
+        <AlertTriangle className='h-4 w-4' />
+        {error}
+      </p>
+    )}
+  </div>
+)

@@ -1,22 +1,33 @@
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
-  API_PREFIX: "/api",
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
   AUTH_ENDPOINTS: {
-    LOGIN: "/auth/login/",
-    REGISTER: "/auth/register/",
-    PROFILE: "/auth/profile/",
-    USERS: "/auth/users/",
-    REFRESH: "/auth/token/refresh/",
-    UPDATE_PROFILE: "/auth/profile/update/",
+    LOGIN: "/login/",
+    REGISTER: "/register/",
+    PROFILE: "/profile/",
+    USERS: "/users/",
+    REFRESH: "/token/refresh/",
+    UPDATE_PROFILE: "/profile/update/",
   },
 } as const
 
-
 export const getApiUrl = (endpoint: string): string => {
-  return `${API_CONFIG.BASE_URL}${API_CONFIG.API_PREFIX}${endpoint}`
+  return `${API_CONFIG.BASE_URL}${endpoint}`
 }
 
+const getBaseUrl = (url: string) => {
+    if (url.includes('/api')) {
+        return url.split('/api')[0];
+    }
+    return url;
+}
 
 export const getMediaUrl = (path: string): string => {
-  return `${API_CONFIG.BASE_URL}${path}`
+    if (!path) {
+        return '';
+    }
+    if (path.startsWith('http')) {
+        return path;
+    }
+    const baseUrl = getBaseUrl(API_CONFIG.BASE_URL);
+    return `${baseUrl}${path}`;
 }
