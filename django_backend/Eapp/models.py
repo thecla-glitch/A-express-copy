@@ -386,6 +386,7 @@ class CostBreakdown(models.Model):
     cost_type = models.CharField(max_length=20, choices=CostType.choices, default=CostType.INCLUSIVE)
     category = models.CharField(max_length=100, default='Inclusive')
     created_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f'{self.get_cost_type_display()} cost of {self.amount} for {self.task.title}'

@@ -614,6 +614,31 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]
 
+
+class CostBreakdownViewSet(viewsets.ModelViewSet):
+    queryset = CostBreakdown.objects.all()
+    serializer_class = CostBreakdownSerializer
+    permission_classes = [permissions.IsAuthenticated, IsManager]
+
+    def create(self, request, *args, **kwargs):
+        task_id = kwargs.get('task_id')
+        task = get_object_or_404(Task, title=task_id)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cost_breakdown = serializer.save(task=task)
+
+        if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+            TaskActivity.objects.create(
+                task=task,
+                user=request.user,
+                type=TaskActivity.ActivityType.NOTE,
+                message=f"Refund of {cost_breakdown.amount} issued. Reason: {cost_breakdown.reason}"
+            )
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
 from django.utils import timezone
 from datetime import timedelta
 

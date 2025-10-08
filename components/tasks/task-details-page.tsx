@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CostBreakdown } from "./cost-breakdown";
 import { Combobox } from "@/components/ui/core/combobox";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
+import { AddRefundDialog } from "./add-refund-dialog";
 
 
 
@@ -71,6 +72,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState<number | "">("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
+  const [isAddRefundOpen, setIsAddRefundOpen] = useState(false);
 
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
 
@@ -650,6 +652,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <Plus className="h-4 w-4 mr-1" />
                       Add Payment
                     </Button>
+                    <Button
+                        onClick={() => setIsAddRefundOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Refund
+                      </Button>
                   </div>
                 )}
               </div>
@@ -680,6 +689,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </Card>
         </TabsContent>
       </Tabs>
+      <AddRefundDialog taskId={taskId} open={isAddRefundOpen} onOpenChange={setIsAddRefundOpen} />
     </div>
   )
 }
