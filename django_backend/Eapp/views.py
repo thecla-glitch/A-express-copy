@@ -1,5 +1,5 @@
 from rest_framework import status, permissions, viewsets, generics
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
@@ -18,6 +18,8 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from datetime import datetime
 from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant
+from .status_transitions import can_transition
+
 
 
 @api_view(['GET'])
@@ -56,20 +58,72 @@ def customer_create(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-@api_view(['POST'])
-@permission_classes([IsAdminOrManager])
-def register_user(request):
-    serializer = UserRegistrationSerializer(data=request.data, context={'request': request})
-    if serializer.is_valid():
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserRegistrationSerializer
+        return UserSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update_user', 'delete_user', 'deactivate', 'activate']:
+            self.permission_classes = [IsAdminOrManager]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         user = serializer.save()
         refresh = RefreshToken.for_user(user)
+        headers = self.get_success_headers(serializer.data)
         return Response({
-            'user': UserSerializer(user).data,
+            'user': UserSerializer(user, context=self.get_serializer_context()).data,
             'refresh': str(refresh),
             'access': str(refresh.access_token),
-        }, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        }, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=True, methods=['patch'], url_path='update')
+    def update_user(self, request, pk=None):
+        user = self.get_object()
+        if user.is_superuser and not request.user.is_superuser:
+            return Response({"error": "Only superusers can update other superusers."}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['delete'], url_path='delete')
+    def delete_user(self, request, pk=None):
+        user = self.get_object()
+        if user.id == request.user.id:
+            return Response({"error": "You cannot delete your own account."}, status=status.HTTP_403_FORBIDDEN)
+        if user.is_superuser and not request.user.is_superuser:
+            return Response({"error": "Only superusers can delete other superusers."}, status=status.HTTP_403_FORBIDDEN)
+        
+        user.delete()
+        return Response({"message": "User deleted successfully."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='deactivate')
+    def deactivate(self, request, pk=None):
+        user = self.get_object()
+        if user.id == request.user.id:
+            return Response({"error": "You cannot deactivate your own account."}, status=status.HTTP_403_FORBIDDEN)
+        
+        user.is_active = False
+        user.save()
+        return Response({"message": "User deactivated successfully."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='activate')
+    def activate(self, request, pk=None):
+        user = self.get_object()
+        user.is_active = True
+        user.save()
+        return Response({"message": "User activated successfully."}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -94,14 +148,6 @@ def login_user(request):
 @permission_classes([permissions.IsAuthenticated])
 def get_user_profile(request):
     serializer = UserSerializer(request.user, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['GET'])
-@permission_classes([IsAdminOrManagerOrFrontDeskOrAccountant])
-def list_users(request):
-    users = User.objects.all()
-    serializer = UserSerializer(users, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -151,90 +197,6 @@ def upload_profile_picture(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
-@permission_classes([IsAdminOrManager])
-def get_user_detail(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    serializer = UserSerializer(user, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['PUT', 'PATCH'])
-@permission_classes([IsAdminOrManager])
-def update_user(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    
-    if user.is_superuser and not request.user.is_superuser:
-        return Response(
-            {"error": "Only superusers can update other superusers."},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    serializer = UserSerializer(user, data=request.data, partial=True, context={'request': request})
-    
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE'])
-@permission_classes([IsAdminOrManager])
-def delete_user(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    
-    if user.id == request.user.id:
-        return Response(
-            {"error": "You cannot delete your own account."},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    if user.is_superuser and not request.user.is_superuser:
-        return Response(
-            {"error": "Only superusers can delete other superusers."},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    user.delete()
-    return Response(
-        {"message": "User deleted successfully."},
-        status=status.HTTP_200_OK
-    )
-
-
-@api_view(['POST'])
-@permission_classes([IsAdminOrManager])
-def deactivate_user(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    
-    if user.id == request.user.id:
-        return Response(
-            {"error": "You cannot deactivate your own account."},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    user.is_active = False
-    user.save()
-    
-    return Response(
-        {"message": "User deactivated successfully."},
-        status=status.HTTP_200_OK
-    )
-
-
-@api_view(['POST'])
-@permission_classes([IsAdminOrManager])
-def activate_user(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    user.is_active = True
-    user.save()
-    
-    return Response(
-        {"message": "User activated successfully."},
-        status=status.HTTP_200_OK
-    )
-
 
 @api_view(['GET'])
 @permission_classes([IsAdminOrManagerOrFrontDeskOrAccountant])
@@ -275,21 +237,21 @@ def change_password(request):
 
 
 def generate_task_id():
-    first_task = Task.objects.order_by('created_at').first()
-    if first_task:
-        first_year = first_task.created_at.year
+    now = timezone.now()
+    year_month = now.strftime('%y-%m')
+
+    # Find the last task created this month to determine the next sequence number
+    last_task = Task.objects.filter(title__startswith=year_month).order_by('-title').first()
+
+    if last_task:
+        # Extract the sequence number from the last task's title
+        last_seq = int(last_task.title.split('-')[-1])
+        new_seq = last_seq + 1
     else:
-        first_year = datetime.now().year
+        # Start a new sequence for the month
+        new_seq = 1
 
-    current_year = datetime.now().year
-    year_diff = current_year - first_year
-    year_letter = chr(ord('A') + year_diff)
-
-    current_month = datetime.now().month
-    monthly_tasks = Task.objects.filter(created_at__year=current_year, created_at__month=current_month).count()
-    task_number = monthly_tasks + 1
-
-    return f'{year_letter}{current_month}-{task_number:03d}'
+    return f'{year_month}-{new_seq:04d}'
 
 # Task-related views (assuming these are the missing parts based on urls.py)
 @api_view(['GET', 'POST'])
@@ -327,169 +289,132 @@ def task_list_create(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
-@permission_classes([permissions.IsAuthenticated])
-def task_detail(request, task_id):
-    task = get_object_or_404(
-        Task.objects.select_related(
-            'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
-        ).prefetch_related('activities', 'payments').annotate(
-            paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
-        ),
-        title=task_id
-    )
-    user = request.user
-    is_manager = user.role == 'Manager' or user.is_superuser
 
-    if request.method == 'GET':
-        serializer = TaskSerializer(task, context={'request': request})
+class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Task.objects.select_related(
+        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
+    ).prefetch_related('activities', 'payments').annotate(
+        paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
+    )
+    serializer_class = TaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'title'
+    lookup_url_kwarg = 'task_id'
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        obj = get_object_or_404(queryset, **filter_kwargs)
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        task = self.get_object()
+        user = request.user
+
+        # Handle specific field updates with dedicated methods
+        self._handle_customer_update(request.data.pop('customer', None), task)
+        self._handle_debt_status(request.data, task, user)
+        self._handle_payment_status_update(request.data, task, user)
+        self._handle_workshop_logic(request.data, task, user)
+
+        # Handle status transitions
+        if 'status' in request.data:
+            response = self._handle_status_update(request.data, task, user)
+            if response:
+                return response
+
+        serializer = self.get_serializer(task, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
         return Response(serializer.data)
 
-    elif request.method in ['PUT', 'PATCH']:
-        customer_data = request.data.pop('customer', None)
+    def _handle_customer_update(self, customer_data, task):
         if customer_data:
-            customer = task.customer
-            customer_serializer = CustomerSerializer(customer, data=customer_data, partial=True)
-            if customer_serializer.is_valid():
-                customer_serializer.save()
-            else:
-                return Response(customer_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            customer_serializer = CustomerSerializer(task.customer, data=customer_data, partial=True)
+            customer_serializer.is_valid(raise_exception=True)
+            customer_serializer.save()
 
-        if 'is_debt' in request.data and request.data['is_debt'] is True:
+    def _handle_debt_status(self, data, task, user):
+        if data.get('is_debt') is True:
             TaskActivity.objects.create(
-                task=task,
-                user=user,
-                type=TaskActivity.ActivityType.STATUS_UPDATE,
-                message="Task marked as debt."
+                task=task, user=user, type=TaskActivity.ActivityType.STATUS_UPDATE, message="Task marked as debt."
             )
 
-        if user.role == 'Front Desk' and 'current_location' in request.data:
-            return Response(
-                {"error": "Front Desk users cannot change the task location."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        if 'status' in request.data and request.data['status'] == 'Pending' and user.role not in ['Manager', 'Front Desk']:
-            return Response(
-                {"error": "You do not have permission to return tasks."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        if 'status' in request.data and not is_manager:
-            current_status = task.status
-            new_status = request.data['status']
-            
-            if new_status == 'Picked Up':
-                request.data['sent_out_by'] = user.id
-                request.data['date_out'] = timezone.now()
-                TaskActivity.objects.create(
-                    task=task,
-                    user=user,
-                    type=TaskActivity.ActivityType.PICKED_UP,
-                    message="Task has been picked up by the customer."
-                )
-            elif new_status == 'Completed':
-                TaskActivity.objects.create(
-                    task=task,
-                    user=user,
-                    type=TaskActivity.ActivityType.STATUS_UPDATE,
-                    message=f"Task marked as Completed."
-                )
-            elif new_status == 'Ready for Pickup':
-                TaskActivity.objects.create(
-                    task=task,
-                    user=user,
-                    type=TaskActivity.ActivityType.STATUS_UPDATE,
-                    message="Task has been approved and is ready for pickup."
-                )
-            elif new_status == 'In Progress' and user.role == 'Front Desk':
-                technician_id = request.data.get('assigned_to')
-                if technician_id:
-                    technician = get_object_or_404(User, id=technician_id, role='Technician')
-                    task.assigned_to = technician
-                    TaskActivity.objects.create(
-                        task=task,
-                        user=user,
-                        type=TaskActivity.ActivityType.STATUS_UPDATE,
-                        message=f"Task assigned to {technician.get_full_name()}."
-                    )
-
-            allowed_transitions = {
-                'Front Desk': {
-                    'Completed': ['Ready for Pickup', 'In Progress', 'Pending'],
-                    'Ready for Pickup': ['Picked Up', 'Pending', 'In Progress'],
-                    'Picked Up': ['In Progress'],
-                    'Pending': ['Terminated'],
-                    'In Progress': ['Terminated', 'Pending'],
-                },
-                'Technician': {
-                    'Pending': ['In Progress'],
-                    'In Progress': ['Awaiting Parts', 'Completed'],
-                    'Awaiting Parts': ['In Progress'],
-                },
-                'Manager': {
-                }
-            }
-
-            role_transitions = allowed_transitions.get(user.role, {})
-            if new_status not in role_transitions.get(current_status, []):
-                return Response(
-                    {"error": f"As a {user.role}, you cannot change status from '{current_status}' to '{new_status}'."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-        if user.role == 'Accountant' and 'payment_status' in request.data:
-            task.payment_status = request.data['payment_status']
-            if request.data['payment_status'] == 'Fully Paid':
+    def _handle_payment_status_update(self, data, task, user):
+        if user.role == 'Accountant' and 'payment_status' in data:
+            task.payment_status = data['payment_status']
+            if data['payment_status'] == 'Fully Paid':
                 task.paid_date = timezone.now().date()
             task.save()
-            return Response(TaskSerializer(task, context={'request': request}).data)
 
-        if 'workshop_location' in request.data and 'workshop_technician' in request.data:
+    def _handle_workshop_logic(self, data, task, user):
+        if 'workshop_location' in data and 'workshop_technician' in data:
             task.original_location = task.current_location
             task.workshop_status = 'In Workshop'
             task.original_technician = user
             task.workshop_sent_at = timezone.now()
-            workshop_technician_id = request.data.get('workshop_technician')
-            workshop_technician = User.objects.get(id=workshop_technician_id)
-            
-            workshop_location_id = request.data.get('workshop_location')
-            workshop_location = Location.objects.get(id=workshop_location_id)
+            workshop_technician = get_object_or_404(User, id=data.get('workshop_technician'))
+            workshop_location = get_object_or_404(Location, id=data.get('workshop_location'))
             task.current_location = workshop_location.name
 
-
-
-        if 'workshop_status' in request.data and request.data['workshop_status'] in ['Solved', 'Not Solved']:
+        if data.get('workshop_status') in ['Solved', 'Not Solved']:
             if task.original_location:
                 task.current_location = task.original_location
                 task.original_location = None
-            
             task.assigned_to = task.original_technician
             task.workshop_location = None
             task.workshop_technician = None
             task.original_technician = None
             task.workshop_returned_at = timezone.now()
             TaskActivity.objects.create(
-                task=task,
-                user=user,
-                type=TaskActivity.ActivityType.WORKSHOP,
-                message=f"Task returned from workshop with status: {request.data['workshop_status']}."
+                task=task, user=user, type=TaskActivity.ActivityType.WORKSHOP,
+                message=f"Task returned from workshop with status: {data['workshop_status']}."
             )
 
-        serializer = TaskSerializer(task, data=request.data, partial=True, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def _handle_status_update(self, data, task, user):
+        new_status = data['status']
+        if not can_transition(user, task, new_status):
+            return Response(
+                {"error": f"As a {user.role}, you cannot change status from '{task.status}' to '{new_status}'."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-    elif request.method == 'DELETE':
-        if not is_manager:
+        # Create activity logs for specific transitions
+        activity_messages = {
+            'Picked Up': "Task has been picked up by the customer.",
+            'Completed': "Task marked as Completed.",
+            'Ready for Pickup': "Task has been approved and is ready for pickup."
+        }
+        if new_status in activity_messages:
+            TaskActivity.objects.create(task=task, user=user, type=TaskActivity.ActivityType.STATUS_UPDATE, message=activity_messages[new_status])
+            if new_status == 'Picked Up':
+                data['sent_out_by'] = user.id
+                data['date_out'] = timezone.now()
+
+        if new_status == 'In Progress' and user.role == 'Front Desk':
+            technician_id = data.get('assigned_to')
+            if technician_id:
+                technician = get_object_or_404(User, id=technician_id, role='Technician')
+                task.assigned_to = technician
+                TaskActivity.objects.create(
+                    task=task, user=user, type=TaskActivity.ActivityType.STATUS_UPDATE,
+                    message=f"Task assigned to {technician.get_full_name()}."
+                )
+        return None
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        if not (user.is_superuser or user.role == 'Manager'):
             return Response(
                 {"error": "You do not have permission to delete tasks."},
                 status=status.HTTP_403_FORBIDDEN
             )
-        task.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return super().destroy(request, *args, **kwargs)
+
 
 
 @api_view(['GET'])
