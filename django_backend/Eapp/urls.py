@@ -10,7 +10,6 @@ router.register(r'locations', views.LocationViewSet, basename='location')
 router.register(r'brands', views.BrandViewSet, basename='brand')
 router.register(r'payment-methods', views.PaymentMethodViewSet)
 router.register(r'payments', views.PaymentViewSet, basename='payment')
-
 router.register(r'users', views.UserViewSet, basename='user')
 
 urlpatterns = [
@@ -33,7 +32,7 @@ urlpatterns = [
     path('customers/create/', views.customer_create, name='customer_create'),
     
     # Task management endpoints
-    path('tasks/', views.task_list_create, name='task_list_create'),
+    path('tasks/', views.TaskListCreateView.as_view(), name='task_list_create'),
     path('tasks/<path:task_id>/activities/', views.task_activities, name='task_activities'),
     path('tasks/<path:task_id>/add-activity/', views.add_task_activity, name='add_task_activity'),
     path('tasks/<path:task_id>/payments/', views.task_payments, name='task_payments'),

@@ -253,28 +253,22 @@ def generate_task_id():
 
     return f'{year_month}-{new_seq:04d}'
 
-# Task-related views (assuming these are the missing parts based on urls.py)
-@api_view(['GET', 'POST'])
-@permission_classes([permissions.IsAuthenticated])
-def task_list_create(request):
-    if request.method == 'GET':
-        filters = {}
-        for key, value in request.query_params.items():
-            if key.endswith('__in'):
-                filters[key] = request.query_params.getlist(key)
-            else:
-                filters[key] = value
-        
-        tasks = Task.objects.filter(**filters).select_related(
-            'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
-        ).prefetch_related('activities', 'payments').annotate(
-            paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
-        )
-        
-        serializer = TaskSerializer(tasks, many=True, context={'request': request})
-        return Response(serializer.data)
-    
-    elif request.method == 'POST':
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import TaskFilter
+
+
+class TaskListCreateView(generics.ListCreateAPIView):
+    queryset = Task.objects.select_related(
+        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
+    ).prefetch_related('activities', 'payments').annotate(
+        paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
+    )
+    serializer_class = TaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TaskFilter
+
+    def create(self, request, *args, **kwargs):
         if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
             return Response(
                 {"error": "You do not have permission to create tasks."},
@@ -282,11 +276,11 @@ def task_list_create(request):
             )
         data = request.data.copy()
         data['title'] = generate_task_id()
-        serializer = TaskSerializer(data=data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save(created_by=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by=request.user)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 
