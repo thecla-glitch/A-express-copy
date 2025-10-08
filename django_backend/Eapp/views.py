@@ -37,24 +37,26 @@ def customer_create(request):
     """
     Create a new customer or retrieve an existing one.
     """
+    phone = request.data.get('phone')
+    email = request.data.get('email')
+
+    if phone:
+        customer = Customer.objects.filter(phone=phone).first()
+        if customer:
+            serializer = CustomerSerializer(customer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+    if email:
+        customer = Customer.objects.filter(email=email).first()
+        if customer:
+            serializer = CustomerSerializer(customer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
     serializer = CustomerSerializer(data=request.data)
     if serializer.is_valid():
-        # Check if customer already exists
-        phone = serializer.validated_data.get('phone')
-        email = serializer.validated_data.get('email')
-        
-        if phone:
-            customer = Customer.objects.filter(phone=phone).first()
-            if customer:
-                return Response(CustomerSerializer(customer).data, status=status.HTTP_200_OK)
-
-        if email:
-            customer = Customer.objects.filter(email=email).first()
-            if customer:
-                return Response(CustomerSerializer(customer).data, status=status.HTTP_200_OK)
-
         customer = serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -238,20 +240,30 @@ def change_password(request):
 
 def generate_task_id():
     now = timezone.now()
-    year_month = now.strftime('%y-%m')
+    
+    # Determine the year character
+    first_task = Task.objects.order_by('created_at').first()
+    if first_task:
+        first_year = first_task.created_at.year
+        year_char = chr(ord('A') + now.year - first_year)
+    else:
+        year_char = 'A'
+
+    # Format the prefix for the current month
+    month_prefix = f"{year_char}{now.month}"
 
     # Find the last task created this month to determine the next sequence number
-    last_task = Task.objects.filter(title__startswith=year_month).order_by('-title').first()
+    last_task = Task.objects.filter(title__startswith=month_prefix).order_by('-title').first()
 
     if last_task:
         # Extract the sequence number from the last task's title
-        last_seq = int(last_task.title.split('-')[-1])
+        last_seq = int(last_task.title.split('/')[-1])
         new_seq = last_seq + 1
     else:
         # Start a new sequence for the month
         new_seq = 1
 
-    return f'{year_month}-{new_seq:04d}'
+    return f'{month_prefix}/{new_seq:03d}'
 
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import TaskFilter
