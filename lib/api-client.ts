@@ -44,7 +44,7 @@ export const listWorkshopTechnicians = () => apiClient.get('/workshop-technician
 
 // Functions from ApiClient class
 export const login = (username: any, password: any) => apiClient.post('/login/', { username, password });
-export const registerUser = (userData: any) => apiClient.post('/register/', userData);
+export const registerUser = (userData: any) => apiClient.post('/users/', userData);
 export const listUsers = () => apiClient.get('/users/');
 export const updateProfile = (profileData: any) => apiClient.patch('/profile/update/', profileData);
 export const changePassword = (passwordData: any) => apiClient.post('/profile/change-password/', passwordData);
