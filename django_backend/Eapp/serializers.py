@@ -144,7 +144,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Payment
-        fields = ('id', 'task', 'task_title', 'task_status', 'amount', 'date', 'method', 'method_name', 'reference')
+        fields = ('id', 'task', 'task_title', 'task_status', 'amount', 'date', 'method', 'method_name')
         read_only_fields = ('task',)
         extra_kwargs = {
             'amount': {'validators': [MinValueValidator(Decimal('0.00'))]},

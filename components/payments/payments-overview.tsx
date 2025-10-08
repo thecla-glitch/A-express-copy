@@ -20,7 +20,6 @@ interface Payment {
   date: string;
   method: number;
   method_name: string;
-  reference: string | null;
 }
 
 const paymentStats = {
@@ -196,7 +195,6 @@ export function PaymentsOverview() {
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead>Reference</TableHead>
                       <TableHead className='text-right'>Task Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -207,7 +205,6 @@ export function PaymentsOverview() {
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>{payment.method_name}</TableCell>
                         <TableCell>{payment.date}</TableCell>
-                        <TableCell>{payment.reference}</TableCell>
                         <TableCell className='text-right'>{getStatusBadge(payment.task_status)}</TableCell>
                       </TableRow>
                     ))}

@@ -661,7 +661,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <TableHead>Amount</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Method</TableHead>
-                    <TableHead>Reference</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -670,7 +669,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <TableCell className="font-medium text-green-600">TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                       <TableCell>{payment.date}</TableCell>
                       <TableCell>{payment.method_name}</TableCell>
-                      <TableCell className="font-mono text-sm">{payment.reference}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
