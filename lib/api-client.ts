@@ -63,6 +63,8 @@ export const getCostBreakdowns = (taskId: any) => apiClient.get(`/tasks/${taskId
 export const createCostBreakdown = (taskId: string, costBreakdownData: any) => apiClient.post(`/tasks/${taskId}/cost-breakdowns/`, costBreakdownData);
 export const updateCostBreakdown = (taskId: any, costBreakdownId: any, costBreakdownData: any) => apiClient.patch(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`, costBreakdownData);
 export const deleteCostBreakdown = (taskId: string, costBreakdownId: number) => apiClient.delete(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`);
+export const approveRefund = (costBreakdownId: number) => apiClient.post(`/cost-breakdowns/${costBreakdownId}/approve/`);
+export const rejectRefund = (costBreakdownId: number) => apiClient.post(`/cost-breakdowns/${costBreakdownId}/reject/`);
 export const getBrands = () => apiClient.get('/brands/');
 export const createBrand = (brandData: { name: string; }) => apiClient.post('/brands/', brandData);
 

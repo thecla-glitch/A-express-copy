@@ -11,6 +11,7 @@ router.register(r'brands', views.BrandViewSet, basename='brand')
 router.register(r'payment-methods', views.PaymentMethodViewSet)
 router.register(r'payments', views.PaymentViewSet, basename='payment')
 router.register(r'users', views.UserViewSet, basename='user')
+router.register(r'cost-breakdowns', views.CostBreakdownViewSet, basename='cost-breakdown')
 
 urlpatterns = [
     # Authentication endpoints

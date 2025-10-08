@@ -6,10 +6,28 @@ from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer
 from django.utils import timezone
 
 
+class UserSerializer(serializers.ModelSerializer):
+    profile_picture_url = serializers.SerializerMethodField()
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name',
+                    'phone', 'role', 'is_workshop', 'profile_picture', 'profile_picture_url', 'is_active', 'created_at', 'last_login') 
+        read_only_fields = ('id', 'created_at', 'last_login', 'full_name') 
+        
+    def get_profile_picture_url(self, obj):
+        request = self.context.get('request')
+        if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
+            return obj.profile_picture.url
+        return None
+
 class CostBreakdownSerializer(serializers.ModelSerializer):
+    requested_by = UserSerializer(read_only=True)
+
     class Meta:
         model = CostBreakdown
-        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason']
+        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'status', 'requested_by']
 
 
 class BrandSerializer(serializers.ModelSerializer):
@@ -30,21 +48,7 @@ class ReferrerSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'phone']
 
 
-class UserSerializer(serializers.ModelSerializer):
-    profile_picture_url = serializers.SerializerMethodField()
-    full_name = serializers.CharField(source='get_full_name', read_only=True)
 
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name',
-                    'phone', 'role', 'is_workshop', 'profile_picture', 'profile_picture_url', 'is_active', 'created_at', 'last_login') 
-        read_only_fields = ('id', 'created_at', 'last_login', 'full_name') 
-        
-    def get_profile_picture_url(self, obj):
-        request = self.context.get('request')
-        if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
-            return obj.profile_picture.url
-        return None
 
         
 class UserProfileUpdateSerializer(serializers.ModelSerializer):

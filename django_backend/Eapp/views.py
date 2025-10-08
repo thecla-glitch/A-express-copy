@@ -618,25 +618,63 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 class CostBreakdownViewSet(viewsets.ModelViewSet):
     queryset = CostBreakdown.objects.all()
     serializer_class = CostBreakdownSerializer
-    permission_classes = [permissions.IsAuthenticated, IsManager]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['approve', 'reject']:
+            self.permission_classes = [IsManager]
+        elif self.action == 'create':
+            self.permission_classes = [IsAdminOrManagerOrFrontDeskOrAccountant]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
         task_id = kwargs.get('task_id')
         task = get_object_or_404(Task, title=task_id)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        cost_breakdown = serializer.save(task=task)
 
-        if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
-            TaskActivity.objects.create(
-                task=task,
-                user=request.user,
-                type=TaskActivity.ActivityType.NOTE,
-                message=f"Refund of {cost_breakdown.amount} issued. Reason: {cost_breakdown.reason}"
-            )
+        if request.user.role == 'Accountant':
+            serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.PENDING)
+        elif request.user.role == 'Manager':
+            cost_breakdown = serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.APPROVED, approved_by=request.user)
+            if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+                TaskActivity.objects.create(
+                    task=task,
+                    user=request.user,
+                    type=TaskActivity.ActivityType.NOTE,
+                    message=f"Refund of {cost_breakdown.amount} issued. Reason: {cost_breakdown.reason}"
+                )
+        else:
+            return Response({"error": "You do not have permission to create a refund request."}, status=status.HTTP_403_FORBIDDEN)
 
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        cost_breakdown = self.get_object()
+        cost_breakdown.status = CostBreakdown.RefundStatus.APPROVED
+        cost_breakdown.approved_by = request.user
+        cost_breakdown.save()
+
+        if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+            TaskActivity.objects.create(
+                task=cost_breakdown.task,
+                user=request.user,
+                type=TaskActivity.ActivityType.NOTE,
+                message=f"Refund of {cost_breakdown.amount} approved. Reason: {cost_breakdown.reason}"
+            )
+
+        return Response(self.get_serializer(cost_breakdown).data)
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        cost_breakdown = self.get_object()
+        cost_breakdown.status = CostBreakdown.RefundStatus.REJECTED
+        cost_breakdown.save()
+        return Response(self.get_serializer(cost_breakdown).data)
 
 
 from django.utils import timezone

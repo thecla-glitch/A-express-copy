@@ -47,6 +47,7 @@ import { CostBreakdown } from "./cost-breakdown";
 import { Combobox } from "@/components/ui/core/combobox";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
 import { AddRefundDialog } from "./add-refund-dialog";
+import { PendingRefunds } from "./pending-refunds";
 
 
 
@@ -614,6 +615,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         {/* Financials Tab */}
         <TabsContent value="financials" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-1">
+            {isManager && <PendingRefunds task={taskData} />}
             <CostBreakdown task={taskData} />
 
 
@@ -652,13 +654,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <Plus className="h-4 w-4 mr-1" />
                       Add Payment
                     </Button>
-                    <Button
+                    {(isAccountant) && (<Button
                         onClick={() => setIsAddRefundOpen(true)}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Add Refund
-                      </Button>
+                      </Button>)}
                   </div>
                 )}
               </div>
