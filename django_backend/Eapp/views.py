@@ -256,14 +256,14 @@ def generate_task_id():
     last_task = Task.objects.filter(title__startswith=month_prefix).order_by('-title').first()
 
     if last_task:
-        # Extract the sequence number from the last task's title
-        last_seq = int(last_task.title.split('/')[-1])
+        # Extract the sequence number from the last task\'s title
+        last_seq = int(last_task.title.split('-')[-1])
         new_seq = last_seq + 1
     else:
         # Start a new sequence for the month
         new_seq = 1
 
-    return f'{month_prefix}/{new_seq:03d}'
+    return f"{month_prefix}-{new_seq:03d}"
 
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import TaskFilter
