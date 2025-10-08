@@ -11,9 +11,10 @@ router.register(r'brands', views.BrandViewSet, basename='brand')
 router.register(r'payment-methods', views.PaymentMethodViewSet)
 router.register(r'payments', views.PaymentViewSet, basename='payment')
 
+router.register(r'users', views.UserViewSet, basename='user')
+
 urlpatterns = [
     # Authentication endpoints
-    path('register/', views.register_user, name='register'),
     path('login/', views.login_user, name='login'),
     path('logout/', views.logout, name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -24,12 +25,6 @@ urlpatterns = [
     path('profile/upload-picture/', views.upload_profile_picture, name='upload_profile_picture'),
     path('profile/change-password/', views.change_password, name='change_password'),
     
-    path('users/', views.list_users, name='list_users'),
-    path('users/<int:user_id>/', views.get_user_detail, name='user_detail'),
-    path('users/<int:user_id>/update/', views.update_user, name='update_user'),
-    path('users/<int:user_id>/delete/', views.delete_user, name='delete_user'),
-    path('users/<int:user_id>/deactivate/', views.deactivate_user, name='deactivate_user'),
-    path('users/<int:user_id>/activate/', views.activate_user, name='activate_user'),
     path('users/role/<str:role>/', views.list_users_by_role, name='list_users_by_role'),
 
     # Customer endpoints
@@ -47,7 +42,7 @@ urlpatterns = [
 
     path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
     path('tasks/urgency-options/', views.get_task_urgency_options, name='get_task_urgency_options'),
-    path('tasks/<path:task_id>/', views.task_detail, name='task_detail'),
+    path('tasks/<path:task_id>/', views.TaskDetailView.as_view(), name='task_detail'),
 
     
     # Technician endpoints
