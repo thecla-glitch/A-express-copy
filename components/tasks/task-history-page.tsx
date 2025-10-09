@@ -22,7 +22,7 @@ export function TaskHistoryPage() {
         setLoading(true);
         const tasksResponse = await getTasks();
         if (tasksResponse.data) {
-          setTasks(tasksResponse.data);
+          setTasks(tasksResponse.data.results);
         } else {
           setError("Failed to fetch tasks");
         }
@@ -53,7 +53,7 @@ export function TaskHistoryPage() {
     setIsReturnDialogOpen(true);
   };
 
-  const historicalTasks = tasks.filter(task => ["Picked Up", "Completed", "Terminated"].includes(task.status));
+  const historicalTasks = tasks.filter(task => ["Picked Up", "Terminated"].includes(task.status));
 
   return (
     <div className="flex-1 space-y-6 p-6">

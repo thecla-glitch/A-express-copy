@@ -19,6 +19,9 @@ django-cors-headers==4.4.0
 # WSGI HTTP Server for production deployment
 gunicorn==22.0.0
 
+# Django Filter for powerful filtering against querysets
+django-filter==24.2
+
 # Manages environment variables and .env files
 python-decouple==3.8
 python-dotenv==1.0.1

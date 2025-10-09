@@ -2,32 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod, Account
 from django.utils import timezone
-
-
-class CostBreakdownSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CostBreakdown
-        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at']
-
-
-class BrandSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Brand
-        fields = ['id', 'name']
-
-
-class CustomerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Customer
-        fields = ['id', 'name', 'email', 'phone', 'address', 'customer_type']
-
-
-class ReferrerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Referrer
-        fields = ['id', 'name', 'phone']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -45,6 +21,60 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
             return obj.profile_picture.url
         return None
+
+class CostBreakdownSerializer(serializers.ModelSerializer):
+    requested_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = CostBreakdown
+        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'status', 'requested_by', 'payment_method']
+        extra_kwargs = {
+            'payment_method': {'write_only': True}
+        }
+
+
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = ['id', 'name']
+
+
+class AccountSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Account
+        fields = ['id', 'name', 'balance', 'created_by', 'created_at']
+        read_only_fields = ('id', 'created_by', 'created_at')
+
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ['id', 'name', 'email', 'phone', 'address', 'customer_type']
+
+
+class ReferrerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Referrer
+        fields = ['id', 'name', 'phone']
+
+
+class CustomerListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ['name', 'phone']
+
+class UserListSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['full_name']
+
+
+
 
         
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
@@ -144,7 +174,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Payment
-        fields = ('id', 'task', 'task_title', 'task_status', 'amount', 'date', 'method', 'method_name', 'reference')
+        fields = ('id', 'task', 'task_title', 'task_status', 'amount', 'date', 'method', 'method_name')
         read_only_fields = ('task',)
         extra_kwargs = {
             'amount': {'validators': [MinValueValidator(Decimal('0.00'))]},
@@ -156,7 +186,35 @@ class LocationSerializer(serializers.ModelSerializer):
         model = Location
         fields = ['id', 'name', 'is_workshop']
 
-class TaskSerializer(serializers.ModelSerializer):
+class TaskListSerializer(serializers.ModelSerializer):
+    customer_details = CustomerListSerializer(source='customer', read_only=True)
+    assigned_to_details = UserListSerializer(source='assigned_to', read_only=True)
+    outstanding_balance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = (
+            'id',
+            'title',
+            'status',
+            'urgency',
+            'payment_status',
+            'workshop_status',
+            'current_location',
+            'laptop_model',
+            'description',
+            'updated_at',
+            'customer_details',
+            'assigned_to_details',
+            'outstanding_balance',
+        )
+
+    def get_outstanding_balance(self, obj):
+        total_cost = obj.calculate_total_cost()
+        paid_sum = sum(p.amount for p in obj.payments.all()) or Decimal('0.00')
+        return total_cost - paid_sum
+
+class TaskDetailSerializer(serializers.ModelSerializer):
     negotiated_by = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(is_active=True),
         allow_null=True,

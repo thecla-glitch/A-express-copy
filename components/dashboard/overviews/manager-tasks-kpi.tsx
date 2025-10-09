@@ -1,28 +1,35 @@
 
-"use client"
+"use client";
 
-import { useTasks } from "@/hooks/use-tasks"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/layout/card"
-import { ClipboardList, Package } from "lucide-react"
+import { useTasks } from "@/hooks/use-tasks";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/layout/card";
+import { ClipboardList, Package } from "lucide-react";
 
 export function ManagerTasksKpi() {
-  const { data: tasks, isLoading, error } = useTasks({})
+  const { data: tasksData, isLoading, error } = useTasks({});
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   if (error) {
-    return <div>Error loading tasks</div>
+    return <div>Error loading tasks</div>;
   }
 
-  const tasksReadyForPickup = tasks?.filter(
-    (task) => task.status === "Ready for Pickup"
-  ).length
+  const tasks = tasksData?.results || [];
 
-  const activeTasks = tasks?.filter(
+  const tasksReadyForPickup = tasks.filter(
+    (task) => task.status === "Ready for Pickup"
+  ).length;
+
+  const activeTasks = tasks.filter(
     (task) => task.status === "In Progress" || task.status === "Completed"
-  ).length
+  ).length;
 
   return (
     <>

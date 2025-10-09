@@ -22,6 +22,7 @@ apiClient.interceptors.request.use((config) => {
 
 export const getProfile = () => apiClient.get('/profile/');
 export const getTasks = (params: any = {}) => apiClient.get('/tasks/', { params });
+export const getDebts = (params: any = {}) => apiClient.get('/tasks/debts/', { params });
 export const getTask = (id: string) => apiClient.get(`/tasks/${id}/`);
 export const createTask = (data: any) => apiClient.post('/tasks/', data);
 export const updateTask = (id: string, data: any) => apiClient.patch(`/tasks/${id}/`, data);
@@ -44,7 +45,7 @@ export const listWorkshopTechnicians = () => apiClient.get('/workshop-technician
 
 // Functions from ApiClient class
 export const login = (username: any, password: any) => apiClient.post('/login/', { username, password });
-export const registerUser = (userData: any) => apiClient.post('/register/', userData);
+export const registerUser = (userData: any) => apiClient.post('/users/', userData);
 export const listUsers = () => apiClient.get('/users/');
 export const updateProfile = (profileData: any) => apiClient.patch('/profile/update/', profileData);
 export const changePassword = (passwordData: any) => apiClient.post('/profile/change-password/', passwordData);
@@ -63,6 +64,8 @@ export const getCostBreakdowns = (taskId: any) => apiClient.get(`/tasks/${taskId
 export const createCostBreakdown = (taskId: string, costBreakdownData: any) => apiClient.post(`/tasks/${taskId}/cost-breakdowns/`, costBreakdownData);
 export const updateCostBreakdown = (taskId: any, costBreakdownId: any, costBreakdownData: any) => apiClient.patch(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`, costBreakdownData);
 export const deleteCostBreakdown = (taskId: string, costBreakdownId: number) => apiClient.delete(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`);
+export const approveRefund = (costBreakdownId: number) => apiClient.post(`/cost-breakdowns/${costBreakdownId}/approve/`);
+export const rejectRefund = (costBreakdownId: number) => apiClient.post(`/cost-breakdowns/${costBreakdownId}/reject/`);
 export const getBrands = () => apiClient.get('/brands/');
 export const createBrand = (brandData: { name: string; }) => apiClient.post('/brands/', brandData);
 
@@ -70,3 +73,8 @@ export const getPaymentMethods = () => apiClient.get('/payment-methods/');
 export const createPaymentMethod = (paymentMethodData: { name: string; }) => apiClient.post('/payment-methods/', paymentMethodData);
 export const updatePaymentMethod = (paymentMethodId: number, paymentMethodData: { name: string; }) => apiClient.patch(`/payment-methods/${paymentMethodId}/`, paymentMethodData);
 export const deletePaymentMethod = (paymentMethodId: number) => apiClient.delete(`/payment-methods/${paymentMethodId}/`);
+
+export const getAccounts = () => apiClient.get('/accounts/');
+export const createAccount = (accountData: { name: string; balance: number; }) => apiClient.post('/accounts/', accountData);
+export const updateAccount = (accountId: number, accountData: { name: string; }) => apiClient.patch(`/accounts/${accountId}/`, accountData);
+export const deleteAccount = (accountId: number) => apiClient.delete(`/accounts/${accountId}/`);

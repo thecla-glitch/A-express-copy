@@ -339,6 +339,7 @@ class TaskActivity(models.Model):
 
 class PaymentMethod(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    is_user_selectable = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -353,7 +354,6 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date = models.DateField(default=get_current_date)
     method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
-    reference = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f'Payment of {self.amount} for {self.task.title} on {self.date}'
@@ -381,15 +381,38 @@ class CostBreakdown(models.Model):
         SUBTRACTIVE = 'Subtractive', _('Subtractive')
         INCLUSIVE = 'Inclusive', _('Inclusive')
 
+    class RefundStatus(models.TextChoices):
+        PENDING = 'Pending', _('Pending')
+        APPROVED = 'Approved', _('Approved')
+        REJECTED = 'Rejected', _('Rejected')
+
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='cost_breakdowns')
     description = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     cost_type = models.CharField(max_length=20, choices=CostType.choices, default=CostType.INCLUSIVE)
     category = models.CharField(max_length=100, default='Inclusive')
     created_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=RefundStatus.choices, default=RefundStatus.APPROVED)
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='requested_refunds')
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_refunds')
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'{self.get_cost_type_display()} cost of {self.amount} for {self.task.title}'
 
     class Meta:
         ordering = ['created_at']
+
+
+class Account(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']

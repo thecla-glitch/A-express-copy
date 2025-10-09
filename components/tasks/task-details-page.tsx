@@ -46,6 +46,8 @@ import { useToast } from "@/hooks/use-toast";
 import { CostBreakdown } from "./cost-breakdown";
 import { Combobox } from "@/components/ui/core/combobox";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
+import { AddRefundDialog } from "./add-refund-dialog";
+import { PendingRefunds } from "./pending-refunds";
 
 
 
@@ -71,6 +73,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState<number | "">("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
+  const [isAddRefundOpen, setIsAddRefundOpen] = useState(false);
 
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
 
@@ -612,6 +615,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         {/* Financials Tab */}
         <TabsContent value="financials" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-1">
+            {isManager && <PendingRefunds task={taskData} />}
             <CostBreakdown task={taskData} />
 
 
@@ -650,6 +654,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <Plus className="h-4 w-4 mr-1" />
                       Add Payment
                     </Button>
+                    {(isAccountant) && (<Button
+                        onClick={() => setIsAddRefundOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Refund
+                      </Button>)}
                   </div>
                 )}
               </div>
@@ -661,7 +672,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <TableHead>Amount</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Method</TableHead>
-                    <TableHead>Reference</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -670,7 +680,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <TableCell className="font-medium text-green-600">TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                       <TableCell>{payment.date}</TableCell>
                       <TableCell>{payment.method_name}</TableCell>
-                      <TableCell className="font-mono text-sm">{payment.reference}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -682,6 +691,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </Card>
         </TabsContent>
       </Tabs>
+      <AddRefundDialog taskId={taskId} open={isAddRefundOpen} onOpenChange={setIsAddRefundOpen} />
     </div>
   )
 }

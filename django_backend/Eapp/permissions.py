@@ -48,3 +48,13 @@ class IsAdminOrManagerOrFrontDeskOrAccountant(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         return request.user.is_superuser or request.user.role in ['Manager', 'Front Desk', 'Accountant']
+
+
+class IsAdminOrManagerOrAccountant(permissions.BasePermission):
+    """
+    Custom permission to allow admins, managers, or accountant to view data.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return request.user.is_superuser or request.user.role in ['Manager', 'Accountant']

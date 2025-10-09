@@ -24,7 +24,7 @@ export function CostBreakdown({ task }: CostBreakdownProps) {
   const [isOtherCategory, setIsOtherCategory] = useState(false);
   const [newBreakdown, setNewBreakdown] = useState({ amount: '', cost_type: 'Inclusive', category: '' });
 
-  const costBreakdowns = task.cost_breakdowns || [];
+  const costBreakdowns = task.cost_breakdowns?.filter(item => item.status === 'Approved') || [];
   const createMutation = useMutation({
     mutationFn: (data: any) => createCostBreakdown(task.title, data),
     onSuccess: () => {

@@ -75,6 +75,12 @@ export interface Task {
   is_commissioned: boolean;
   commissioned_by: string;
   cost_breakdowns: CostBreakdown[];
+  approved_by: number;
+  approved_at: string;
+  is_debt: boolean;
+  qc_notes: string;
+  workshop_status: string | null;
+  sent_out_by: number;
 }
 
 export interface TaskActivity {

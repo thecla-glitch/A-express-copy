@@ -6,18 +6,17 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod
-from .serializers import UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, TaskSerializer, TaskActivitySerializer, PaymentSerializer, LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer
-from .permissions import IsManager, IsTechnician, IsFrontDesk
+from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod, Account
 from .serializers import (
-    UserSerializer, TaskSerializer, TaskActivitySerializer, PaymentSerializer, 
-    LocationSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, CostBreakdownSerializer,
+    UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, 
+    TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
+    LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer, AccountSerializer,
     UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer
 )
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from datetime import datetime
-from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant
+from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 
 
@@ -37,24 +36,26 @@ def customer_create(request):
     """
     Create a new customer or retrieve an existing one.
     """
+    phone = request.data.get('phone')
+    email = request.data.get('email')
+
+    if phone:
+        customer = Customer.objects.filter(phone=phone).first()
+        if customer:
+            serializer = CustomerSerializer(customer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+    if email:
+        customer = Customer.objects.filter(email=email).first()
+        if customer:
+            serializer = CustomerSerializer(customer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
     serializer = CustomerSerializer(data=request.data)
     if serializer.is_valid():
-        # Check if customer already exists
-        phone = serializer.validated_data.get('phone')
-        email = serializer.validated_data.get('email')
-        
-        if phone:
-            customer = Customer.objects.filter(phone=phone).first()
-            if customer:
-                return Response(CustomerSerializer(customer).data, status=status.HTTP_200_OK)
-
-        if email:
-            customer = Customer.objects.filter(email=email).first()
-            if customer:
-                return Response(CustomerSerializer(customer).data, status=status.HTTP_200_OK)
-
         customer = serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -238,68 +239,51 @@ def change_password(request):
 
 def generate_task_id():
     now = timezone.now()
-    year_month = now.strftime('%y-%m')
+    
+    # Determine the year character
+    first_task = Task.objects.order_by('created_at').first()
+    if first_task:
+        first_year = first_task.created_at.year
+        year_char = chr(ord('A') + now.year - first_year)
+    else:
+        year_char = 'A'
+
+    # Format the prefix for the current month
+    month_prefix = f"{year_char}{now.month}"
 
     # Find the last task created this month to determine the next sequence number
-    last_task = Task.objects.filter(title__startswith=year_month).order_by('-title').first()
+    last_task = Task.objects.filter(title__startswith=month_prefix).order_by('-title').first()
 
     if last_task:
-        # Extract the sequence number from the last task's title
+        # Extract the sequence number from the last task\'s title
         last_seq = int(last_task.title.split('-')[-1])
         new_seq = last_seq + 1
     else:
         # Start a new sequence for the month
         new_seq = 1
 
-    return f'{year_month}-{new_seq:04d}'
+    return f"{month_prefix}-{new_seq:03d}"
 
-# Task-related views (assuming these are the missing parts based on urls.py)
-@api_view(['GET', 'POST'])
-@permission_classes([permissions.IsAuthenticated])
-def task_list_create(request):
-    if request.method == 'GET':
-        filters = {}
-        for key, value in request.query_params.items():
-            if key.endswith('__in'):
-                filters[key] = request.query_params.getlist(key)
-            else:
-                filters[key] = value
-        
-        tasks = Task.objects.filter(**filters).select_related(
-            'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
-        ).prefetch_related('activities', 'payments').annotate(
-            paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
-        )
-        
-        serializer = TaskSerializer(tasks, many=True, context={'request': request})
-        return Response(serializer.data)
-    
-    elif request.method == 'POST':
-        if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
-            return Response(
-                {"error": "You do not have permission to create tasks."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        data = request.data.copy()
-        data['title'] = generate_task_id()
-        serializer = TaskSerializer(data=data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save(created_by=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import TaskFilter, PaymentFilter
+from .pagination import StandardResultsSetPagination
 
 
-
-class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.select_related(
-        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
-    ).prefetch_related('activities', 'payments').annotate(
-        paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
-    )
-    serializer_class = TaskSerializer
+        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician', 'customer'
+    ).prefetch_related('activities', 'payments', 'cost_breakdowns')
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TaskFilter
+    pagination_class = StandardResultsSetPagination
     lookup_field = 'title'
     lookup_url_kwarg = 'task_id'
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return TaskListSerializer
+        return TaskDetailSerializer
 
     def get_object(self):
         queryset = self.get_queryset()
@@ -308,6 +292,20 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
         obj = get_object_or_404(queryset, **filter_kwargs)
         self.check_object_permissions(self.request, obj)
         return obj
+
+    def create(self, request, *args, **kwargs):
+        if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
+            return Response(
+                {"error": "You do not have permission to create tasks."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        data = request.data.copy()
+        data['title'] = generate_task_id()
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by=request.user)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -414,6 +412,20 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_403_FORBIDDEN
             )
         return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminOrManagerOrAccountant])
+    def debts(self, request):
+        """
+        Returns a list of tasks that are 'Picked Up' but not 'Fully Paid'.
+        """
+        tasks = self.get_queryset().filter(status='Picked Up').exclude(payment_status='Fully Paid')
+        page = self.paginate_queryset(tasks)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
 
 
 
@@ -570,6 +582,18 @@ class BrandViewSet(viewsets.ModelViewSet):
             self.permission_classes = [IsManager]
         return super().get_permissions()
 
+
+class AccountViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows accounts to be viewed or edited by managers.
+    """
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer
+    permission_classes = [IsManager]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def list_workshop_locations(request):
@@ -591,7 +615,7 @@ class TaskActivityViewSet(viewsets.ModelViewSet):
 
 
 class PaymentMethodViewSet(viewsets.ModelViewSet):
-    queryset = PaymentMethod.objects.all()
+    queryset = PaymentMethod.objects.filter(is_user_selectable=True)
     serializer_class = PaymentMethodSerializer
     permission_classes = [permissions.IsAuthenticated, IsManager]
 
@@ -607,6 +631,85 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PaymentFilter
+
+
+class CostBreakdownViewSet(viewsets.ModelViewSet):
+    queryset = CostBreakdown.objects.all()
+    serializer_class = CostBreakdownSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['approve', 'reject']:
+            self.permission_classes = [IsManager]
+        elif self.action == 'create':
+            self.permission_classes = [IsAdminOrManagerOrFrontDeskOrAccountant]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        task_id = kwargs.get('task_id')
+        task = get_object_or_404(Task, title=task_id)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if request.user.role == 'Accountant':
+            serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.PENDING, payment_method=serializer.validated_data.get('payment_method'))
+        elif request.user.role == 'Manager':
+            cost_breakdown = serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.APPROVED, approved_by=request.user)
+            if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+                Payment.objects.create(
+                    task=task,
+                    amount=-cost_breakdown.amount,
+                    method=cost_breakdown.payment_method
+                )
+                TaskActivity.objects.create(
+                    task=task,
+                    user=request.user,
+                    type=TaskActivity.ActivityType.NOTE,
+                    message=f"Refund of {cost_breakdown.amount} issued. Reason: {cost_breakdown.reason}"
+                )
+        else:
+            return Response({"error": "You do not have permission to create a refund request."}, status=status.HTTP_403_FORBIDDEN)
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        cost_breakdown = self.get_object()
+        cost_breakdown.status = CostBreakdown.RefundStatus.APPROVED
+        cost_breakdown.approved_by = request.user
+        cost_breakdown.save()
+
+        if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+            payment_method = cost_breakdown.payment_method
+            if not payment_method:
+                payment_method, _ = PaymentMethod.objects.get_or_create(name='Refund')
+            
+            Payment.objects.create(
+                task=cost_breakdown.task,
+                amount=-cost_breakdown.amount,
+                method=payment_method
+            )
+            TaskActivity.objects.create(
+                task=cost_breakdown.task,
+                user=request.user,
+                type=TaskActivity.ActivityType.NOTE,
+                message=f"Refund of {cost_breakdown.amount} approved. Reason: {cost_breakdown.reason}"
+            )
+
+        return Response(self.get_serializer(cost_breakdown).data)
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        cost_breakdown = self.get_object()
+        cost_breakdown.status = CostBreakdown.RefundStatus.REJECTED
+        cost_breakdown.save()
+        return Response(self.get_serializer(cost_breakdown).data)
+
 
 from django.utils import timezone
 from datetime import timedelta
