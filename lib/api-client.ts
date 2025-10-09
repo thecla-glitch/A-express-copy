@@ -22,6 +22,7 @@ apiClient.interceptors.request.use((config) => {
 
 export const getProfile = () => apiClient.get('/profile/');
 export const getTasks = (params: any = {}) => apiClient.get('/tasks/', { params });
+export const getDebts = (params: any = {}) => apiClient.get('/tasks/debts/', { params });
 export const getTask = (id: string) => apiClient.get(`/tasks/${id}/`);
 export const createTask = (data: any) => apiClient.post('/tasks/', data);
 export const updateTask = (id: string, data: any) => apiClient.patch(`/tasks/${id}/`, data);

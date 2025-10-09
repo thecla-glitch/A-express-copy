@@ -117,6 +117,11 @@ const navigationItems = {
       icon: Banknote,
     },
     {
+      title: "Debts",
+      url: "/dashboard/debts",
+      icon: Banknote,
+    },
+    {
       title: "Customers",
       url: "/dashboard/customers",
       icon: Building2,
@@ -221,6 +226,11 @@ const navigationItems = {
       title: "History",
       url: "/dashboard/accountant/history",
       icon: FileText,
+    },
+    {
+      title: "Debts",
+      url: "/dashboard/debts",
+      icon: Banknote,
     },
     {
       title: "Payments",

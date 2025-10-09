@@ -49,9 +49,10 @@ interface TasksDisplayProps {
   onReturnTask?: (task: any) => void;
   isAccountantView?: boolean;
   onAddPayment?: (taskId: string, amount: number, paymentMethodId: number) => void;
+  onRemindDebt?: (taskId: string) => void;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask, isAccountantView, onAddPayment }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask, isAccountantView, onAddPayment, onRemindDebt }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -411,17 +412,31 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                           </Dialog>
                         </>
                       ) : isAccountantView ? (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTaskToPay(task);
-                            setIsAddPaymentDialogOpen(true);
-                          }}
-                        >
-                          Add Payment
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTaskToPay(task);
+                              setIsAddPaymentDialogOpen(true);
+                            }}
+                          >
+                            Add Payment
+                          </Button>
+                          {onRemindDebt && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRemindDebt(task.title);
+                              }}
+                            >
+                              Remind Debt
+                            </Button>
+                          )}
+                        </>
                       ) : isCompletedTab ? (
                         <>
                           <Button

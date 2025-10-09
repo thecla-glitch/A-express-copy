@@ -16,7 +16,7 @@ from .serializers import (
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from datetime import datetime
-from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant
+from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 
 
@@ -412,6 +412,20 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminOrManagerOrAccountant])
+    def debts(self, request):
+        """
+        Returns a list of tasks that are 'Picked Up' but not 'Fully Paid'.
+        """
+        tasks = self.get_queryset().filter(status='Picked Up').exclude(payment_status='Fully Paid')
+        page = self.paginate_queryset(tasks)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
 
 
 
