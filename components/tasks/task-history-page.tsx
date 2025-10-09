@@ -22,7 +22,7 @@ export function TaskHistoryPage() {
         setLoading(true);
         const tasksResponse = await getTasks();
         if (tasksResponse.data) {
-          setTasks(tasksResponse.data);
+          setTasks(tasksResponse.data.results);
         } else {
           setError("Failed to fetch tasks");
         }

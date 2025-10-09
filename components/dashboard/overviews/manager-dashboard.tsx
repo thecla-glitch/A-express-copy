@@ -6,14 +6,16 @@ import { ClipboardList, Users, Calendar, UserCog, CreditCard, FileText, BarChart
 import { Button } from "@/components/ui/core/button";
 
 
-import { ManagerTasksKpi } from "./manager-tasks-kpi"
+import { ManagerTasksKpi } from "./manager-tasks-kpi";
 
 export function ManagerDashboard() {
   return (
     <div className="space-y-6 p-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Manager Dashboard</h2>
-        <p className="text-muted-foreground">Overview of business operations and key metrics.</p>
+        <p className="text-muted-foreground">
+          Overview of business operations and key metrics.
+        </p>
       </div>
 
       {/* KPI Cards */}
