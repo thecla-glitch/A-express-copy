@@ -35,13 +35,13 @@ export function FrontDeskHistoryPage() {
     return tasks.filter(task => {
       const taskDate = new Date(task.updated_at);
       const isRecent = taskDate > twoWeeksAgo;
-      const isCompletedOrPickedUp = task.status === "Completed" || task.status === "Picked Up";
+      const isPickedUp = task.status === "Picked Up";
 
       if (showAll) {
-          return isCompletedOrPickedUp;
+          return isPickedUp;
       }
 
-      return isRecent && isCompletedOrPickedUp;
+      return isRecent && isPickedUp;
     });
   }, [tasks, showAll]);
 

@@ -53,7 +53,7 @@ export function TaskHistoryPage() {
     setIsReturnDialogOpen(true);
   };
 
-  const historicalTasks = tasks.filter(task => ["Picked Up", "Completed", "Terminated"].includes(task.status));
+  const historicalTasks = tasks.filter(task => ["Picked Up", "Terminated"].includes(task.status));
 
   return (
     <div className="flex-1 space-y-6 p-6">
