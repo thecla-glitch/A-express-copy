@@ -72,3 +72,8 @@ export const getPaymentMethods = () => apiClient.get('/payment-methods/');
 export const createPaymentMethod = (paymentMethodData: { name: string; }) => apiClient.post('/payment-methods/', paymentMethodData);
 export const updatePaymentMethod = (paymentMethodId: number, paymentMethodData: { name: string; }) => apiClient.patch(`/payment-methods/${paymentMethodId}/`, paymentMethodData);
 export const deletePaymentMethod = (paymentMethodId: number) => apiClient.delete(`/payment-methods/${paymentMethodId}/`);
+
+export const getAccounts = () => apiClient.get('/accounts/');
+export const createAccount = (accountData: { name: string; balance: number; }) => apiClient.post('/accounts/', accountData);
+export const updateAccount = (accountId: number, accountData: { name: string; }) => apiClient.patch(`/accounts/${accountId}/`, accountData);
+export const deleteAccount = (accountId: number) => apiClient.delete(`/accounts/${accountId}/`);

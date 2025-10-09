@@ -17,6 +17,7 @@ import {
   Shield,
   Activity,
   UserCog,
+  Banknote,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -109,6 +110,11 @@ const navigationItems = {
       title: "User Management",
       url: "/dashboard/manager/users",
       icon: UserCog,
+    },
+    {
+      title: "Account Management",
+      url: "/dashboard/manager/accounts",
+      icon: Banknote,
     },
     {
       title: "Customers",

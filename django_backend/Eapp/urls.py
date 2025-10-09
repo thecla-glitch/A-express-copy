@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import (
 router = DefaultRouter()
 router.register(r'locations', views.LocationViewSet, basename='location')
 router.register(r'brands', views.BrandViewSet, basename='brand')
+router.register(r'accounts', views.AccountViewSet, basename='account')
 router.register(r'payment-methods', views.PaymentMethodViewSet)
 router.register(r'payments', views.PaymentViewSet, basename='payment')
 router.register(r'users', views.UserViewSet, basename='user')

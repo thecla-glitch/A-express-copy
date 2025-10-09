@@ -6,11 +6,11 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod
+from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod, Account
 from .serializers import (
     UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, 
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
-    LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer,
+    LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer, AccountSerializer,
     UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer
 )
 from django.db.models import Q
@@ -567,6 +567,18 @@ class BrandViewSet(viewsets.ModelViewSet):
         else:
             self.permission_classes = [IsManager]
         return super().get_permissions()
+
+
+class AccountViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows accounts to be viewed or edited by managers.
+    """
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer
+    permission_classes = [IsManager]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

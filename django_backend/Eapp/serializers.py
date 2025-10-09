@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod
+from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod, Account
 from django.utils import timezone
 
 
@@ -37,6 +37,16 @@ class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model = Brand
         fields = ['id', 'name']
+
+
+class AccountSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Account
+        fields = ['id', 'name', 'balance', 'created_by', 'created_at']
+        read_only_fields = ('id', 'created_by', 'created_at')
+
 
 
 class CustomerSerializer(serializers.ModelSerializer):

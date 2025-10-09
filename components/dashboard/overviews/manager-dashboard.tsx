@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card";
 import { RevenueOverview } from "./revenue-overview";
-import { ClipboardList, Users, Calendar, UserCog, CreditCard, FileText, BarChart3 } from "lucide-react";
+import { ClipboardList, Users, Calendar, UserCog, CreditCard, FileText, BarChart3, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/core/button";
 
 
@@ -37,6 +37,21 @@ export function ManagerDashboard() {
           <CardContent>
             <Button asChild className="w-full">
               <a href="/dashboard/manager/users">Manage Users</a>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Banknote className="h-5 w-5" />
+              Account Management
+            </CardTitle>
+            <CardDescription>Manage internal accounts and balances.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <a href="/dashboard/manager/accounts">Manage Accounts</a>
             </Button>
           </CardContent>
         </Card>
