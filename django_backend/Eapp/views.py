@@ -7,11 +7,10 @@ from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod
-from .serializers import UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, TaskSerializer, TaskActivitySerializer, PaymentSerializer, LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer
-from .permissions import IsManager, IsTechnician, IsFrontDesk
 from .serializers import (
-    UserSerializer, TaskSerializer, TaskActivitySerializer, PaymentSerializer, 
-    LocationSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, CostBreakdownSerializer,
+    UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, 
+    TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
+    LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer,
     UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer
 )
 from django.db.models import Q
@@ -270,17 +269,29 @@ from .filters import TaskFilter
 from .pagination import StandardResultsSetPagination
 
 
-class TaskListCreateView(generics.ListCreateAPIView):
+class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.select_related(
-        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
-    ).prefetch_related('activities', 'payments').annotate(
-        paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
-    )
-    serializer_class = TaskSerializer
+        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician', 'customer'
+    ).prefetch_related('activities', 'payments', 'cost_breakdowns')
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TaskFilter
     pagination_class = StandardResultsSetPagination
+    lookup_field = 'title'
+    lookup_url_kwarg = 'task_id'
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return TaskListSerializer
+        return TaskDetailSerializer
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        obj = get_object_or_404(queryset, **filter_kwargs)
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def create(self, request, *args, **kwargs):
         if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
@@ -295,27 +306,6 @@ class TaskListCreateView(generics.ListCreateAPIView):
         serializer.save(created_by=request.user)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-
-
-class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Task.objects.select_related(
-        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician'
-    ).prefetch_related('activities', 'payments').annotate(
-        paid_sum=Sum('payments__amount', output_field=DecimalField(max_digits=10, decimal_places=2))
-    )
-    serializer_class = TaskSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    lookup_field = 'title'
-    lookup_url_kwarg = 'task_id'
-
-    def get_object(self):
-        queryset = self.get_queryset()
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        obj = get_object_or_404(queryset, **filter_kwargs)
-        self.check_object_permissions(self.request, obj)
-        return obj
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)

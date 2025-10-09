@@ -108,7 +108,7 @@ export function InProgressTasksList({ isWorkshopView = false }: { isWorkshopView
                 <div className="md:col-span-2 space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{task.customer_name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{task.customer_details?.name}</h3>
                       <p className="text-sm text-gray-500">Task ID: <span className="font-medium text-red-600">{task.title}</span></p>
                     </div>
                     {getUrgencyBadge(task.urgency)}

@@ -59,10 +59,11 @@ export function useInProgressTasks(isWorkshopView: boolean, userId: string | und
                 ? { workshop_technician: userId, workshop_status: "In Workshop" }
                 : { assigned_to: userId, status: "In Progress" };
             const response = await getTasks(params);
+            const tasks = response.data.results || [];
             if (isWorkshopView) {
-                return response.data;
+                return tasks;
             }
-            return response.data.filter((task: any) => task.workshop_status !== "In Workshop");
+            return tasks.filter((task: any) => task.workshop_status !== "In Workshop");
         },
         enabled: !!userId, // only run the query if the user ID is available
     });
@@ -73,7 +74,7 @@ export function useInWorkshopTasks() {
         queryKey: ['inWorkshopTasks'],
         queryFn: async () => {
             const response = await getTasks({ workshop_status: "In Workshop" });
-            return response.data;
+            return response.data.results || [];
         },
     });
 }
@@ -84,7 +85,7 @@ export function useCompletedTasks(userId: string | undefined) {
         queryFn: async () => {
             if (!userId) return [];
             const response = await getTasks({ status: "Completed", assigned_to: userId });
-            return response.data;
+            return response.data.results || [];
         },
         enabled: !!userId, // only run the query if the user ID is available
     });

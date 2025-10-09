@@ -51,6 +51,19 @@ class ReferrerSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'phone']
 
 
+class CustomerListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ['name', 'phone']
+
+class UserListSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['full_name']
+
+
 
 
         
@@ -163,7 +176,35 @@ class LocationSerializer(serializers.ModelSerializer):
         model = Location
         fields = ['id', 'name', 'is_workshop']
 
-class TaskSerializer(serializers.ModelSerializer):
+class TaskListSerializer(serializers.ModelSerializer):
+    customer_details = CustomerListSerializer(source='customer', read_only=True)
+    assigned_to_details = UserListSerializer(source='assigned_to', read_only=True)
+    outstanding_balance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = (
+            'id',
+            'title',
+            'status',
+            'urgency',
+            'payment_status',
+            'workshop_status',
+            'current_location',
+            'laptop_model',
+            'description',
+            'updated_at',
+            'customer_details',
+            'assigned_to_details',
+            'outstanding_balance',
+        )
+
+    def get_outstanding_balance(self, obj):
+        total_cost = obj.calculate_total_cost()
+        paid_sum = sum(p.amount for p in obj.payments.all()) or Decimal('0.00')
+        return total_cost - paid_sum
+
+class TaskDetailSerializer(serializers.ModelSerializer):
     negotiated_by = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(is_active=True),
         allow_null=True,

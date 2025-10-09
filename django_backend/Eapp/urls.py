@@ -11,7 +11,7 @@ router.register(r'brands', views.BrandViewSet, basename='brand')
 router.register(r'payment-methods', views.PaymentMethodViewSet)
 router.register(r'payments', views.PaymentViewSet, basename='payment')
 router.register(r'users', views.UserViewSet, basename='user')
-router.register(r'cost-breakdowns', views.CostBreakdownViewSet, basename='cost-breakdown')
+router.register(r'tasks', views.TaskViewSet, basename='task')
 
 urlpatterns = [
     # Authentication endpoints
@@ -33,7 +33,6 @@ urlpatterns = [
     path('customers/create/', views.customer_create, name='customer_create'),
     
     # Task management endpoints
-    path('tasks/', views.TaskListCreateView.as_view(), name='task_list_create'),
     path('tasks/<path:task_id>/activities/', views.task_activities, name='task_activities'),
     path('tasks/<path:task_id>/add-activity/', views.add_task_activity, name='add_task_activity'),
     path('tasks/<path:task_id>/payments/', views.task_payments, name='task_payments'),
@@ -44,7 +43,6 @@ urlpatterns = [
 
     path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
     path('tasks/urgency-options/', views.get_task_urgency_options, name='get_task_urgency_options'),
-    path('tasks/<path:task_id>/', views.TaskDetailView.as_view(), name='task_detail'),
 
     
     # Technician endpoints
