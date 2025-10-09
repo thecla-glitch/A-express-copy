@@ -267,6 +267,7 @@ def generate_task_id():
 
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import TaskFilter
+from .pagination import StandardResultsSetPagination
 
 
 class TaskListCreateView(generics.ListCreateAPIView):
@@ -279,6 +280,7 @@ class TaskListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TaskFilter
+    pagination_class = StandardResultsSetPagination
 
     def create(self, request, *args, **kwargs):
         if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):

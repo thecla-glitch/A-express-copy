@@ -4,12 +4,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getTasks, createTask, updateTask as apiUpdateTask, createCostBreakdown } from '@/lib/api-client'
 import { Task } from '@/lib/api'
 
+export interface PaginatedTasks {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Task[];
+}
+
 export function useTasks(filters?: {
   status?: string
   technician?: string
   search?: string
+  page?: number
 }) {
-  return useQuery<Task[]>({
+  return useQuery<PaginatedTasks>({
     queryKey: ['tasks', filters],
     queryFn: () => getTasks(filters).then(res => res.data),
   });

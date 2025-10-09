@@ -14,7 +14,18 @@ import { useAuth } from "@/lib/auth-context";
 export function FrontDeskTasksPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { data: tasks, isLoading, isError, error } = useTasks();
+  const [activeTab, setActiveTab] = useState("not-completed");
+  const [pages, setPages] = useState({
+    "not-completed": 1,
+    completed: 1,
+    pickup: 1,
+  });
+
+  const { data: tasksData, isLoading, isError, error } = useTasks({
+    page: pages[activeTab],
+    status: activeTab === "not-completed" ? "Pending,In Progress" : activeTab === "completed" ? "Completed" : "Ready for Pickup",
+  });
+  
   const { data: technicians } = useTechnicians();
   const updateTaskMutation = useUpdateTask();
   const { toast } = useToast();
@@ -65,9 +76,14 @@ export function FrontDeskTasksPage() {
     alert(`Notifying ${customerName} for task ${taskTitle}`);
   }, []);
 
-  const unassignedTasks = useMemo(() => tasks?.filter(task => task.status === "Pending" || task.status === "In Progress") || [], [tasks]);
-  const completedTasks = useMemo(() => tasks?.filter(task => task.status === "Completed") || [], [tasks]);
-  const readyForPickupTasks = useMemo(() => tasks?.filter(task => task.status === "Ready for Pickup") || [], [tasks]);
+  const tasks = useMemo(() => tasksData?.results || [], [tasksData]);
+
+  const handlePageChange = (tab: string, direction: 'next' | 'previous') => {
+    setPages(prev => ({
+      ...prev,
+      [tab]: direction === 'next' ? prev[tab] + 1 : prev[tab] - 1,
+    }));
+  };
 
   if (isLoading) {
     return (
@@ -104,7 +120,7 @@ export function FrontDeskTasksPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="not-completed">
+      <Tabs defaultValue="not-completed" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 bg-gray-100">
           <TabsTrigger value="not-completed" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Not Completed</TabsTrigger>
           <TabsTrigger value="completed" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Completed Tasks</TabsTrigger>
@@ -112,16 +128,20 @@ export function FrontDeskTasksPage() {
         </TabsList>
         <TabsContent value="not-completed">
           <TasksDisplay
-            tasks={unassignedTasks}
+            tasks={tasks}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={false}
             isManagerView={true}
           />
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => handlePageChange('not-completed', 'previous')} disabled={!tasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('not-completed', 'next')} disabled={!tasksData?.next}>Next</Button>
+          </div>
         </TabsContent>
         <TabsContent value="completed">
           <TasksDisplay
-            tasks={completedTasks}
+            tasks={tasks}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
@@ -129,10 +149,14 @@ export function FrontDeskTasksPage() {
             onReject={handleReject}
             isFrontDeskCompletedView={true}
           />
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => handlePageChange('completed', 'previous')} disabled={!tasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('completed', 'next')} disabled={!tasksData?.next}>Next</Button>
+          </div>
         </TabsContent>
         <TabsContent value="pickup">
           <TasksDisplay
-            tasks={readyForPickupTasks}
+            tasks={tasks}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
@@ -140,6 +164,10 @@ export function FrontDeskTasksPage() {
             onPickedUp={handlePickedUp}
             onNotifyCustomer={handleNotifyCustomer}
           />
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => handlePageChange('pickup', 'previous')} disabled={!tasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('pickup', 'next')} disabled={!tasksData?.next}>Next</Button>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

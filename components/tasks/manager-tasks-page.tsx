@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/core/button";
 import { Plus } from "lucide-react";
@@ -21,12 +21,23 @@ import { useTechnicians } from "@/hooks/use-data";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ManagePaymentMethodsDialog from "./manage-payment-methods-dialog";
 
+type Tab = 'pending' | 'completed';
+
 export function ManagerTasksPage() {
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<Tab>("pending");
+  const [pages, setPages] = useState({
+    pending: 1,
+    completed: 1,
+  });
 
-  const { data: tasks, isLoading, isError, error } = useTasks();
+  const { data: tasksData, isLoading, isError, error } = useTasks({
+    page: pages[activeTab],
+    status: activeTab === "pending" ? "Pending,In Progress,Awaiting Parts,Assigned - Not Accepted,Diagnostic" : "Completed,Ready for Pickup",
+  });
+
   const { data: technicians } = useTechnicians();
 
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
@@ -58,12 +69,15 @@ export function ManagerTasksPage() {
     updateTaskMutation.mutate({ id: taskTitle, updates: { status: "In Progress", qc_notes: notes } });
   };
 
-  const handleMarkAsPaid = (taskTitle: string) => {
-    updateTaskMutation.mutate({ id: taskTitle, updates: { payment_status: "Paid", paid_date: new Date().toISOString() } });
-  };
-
   const handleTerminateTask = (taskTitle: string) => {
     updateTaskMutation.mutate({ id: taskTitle, updates: { status: "Terminated" } });
+  };
+  
+  const handlePageChange = (tab: Tab, direction: 'next' | 'previous') => {
+    setPages(prev => ({
+      ...prev,
+      [tab]: direction === 'next' ? prev[tab] + 1 : prev[tab] - 1,
+    }));
   };
 
   if (isLoading) {
@@ -84,8 +98,11 @@ export function ManagerTasksPage() {
     )
   }
 
-  const pendingAndInProgressTasks = tasks?.filter(task => ["Pending", "In Progress", "Awaiting Parts", "Assigned - Not Accepted", "Diagnostic"].includes(task.status)) || [];
-  const completedTasks = tasks?.filter(task => ["Completed", "Ready for Pickup"].includes(task.status)) || [];
+  const tasks = useMemo(() => tasksData?.results || [], [tasksData]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as Tab);
+  };
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -134,14 +151,14 @@ export function ManagerTasksPage() {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="pending">
+      <Tabs defaultValue="pending" onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-2 bg-gray-100">
           <TabsTrigger value="pending" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Pending and in Progress</TabsTrigger>
           <TabsTrigger value="completed" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Completed</TabsTrigger>
         </TabsList>
         <TabsContent value="pending">
           <TasksDisplay
-            tasks={pendingAndInProgressTasks}
+            tasks={tasks}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
@@ -150,19 +167,26 @@ export function ManagerTasksPage() {
             onTerminateTask={handleTerminateTask}
             isManagerView={true}
           />
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => handlePageChange('pending', 'previous')} disabled={!tasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('pending', 'next')} disabled={!tasksData?.next}>Next</Button>
+          </div>
         </TabsContent>
         <TabsContent value="completed">
           <TasksDisplay
-            tasks={completedTasks}
+            tasks={tasks}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
             onDeleteTask={deleteTaskMutation.mutate}
             onProcessPickup={handleProcessPickup}
             isCompletedTab={true}
-            onMarkAsPaid={handleMarkAsPaid}
             isManagerView={true}
           />
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => handlePageChange('completed', 'previous')} disabled={!tasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('completed', 'next')} disabled={!tasksData?.next}>Next</Button>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
