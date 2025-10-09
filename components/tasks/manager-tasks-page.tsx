@@ -27,15 +27,19 @@ export function ManagerTasksPage() {
   const { user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [pages, setPages] = useState({
     pending: 1,
     completed: 1,
   });
 
-  const { data: tasksData, isLoading, isError, error } = useTasks({
-    page: pages[activeTab],
-    status: activeTab === "pending" ? "Pending,In Progress,Awaiting Parts,Assigned - Not Accepted,Diagnostic" : "Completed,Ready for Pickup",
+  const { data: pendingTasksData, isLoading: isLoadingPending } = useTasks({
+    page: pages.pending,
+    status: "Pending,In Progress,Awaiting Parts,Assigned - Not Accepted,Diagnostic",
+  });
+
+  const { data: completedTasksData, isLoading: isLoadingCompleted } = useTasks({
+    page: pages.completed,
+    status: "Completed,Ready for Pickup",
   });
 
   const { data: technicians } = useTechnicians();
@@ -80,6 +84,8 @@ export function ManagerTasksPage() {
     }));
   };
 
+  const isLoading = isLoadingPending || isLoadingCompleted;
+
   if (isLoading) {
     return (
       <div className="flex-1 space-y-6 p-6">
@@ -89,20 +95,6 @@ export function ManagerTasksPage() {
       </div>
     );
   }
-
-  if (isError) {
-    return (
-        <div className="flex-1 space-y-6 p-6">
-            <div className="text-red-500">Error: {error.message}</div>
-        </div>
-    )
-  }
-
-  const tasks = useMemo(() => tasksData?.results || [], [tasksData]);
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as Tab);
-  };
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -151,14 +143,14 @@ export function ManagerTasksPage() {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="pending" onValueChange={handleTabChange}>
+      <Tabs defaultValue="pending">
         <TabsList className="grid w-full grid-cols-2 bg-gray-100">
           <TabsTrigger value="pending" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Pending and in Progress</TabsTrigger>
           <TabsTrigger value="completed" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Completed</TabsTrigger>
         </TabsList>
         <TabsContent value="pending">
           <TasksDisplay
-            tasks={tasks}
+            tasks={pendingTasksData?.results || []}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
@@ -168,13 +160,13 @@ export function ManagerTasksPage() {
             isManagerView={true}
           />
           <div className="flex justify-end space-x-2 mt-4">
-            <Button onClick={() => handlePageChange('pending', 'previous')} disabled={!tasksData?.previous}>Previous</Button>
-            <Button onClick={() => handlePageChange('pending', 'next')} disabled={!tasksData?.next}>Next</Button>
+            <Button onClick={() => handlePageChange('pending', 'previous')} disabled={!pendingTasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('pending', 'next')} disabled={!pendingTasksData?.next}>Next</Button>
           </div>
         </TabsContent>
         <TabsContent value="completed">
           <TasksDisplay
-            tasks={tasks}
+            tasks={completedTasksData?.results || []}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
@@ -184,8 +176,8 @@ export function ManagerTasksPage() {
             isManagerView={true}
           />
           <div className="flex justify-end space-x-2 mt-4">
-            <Button onClick={() => handlePageChange('completed', 'previous')} disabled={!tasksData?.previous}>Previous</Button>
-            <Button onClick={() => handlePageChange('completed', 'next')} disabled={!tasksData?.next}>Next</Button>
+            <Button onClick={() => handlePageChange('completed', 'previous')} disabled={!completedTasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('completed', 'next')} disabled={!completedTasksData?.next}>Next</Button>
           </div>
         </TabsContent>
       </Tabs>

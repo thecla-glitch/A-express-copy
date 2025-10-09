@@ -3,6 +3,7 @@ from .models import Task
 
 class TaskFilter(django_filters.FilterSet):
     created_at = django_filters.DateFromToRangeFilter()
+    updated_at = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = Task

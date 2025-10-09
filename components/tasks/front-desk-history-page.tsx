@@ -11,9 +11,19 @@ import { ReturnTaskDialog } from "./return-task-dialog";
 
 export function FrontDeskHistoryPage() {
   const router = useRouter();
-  const { data: tasks, isLoading, isError, error } = useTasks();
-  const { data: technicians } = useTechnicians();
+  const [page, setPage] = useState(1);
   const [showAll, setShowAll] = useState(false);
+
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+  const { data: tasksData, isLoading, isError, error } = useTasks({
+    page,
+    status: "Picked Up",
+    updated_at_after: showAll ? undefined : twoWeeksAgo.toISOString().split('T')[0],
+  });
+
+  const { data: technicians } = useTechnicians();
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
 
@@ -26,24 +36,7 @@ export function FrontDeskHistoryPage() {
     setIsReturnDialogOpen(true);
   };
 
-  const filteredTasks = useMemo(() => {
-    if (!tasks) return [];
-
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
-    return tasks.filter(task => {
-      const taskDate = new Date(task.updated_at);
-      const isRecent = taskDate > twoWeeksAgo;
-      const isPickedUp = task.status === "Picked Up";
-
-      if (showAll) {
-          return isPickedUp;
-      }
-
-      return isRecent && isPickedUp;
-    });
-  }, [tasks, showAll]);
+  const tasks = useMemo(() => tasksData?.results || [], [tasksData]);
 
   if (isLoading) {
     return (
@@ -76,7 +69,7 @@ export function FrontDeskHistoryPage() {
       </div>
 
       <TasksDisplay
-        tasks={filteredTasks}
+        tasks={tasks}
         technicians={technicians || []}
         onRowClick={handleRowClick}
         showActions={true}
@@ -84,6 +77,11 @@ export function FrontDeskHistoryPage() {
         onReturnTask={handleReturnTask}
         isCompletedTab={true}
       />
+
+      <div className="flex justify-end space-x-2 mt-4">
+        <Button onClick={() => setPage(page - 1)} disabled={!tasksData?.previous}>Previous</Button>
+        <Button onClick={() => setPage(page + 1)} disabled={!tasksData?.next}>Next</Button>
+      </div>
 
       {selectedTask && (
         <ReturnTaskDialog

@@ -16,6 +16,7 @@ export function useTasks(filters?: {
   technician?: string
   search?: string
   page?: number
+  updated_at_after?: string
 }) {
   return useQuery<PaginatedTasks>({
     queryKey: ['tasks', filters],
