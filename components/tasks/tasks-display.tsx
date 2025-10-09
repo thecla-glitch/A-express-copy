@@ -328,7 +328,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                                 size="sm"
                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                                 onClick={(e) => e.stopPropagation()}
-                                disabled={task.payment_status !== 'Fully Paid'}
+                                disabled={task.payment_status !== 'Fully Paid' && !task.is_debt}
                               >
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 Picked Up

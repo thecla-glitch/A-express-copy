@@ -41,7 +41,7 @@ export function FrontDeskTasksPage() {
   }, [updateTaskMutation]);
 
   const handlePickedUp = useCallback(async (task: any) => {
-    if (task.payment_status !== 'Fully Paid') {
+    if (task.payment_status !== 'Fully Paid' && !task.is_debt) {
       toast({
         title: "Payment Required",
         description: "This task cannot be marked as picked up until it is fully paid. Please contact the manager for assistance.",
