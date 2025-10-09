@@ -265,7 +265,7 @@ def generate_task_id():
     return f"{month_prefix}-{new_seq:03d}"
 
 from django_filters.rest_framework import DjangoFilterBackend
-from .filters import TaskFilter
+from .filters import TaskFilter, PaymentFilter
 from .pagination import StandardResultsSetPagination
 
 
@@ -631,6 +631,8 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PaymentFilter
 
 
 class CostBreakdownViewSet(viewsets.ModelViewSet):

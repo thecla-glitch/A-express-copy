@@ -1,15 +1,21 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/layout/card'
-import { Button } from '@/components/ui/core/button'
-import { Input } from '@/components/ui/core/input'
-import { Badge } from '@/components/ui/core/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/layout/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/core/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/layout/tabs'
-import { Search, Download, DollarSign, Clock, CheckCircle } from 'lucide-react'
-import { usePayments } from '@/hooks/use-payments'
+import { useState } from "react"
+import { format } from "date-fns"
+import { Calendar as CalendarIcon } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
+import { Button } from "@/components/ui/core/button"
+import { Input } from "@/components/ui/core/input"
+import { Badge } from "@/components/ui/core/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs"
+import { Search, Download } from "lucide-react"
+import { usePayments } from "@/hooks/use-payments"
+import { usePaymentMethods } from "@/hooks/use-payment-methods"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
+import { Calendar } from "@/components/ui/core/calendar"
+import { cn } from "@/lib/utils"
 
 interface Payment {
   id: any;
@@ -22,13 +28,6 @@ interface Payment {
   method_name: string;
 }
 
-const paymentStats = {
-  totalRevenue: 4250.5,
-  todayRevenue: 235.5,
-  pendingPayments: 3,
-  completedPayments: 47,
-}
-
 import { TrendingUp, TrendingDown } from "lucide-react"
 import useSWR from 'swr'
 import { apiClient } from "@/lib/api-client"
@@ -36,24 +35,19 @@ import { apiClient } from "@/lib/api-client"
 const fetcher = (url: string) => apiClient.get(url).then(res => res.data)
 
 export function PaymentsOverview() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [methodFilter, setMethodFilter] = useState('all')
-  const [activeTab, setActiveTab] = useState('all')
+  const [searchTerm, setSearchTerm] = useState("")
+  const [methodFilter, setMethodFilter] = useState("all")
+  const [activeTab, setActiveTab] = useState("all")
+  const [date, setDate] = useState<Date | undefined>(new Date())
 
-  const { data: payments, isLoading, isError } = usePayments()
-  const { data: revenueData, error: revenueError } = useSWR('/revenue-overview/', fetcher)
-
-  const filteredPayments = payments?.filter((payment: Payment) => {
-    const matchesSearch = 
-      payment.id && String(payment.id).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesMethod = methodFilter === 'all' || payment.method_name.toLowerCase() === methodFilter.toLowerCase()
-
-    if (activeTab === 'refunded') {
-      return parseFloat(payment.amount) < 0 && matchesSearch && matchesMethod
-    }
-
-    return matchesSearch && matchesMethod
+  const { data: payments, isLoading, isError } = usePayments({
+    search: searchTerm,
+    method: methodFilter,
+    is_refunded: activeTab === "refunded",
+    date: date ? format(date, "yyyy-MM-dd") : undefined,
   })
+  const { data: revenueData, error: revenueError } = useSWR('/revenue-overview/', fetcher)
+  const { data: paymentMethods } = usePaymentMethods()
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -73,10 +67,6 @@ export function PaymentsOverview() {
       style: 'currency',
       currency: 'TZS',
     }).format(amount)
-  }
-
-  if (isLoading) {
-    return <div>Loading...</div>
   }
 
   if (isError) {
@@ -158,7 +148,7 @@ export function PaymentsOverview() {
                 <div className='relative'>
                   <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
                   <Input
-                    placeholder='Search payments...'
+                    placeholder='Search by Task ID...'
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className='pl-8 w-[300px]'
@@ -171,11 +161,36 @@ export function PaymentsOverview() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value='all'>All Methods</SelectItem>
-                    <SelectItem value='Credit Card'>Credit Card</SelectItem>
-                    <SelectItem value='Debit Card'>Debit Card</SelectItem>
-                    <SelectItem value='Cash'>Cash</SelectItem>
+                    {paymentMethods?.map((method) => (
+                      <SelectItem key={method.id} value={method.name}>
+                        {method.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[280px] justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -192,7 +207,13 @@ export function PaymentsOverview() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPayments?.map((payment: Payment) => (
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          Loading...
+                        </TableCell>
+                      </TableRow>
+                    ) : payments?.map((payment: Payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>{payment.task_title}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
@@ -218,7 +239,13 @@ export function PaymentsOverview() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPayments?.map((payment: Payment) => (
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          Loading...
+                        </TableCell>
+                      </TableRow>
+                    ) : payments?.map((payment: Payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>{payment.task_title}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
