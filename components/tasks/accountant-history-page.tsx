@@ -30,7 +30,7 @@ export default function AccountantHistoryPage() {
     )
   }
 
-  const fullyPaidTasks = tasks?.filter(task => task.payment_status === 'Fully Paid') || [];
+  const fullyPaidTasks = tasks?.results?.filter(task => task.payment_status === 'Fully Paid') || [];
 
   return (
     <div className="flex-1 space-y-6 p-6">
