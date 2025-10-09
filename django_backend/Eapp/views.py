@@ -597,7 +597,7 @@ class TaskActivityViewSet(viewsets.ModelViewSet):
 
 
 class PaymentMethodViewSet(viewsets.ModelViewSet):
-    queryset = PaymentMethod.objects.all()
+    queryset = PaymentMethod.objects.filter(is_user_selectable=True)
     serializer_class = PaymentMethodSerializer
     permission_classes = [permissions.IsAuthenticated, IsManager]
 
@@ -636,10 +636,15 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         if request.user.role == 'Accountant':
-            serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.PENDING)
+            serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.PENDING, payment_method=serializer.validated_data.get('payment_method'))
         elif request.user.role == 'Manager':
             cost_breakdown = serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.APPROVED, approved_by=request.user)
             if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+                Payment.objects.create(
+                    task=task,
+                    amount=-cost_breakdown.amount,
+                    method=cost_breakdown.payment_method
+                )
                 TaskActivity.objects.create(
                     task=task,
                     user=request.user,
@@ -660,6 +665,15 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
         cost_breakdown.save()
 
         if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+            payment_method = cost_breakdown.payment_method
+            if not payment_method:
+                payment_method, _ = PaymentMethod.objects.get_or_create(name='Refund')
+            
+            Payment.objects.create(
+                task=cost_breakdown.task,
+                amount=-cost_breakdown.amount,
+                method=payment_method
+            )
             TaskActivity.objects.create(
                 task=cost_breakdown.task,
                 user=request.user,

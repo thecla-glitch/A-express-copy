@@ -27,7 +27,10 @@ class CostBreakdownSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CostBreakdown
-        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'status', 'requested_by']
+        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'status', 'requested_by', 'payment_method']
+        extra_kwargs = {
+            'payment_method': {'write_only': True}
+        }
 
 
 class BrandSerializer(serializers.ModelSerializer):

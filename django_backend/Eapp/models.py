@@ -339,6 +339,7 @@ class TaskActivity(models.Model):
 
 class PaymentMethod(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    is_user_selectable = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -395,6 +396,7 @@ class CostBreakdown(models.Model):
     status = models.CharField(max_length=20, choices=RefundStatus.choices, default=RefundStatus.APPROVED)
     requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='requested_refunds')
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_refunds')
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'{self.get_cost_type_display()} cost of {self.amount} for {self.task.title}'

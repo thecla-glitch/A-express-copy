@@ -37,8 +37,8 @@ const fetcher = (url: string) => apiClient.get(url).then(res => res.data)
 
 export function PaymentsOverview() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
   const [methodFilter, setMethodFilter] = useState('all')
+  const [activeTab, setActiveTab] = useState('all')
 
   const { data: payments, isLoading, isError } = usePayments()
   const { data: revenueData, error: revenueError } = useSWR('/revenue-overview/', fetcher)
@@ -46,10 +46,13 @@ export function PaymentsOverview() {
   const filteredPayments = payments?.filter((payment: Payment) => {
     const matchesSearch = 
       payment.id && String(payment.id).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' // Assuming status is not available in the new model
     const matchesMethod = methodFilter === 'all' || payment.method_name.toLowerCase() === methodFilter.toLowerCase()
 
-    return matchesSearch && matchesStatus && matchesMethod
+    if (activeTab === 'refunded') {
+      return parseFloat(payment.amount) < 0 && matchesSearch && matchesMethod
+    }
+
+    return matchesSearch && matchesMethod
   })
 
   const getStatusBadge = (status: string) => {
@@ -144,7 +147,7 @@ export function PaymentsOverview() {
           <CardDescription>View and manage all payment transactions</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue='all' className='space-y-4'>
+          <Tabs defaultValue='all' onValueChange={setActiveTab} className='space-y-4'>
             <div className='flex items-center justify-between'>
               <TabsList>
                 <TabsTrigger value='all'>All Payments</TabsTrigger>
@@ -162,16 +165,6 @@ export function PaymentsOverview() {
                   />
                 </div>
 
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className='w-[130px]'>
-                    <SelectValue placeholder='Status' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='all'>All Status</SelectItem>
-                    <SelectItem value='refunded'>Refunded</SelectItem>
-                  </SelectContent>
-                </Select>
-
                 <Select value={methodFilter} onValueChange={setMethodFilter}>
                   <SelectTrigger className='w-[140px]'>
                     <SelectValue placeholder='Method' />
@@ -187,6 +180,32 @@ export function PaymentsOverview() {
             </div>
 
             <TabsContent value='all' className='space-y-4'>
+              <div className='rounded-md border'>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Task ID</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className='text-right'>Task Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPayments?.map((payment: Payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell>{payment.task_title}</TableCell>
+                        <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
+                        <TableCell>{payment.method_name}</TableCell>
+                        <TableCell>{payment.date}</TableCell>
+                        <TableCell className='text-right'>{getStatusBadge(payment.task_status)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+            <TabsContent value='refunded' className='space-y-4'>
               <div className='rounded-md border'>
                 <Table>
                   <TableHeader>

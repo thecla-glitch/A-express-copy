@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/core/textarea';
 import { createCostBreakdown } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '../ui/feedback/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/core/select';
+import { usePaymentMethods } from '@/hooks/use-payment-methods';
 
 interface AddRefundDialogProps {
   taskId: string;
@@ -21,14 +23,18 @@ export function AddRefundDialog({ taskId, open, onOpenChange }: AddRefundDialogP
   const { toast } = useToast();
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const { data: paymentMethods } = usePaymentMethods();
 
   const addRefundMutation = useMutation({
-    mutationFn: () => createCostBreakdown(taskId, {
-        amount,
+    mutationFn: (variables: { amount: string; reason: string; paymentMethod: string }) => 
+      createCostBreakdown(taskId, {
+        amount: variables.amount,
         cost_type: 'Subtractive',
         description: 'Refund',
         category: 'Refund',
-        reason,
+        reason: variables.reason,
+        payment_method: variables.paymentMethod,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
@@ -39,6 +45,7 @@ export function AddRefundDialog({ taskId, open, onOpenChange }: AddRefundDialogP
       onOpenChange(false);
       setAmount('');
       setReason('');
+      setPaymentMethod('');
     },
     onError: () => {
         toast({
@@ -50,15 +57,15 @@ export function AddRefundDialog({ taskId, open, onOpenChange }: AddRefundDialogP
   });
 
   const handleAddRefund = () => {
-    if (!amount || !reason) {
+    if (!amount || !reason || !paymentMethod) {
       toast({
         title: 'Missing Information',
-        description: 'Please provide both an amount and a reason for the refund.',
+        description: 'Please provide amount, reason, and payment method for the refund.',
         variant: 'destructive',
       });
       return;
     }
-    addRefundMutation.mutate();
+    addRefundMutation.mutate({ amount, reason, paymentMethod });
   };
 
   return (
@@ -80,6 +87,21 @@ export function AddRefundDialog({ taskId, open, onOpenChange }: AddRefundDialogP
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Enter refund amount"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Payment Method</Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentMethods?.map((method) => (
+                  <SelectItem key={method.id} value={method.id.toString()}>
+                    {method.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="reason">Reason</Label>
