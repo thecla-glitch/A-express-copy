@@ -691,7 +691,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </Card>
         </TabsContent>
       </Tabs>
-      <AddRefundDialog taskId={taskId} open={isAddRefundOpen} onOpenChange={setIsAddRefundOpen} />
+      <AddRefundDialog taskId={taskId} open={isAddRefundOpen} onOpenChange={setIsAddRefundOpen} taskTitle={taskData.title} />
     </div>
   )
 }

@@ -16,9 +16,10 @@ interface AddRefundDialogProps {
   taskId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  taskTitle: string;
 }
 
-export function AddRefundDialog({ taskId, open, onOpenChange }: AddRefundDialogProps) {
+export function AddRefundDialog({ taskId, open, onOpenChange, taskTitle }: AddRefundDialogProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [amount, setAmount] = useState('');
@@ -27,15 +28,15 @@ export function AddRefundDialog({ taskId, open, onOpenChange }: AddRefundDialogP
   const { data: paymentMethods } = usePaymentMethods();
 
   const addRefundMutation = useMutation({
-    mutationFn: (variables: { amount: string; reason: string; paymentMethod: string }) => 
+    mutationFn: (variables: { amount: string; reason: string; paymentMethod: string }) =>
       createCostBreakdown(taskId, {
         amount: variables.amount,
         cost_type: 'Subtractive',
-        description: 'Refund',
-        category: 'Refund',
+        description: `Refund - ${taskTitle}`,
+        category: 'Tech Support',
         reason: variables.reason,
         payment_method: variables.paymentMethod,
-    }),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       toast({
@@ -117,8 +118,8 @@ export function AddRefundDialog({ taskId, open, onOpenChange }: AddRefundDialogP
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleAddRefund} disabled={addRefundMutation.isLoading}>
-            {addRefundMutation.isLoading ? 'Adding...' : 'Add Refund'}
+          <Button onClick={handleAddRefund} disabled={addRefundMutation.isPending}>
+            {addRefundMutation.isPending ? 'Adding...' : 'Add Refund'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -42,6 +42,8 @@ urlpatterns = [
     path('tasks/<path:task_id>/send-update/', views.send_customer_update, name='send_customer_update'),
     path('tasks/<path:task_id>/cost-breakdowns/', views.CostBreakdownViewSet.as_view({'post': 'create'}), name='task-cost-breakdowns'),
     path('tasks/<path:task_id>/cost-breakdowns/<int:pk>/', views.CostBreakdownViewSet.as_view({'delete': 'destroy'}), name='task-cost-breakdown-detail'),
+    path('cost-breakdowns/<int:pk>/approve/', views.CostBreakdownViewSet.as_view({'post': 'approve'}), name='cost-breakdown-approve'),
+    path('cost-breakdowns/<int:pk>/reject/', views.CostBreakdownViewSet.as_view({'post': 'reject'}), name='cost-breakdown-reject'),
 
     path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
     path('tasks/urgency-options/', views.get_task_urgency_options, name='get_task_urgency_options'),

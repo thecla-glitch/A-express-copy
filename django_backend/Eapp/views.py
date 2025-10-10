@@ -469,7 +469,8 @@ def add_task_payment(request, task_id):
     task = get_object_or_404(Task, title=task_id)
     serializer = PaymentSerializer(data=request.data)
     if serializer.is_valid():
-        payment = serializer.save(task=task, description=f"{task.customer.name} - {task.title}")
+        tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
+        payment = serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
         payment.task.update_payment_status()  # Trigger update
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -665,11 +666,14 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
             serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.PENDING, payment_method=serializer.validated_data.get('payment_method'))
         elif request.user.role == 'Manager':
             cost_breakdown = serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.APPROVED, approved_by=request.user)
-            if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+            if cost_breakdown.cost_type == 'Subtractive':
+                tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
                 Payment.objects.create(
                     task=task,
                     amount=-cost_breakdown.amount,
-                    method=cost_breakdown.payment_method
+                    method=cost_breakdown.payment_method,
+                    description=cost_breakdown.description,
+                    category=tech_support_category
                 )
                 TaskActivity.objects.create(
                     task=task,
@@ -690,16 +694,18 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
         cost_breakdown.approved_by = request.user
         cost_breakdown.save()
 
-        if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
+        if cost_breakdown.cost_type == 'Subtractive':
             payment_method = cost_breakdown.payment_method
             if not payment_method:
                 payment_method, _ = PaymentMethod.objects.get_or_create(name='Refund')
             
+            tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
             Payment.objects.create(
                 task=cost_breakdown.task,
                 amount=-cost_breakdown.amount,
                 method=payment_method,
-                description='Refund'
+                description=cost_breakdown.description,
+                category=tech_support_category
             )
             TaskActivity.objects.create(
                 task=cost_breakdown.task,
