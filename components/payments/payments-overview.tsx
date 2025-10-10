@@ -25,6 +25,7 @@ interface Payment {
   method: number;
   method_name: string;
   description: string;
+  category_name: string;
 }
 
 import { TrendingUp, TrendingDown } from "lucide-react"
@@ -35,16 +36,19 @@ const fetcher = (url: string) => apiClient.get(url).then(res => res.data)
 
 export function PaymentsOverview() {
   const [methodFilter, setMethodFilter] = useState("all")
+  const [categoryFilter, setCategoryFilter] = useState("all")
   const [activeTab, setActiveTab] = useState("all")
   const [date, setDate] = useState<Date | undefined>(new Date())
 
   const { data: payments, isLoading, isError } = usePayments({
     method: methodFilter,
+    category: categoryFilter,
     is_refunded: activeTab === "refunded",
     date: date ? format(date, "yyyy-MM-dd") : undefined,
   })
   const { data: revenueData, error: revenueError } = useSWR('/revenue-overview/', fetcher)
   const { data: paymentMethods } = usePaymentMethods()
+  const { data: paymentCategories } = useSWR('/payment-categories/', fetcher)
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -156,6 +160,20 @@ export function PaymentsOverview() {
                   </SelectContent>
                 </Select>
 
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className='w-[140px]'>
+                    <SelectValue placeholder='Category' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='all'>All Categories</SelectItem>
+                    {paymentCategories?.map((category: any) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -189,6 +207,7 @@ export function PaymentsOverview() {
                       <TableHead>Description</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
+                      <TableHead>Category</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className='text-right'>Task Status</TableHead>
                     </TableRow>
@@ -205,6 +224,7 @@ export function PaymentsOverview() {
                         <TableCell>{payment.description}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>{payment.method_name}</TableCell>
+                        <TableCell>{payment.category_name}</TableCell>
                         <TableCell>{payment.date}</TableCell>
                         <TableCell className='text-right'>{getStatusBadge(payment.task_status)}</TableCell>
                       </TableRow>
@@ -221,6 +241,7 @@ export function PaymentsOverview() {
                       <TableHead>Description</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
+                      <TableHead>Category</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className='text-right'>Task Status</TableHead>
                     </TableRow>

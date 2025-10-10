@@ -24,12 +24,13 @@ class TaskFilter(django_filters.FilterSet):
 class PaymentFilter(django_filters.FilterSet):
     task__title = django_filters.CharFilter(lookup_expr='icontains')
     method_name = django_filters.CharFilter(field_name='method__name', lookup_expr='iexact')
+    category = django_filters.CharFilter(field_name='category__name', lookup_expr='iexact')
     is_refunded = django_filters.BooleanFilter(method='filter_refunded')
     date = django_filters.DateFilter(field_name='date', lookup_expr='exact', initial=timezone.now().date())
 
     class Meta:
         model = Payment
-        fields = ['task__title', 'method_name', 'is_refunded', 'date']
+        fields = ['task__title', 'method_name', 'is_refunded', 'date', 'category']
 
     def filter_refunded(self, queryset, name, value):
         if value:

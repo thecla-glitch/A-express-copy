@@ -348,6 +348,16 @@ class PaymentMethod(models.Model):
         ordering = ['name']
 
 
+class PaymentCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+
+
 class Payment(models.Model):
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='payments')
@@ -355,6 +365,13 @@ class Payment(models.Model):
     date = models.DateField(default=get_current_date)
     method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
     description = models.CharField(max_length=255, default='Customer Payment', blank=True)
+    category = models.ForeignKey(
+        PaymentCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments'
+    )
 
     def __str__(self):
         return f'Payment of {self.amount} for {self.task.title} on {self.date}'

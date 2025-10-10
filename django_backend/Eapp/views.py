@@ -6,12 +6,12 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod, Account
+from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod, Account, PaymentCategory
 from .serializers import (
     UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, 
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
     LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer, AccountSerializer,
-    UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer
+    UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer,PaymentCategorySerializer
 )
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -623,6 +623,12 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
         return super().get_permissions()
+
+class PaymentCategoryViewSet(viewsets.ModelViewSet):
+    queryset = PaymentCategory.objects.all()
+    serializer_class = PaymentCategorySerializer
+    permission_classes = [permissions.IsAuthenticated, IsManager]
+
 
 class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     """

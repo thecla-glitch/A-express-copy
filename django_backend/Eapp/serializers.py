@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod, Account
+from .models import PaymentCategory, User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod, Account
 from django.utils import timezone
 
 
@@ -167,14 +167,21 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class PaymentCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentCategory
+        fields = '__all__'
+
+
 class PaymentSerializer(serializers.ModelSerializer):
     method_name = serializers.CharField(source='method.name', read_only=True)
     task_title = serializers.CharField(source='task.title', read_only=True)
     task_status = serializers.CharField(source='task.status', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True, allow_null=True)
 
     class Meta:
         model = Payment
-        fields = ('id', 'task', 'task_title', 'task_status', 'amount', 'date', 'method', 'method_name', 'description')
+        fields = ('id', 'task', 'task_title', 'task_status', 'amount', 'date', 'method', 'method_name', 'description', 'category', 'category_name')
         read_only_fields = ('task',)
         extra_kwargs = {
             'amount': {'validators': [MinValueValidator(Decimal('0.00'))]},

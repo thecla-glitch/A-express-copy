@@ -7,6 +7,7 @@ interface PaymentFilters {
     method?: string;
     is_refunded?: boolean;
     date?: string;
+    category?: string;
 }
 
 export function usePayments(filters: PaymentFilters = {}) {
