@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_lazy as _
+from common.models import Brand, Location
 import os
 from uuid import uuid4
 from decimal import Decimal
@@ -114,14 +115,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.is_superuser or self.role == 'Manager'
     
 
-class Brand(models.Model):
-    name = models.CharField(max_length=100, unique=True)
 
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
 
 
 class Customer(models.Model):
@@ -210,7 +204,7 @@ class Task(models.Model):
 
     # New fields
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='tasks')
-    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True)
+    brand = models.ForeignKey('common.Brand', on_delete=models.SET_NULL, null=True, blank=True)
     device_type = models.CharField(max_length=20, choices=DeviceType.choices, default=DeviceType.FULL)
     device_notes = models.TextField(blank=True)
     laptop_model = models.CharField(max_length=100)
@@ -251,7 +245,7 @@ class Task(models.Model):
         blank=True
     )
     workshop_location = models.ForeignKey(
-        'Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='workshop_tasks'
+        'common.Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='workshop_tasks'
     )
     workshop_technician = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='workshop_assigned_tasks'
@@ -383,15 +377,7 @@ class Payment(models.Model):
         super().save(*args, **kwargs)
         self.task.update_payment_status()
 
-class Location(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    is_workshop = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
 
 class CostBreakdown(models.Model):
     class CostType(models.TextChoices):
