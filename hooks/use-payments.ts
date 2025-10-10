@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import { getPayments } from '@/lib/payments-api'
 
 interface PaymentFilters {
-    search?: string;
     method?: string;
     is_refunded?: boolean;
     date?: string;

@@ -5,12 +5,11 @@ import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
-import { Input } from "@/components/ui/core/input"
 import { Badge } from "@/components/ui/core/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/layout/tabs"
-import { Search, Download } from "lucide-react"
+import { Download } from "lucide-react"
 import { usePayments } from "@/hooks/use-payments"
 import { usePaymentMethods } from "@/hooks/use-payment-methods"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
@@ -20,7 +19,6 @@ import { cn } from "@/lib/utils"
 interface Payment {
   id: any;
   task: number;
-  task_title: string;
   task_status: string;
   amount: string;
   date: string;
@@ -36,13 +34,11 @@ import { apiClient } from "@/lib/api-client"
 const fetcher = (url: string) => apiClient.get(url).then(res => res.data)
 
 export function PaymentsOverview() {
-  const [searchTerm, setSearchTerm] = useState("")
   const [methodFilter, setMethodFilter] = useState("all")
   const [activeTab, setActiveTab] = useState("all")
   const [date, setDate] = useState<Date | undefined>(new Date())
 
   const { data: payments, isLoading, isError } = usePayments({
-    search: searchTerm,
     method: methodFilter,
     is_refunded: activeTab === "refunded",
     date: date ? format(date, "yyyy-MM-dd") : undefined,
@@ -146,16 +142,6 @@ export function PaymentsOverview() {
               </TabsList>
 
               <div className='flex items-center space-x-2'>
-                <div className='relative'>
-                  <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
-                  <Input
-                    placeholder='Search by Task ID...'
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className='pl-8 w-[300px]'
-                  />
-                </div>
-
                 <Select value={methodFilter} onValueChange={setMethodFilter}>
                   <SelectTrigger className='w-[140px]'>
                     <SelectValue placeholder='Method' />
@@ -200,7 +186,6 @@ export function PaymentsOverview() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Task ID</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
@@ -211,13 +196,12 @@ export function PaymentsOverview() {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={5} className="h-24 text-center">
                           Loading...
                         </TableCell>
                       </TableRow>
                     ) : payments?.map((payment: Payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell>{payment.task_title}</TableCell>
                         <TableCell>{payment.description}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>{payment.method_name}</TableCell>
@@ -234,7 +218,6 @@ export function PaymentsOverview() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Task ID</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
@@ -245,13 +228,12 @@ export function PaymentsOverview() {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={5} className="h-24 text-center">
                           Loading...
                         </TableCell>
                       </TableRow>
                     ) : payments?.map((payment: Payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell>{payment.task_title}</TableCell>
                         <TableCell>{payment.description}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>{payment.method_name}</TableCell>
