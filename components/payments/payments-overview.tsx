@@ -26,6 +26,7 @@ interface Payment {
   date: string;
   method: number;
   method_name: string;
+  description: string;
 }
 
 import { TrendingUp, TrendingDown } from "lucide-react"
@@ -200,6 +201,7 @@ export function PaymentsOverview() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Task ID</TableHead>
+                      <TableHead>Description</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
                       <TableHead>Date</TableHead>
@@ -209,13 +211,14 @@ export function PaymentsOverview() {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        <TableCell colSpan={6} className="h-24 text-center">
                           Loading...
                         </TableCell>
                       </TableRow>
                     ) : payments?.map((payment: Payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>{payment.task_title}</TableCell>
+                        <TableCell>{payment.description}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>{payment.method_name}</TableCell>
                         <TableCell>{payment.date}</TableCell>
@@ -232,6 +235,7 @@ export function PaymentsOverview() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Task ID</TableHead>
+                      <TableHead>Description</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Method</TableHead>
                       <TableHead>Date</TableHead>
@@ -241,13 +245,14 @@ export function PaymentsOverview() {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
+                        <TableCell colSpan={6} className="h-24 text-center">
                           Loading...
                         </TableCell>
                       </TableRow>
                     ) : payments?.map((payment: Payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>{payment.task_title}</TableCell>
+                        <TableCell>{payment.description}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>{payment.method_name}</TableCell>
                         <TableCell>{payment.date}</TableCell>
