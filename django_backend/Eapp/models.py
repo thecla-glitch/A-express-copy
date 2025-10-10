@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_lazy as _
 from common.models import Brand, Location
+from customers.models import Customer, Referrer
 import os
 from uuid import uuid4
 from decimal import Decimal
@@ -118,41 +119,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 
-class Customer(models.Model):
-    class CustomerType(models.TextChoices):
-        NORMAL = 'Normal', _('Normal')
-        REPAIRMAN = 'Repairman', _('Repairman')
-
-    name = models.CharField(max_length=100)
-    email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
-    phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
-    customer_type = models.CharField(
-        max_length=20,
-        choices=CustomerType.choices,
-        default=CustomerType.NORMAL,
-        verbose_name=_('Customer Type')
-    )
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
-
-
-class Referrer(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
-
-
 class Task(models.Model):
     class Status(models.TextChoices):
         PENDING = 'Pending', _('Pending')
@@ -203,7 +169,7 @@ class Task(models.Model):
     due_date = models.DateField(null=True, blank=True)
 
     # New fields
-    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='tasks')
+    customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, related_name='tasks')
     brand = models.ForeignKey('common.Brand', on_delete=models.SET_NULL, null=True, blank=True)
     device_type = models.CharField(max_length=20, choices=DeviceType.choices, default=DeviceType.FULL)
     device_notes = models.TextField(blank=True)
@@ -234,7 +200,7 @@ class Task(models.Model):
     is_debt = models.BooleanField(default=False)
     is_referred = models.BooleanField(default=False)
     referred_by = models.ForeignKey(
-        'Referrer', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_tasks'
+        'customers.Referrer', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_tasks'
     )
 
     # Workshop fields

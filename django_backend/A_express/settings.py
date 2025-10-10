@@ -49,6 +49,7 @@ INSTALLED_APPS = [
      'corsheaders',  
     'Eapp',
     'common',
+    'customers',
     'rest_framework',
     
 ]

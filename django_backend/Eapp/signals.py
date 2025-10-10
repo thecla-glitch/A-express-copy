@@ -1,6 +1,7 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .models import Task, Customer, Account, PaymentMethod
+from .models import Task, Account, PaymentMethod
+from customers.models import Customer
 
 @receiver(post_save, sender=Task)
 def create_customer_from_task(sender, instance, created, **kwargs):
