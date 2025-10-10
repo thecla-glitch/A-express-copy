@@ -5,6 +5,7 @@ interface PaymentFilters {
     is_refunded?: boolean;
     date?: string;
     category?: string;
+    search?: string;
 }
 
 export const getPayments = async (filters: PaymentFilters = {}) => {
@@ -14,6 +15,7 @@ export const getPayments = async (filters: PaymentFilters = {}) => {
         if (filters.category && filters.category !== 'all') params.append('category', filters.category);
         if (filters.is_refunded) params.append('is_refunded', String(filters.is_refunded));
         if (filters.date) params.append('date', filters.date);
+        if (filters.search) params.append('search', filters.search);
 
         const response = await apiClient.get('/payments/', { params });
         return response.data;

@@ -15,6 +15,7 @@ import { usePaymentMethods } from "@/hooks/use-payment-methods"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover"
 import { Calendar } from "@/components/ui/core/calendar"
 import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/core/input";
 
 interface Payment {
   id: any;
@@ -39,12 +40,14 @@ export function PaymentsOverview() {
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [activeTab, setActiveTab] = useState("all")
   const [date, setDate] = useState<Date | undefined>(new Date())
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { data: payments, isLoading, isError } = usePayments({
     method: methodFilter,
     category: categoryFilter,
     is_refunded: activeTab === "refunded",
     date: date ? format(date, "yyyy-MM-dd") : undefined,
+    search: searchTerm,
   })
   const { data: revenueData, error: revenueError } = useSWR('/revenue-overview/', fetcher)
   const { data: paymentMethods } = usePaymentMethods()
@@ -146,6 +149,12 @@ export function PaymentsOverview() {
               </TabsList>
 
               <div className='flex items-center space-x-2'>
+                <Input
+                  placeholder="Search by description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-[200px]"
+                />
                 <Select value={methodFilter} onValueChange={setMethodFilter}>
                   <SelectTrigger className='w-[140px]'>
                     <SelectValue placeholder='Method' />
@@ -258,6 +267,7 @@ export function PaymentsOverview() {
                         <TableCell>{payment.description}</TableCell>
                         <TableCell>TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                         <TableCell>{payment.method_name}</TableCell>
+                        <TableCell>{payment.category_name}</TableCell>
                         <TableCell>{payment.date}</TableCell>
                         <TableCell className='text-right'>{getStatusBadge(payment.task_status)}</TableCell>
                       </TableRow>

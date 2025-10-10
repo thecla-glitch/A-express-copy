@@ -469,7 +469,7 @@ def add_task_payment(request, task_id):
     task = get_object_or_404(Task, title=task_id)
     serializer = PaymentSerializer(data=request.data)
     if serializer.is_valid():
-        payment = serializer.save(task=task, description=task.customer.name)
+        payment = serializer.save(task=task, description=f"{task.customer.name} - {task.title}")
         payment.task.update_payment_status()  # Trigger update
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
