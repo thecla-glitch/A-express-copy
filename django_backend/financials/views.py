@@ -10,8 +10,7 @@ from .serializers import (
     AccountSerializer, 
     CostBreakdownSerializer
 )
-from users.permissions import IsManager, IsAdminOrManagerOrFrontDeskOrAccountant
-from Eapp.models import Task, TaskActivity
+from users.permissions import IsManager, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
 
 class AccountViewSet(viewsets.ModelViewSet):
     """
@@ -37,7 +36,7 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
 class PaymentCategoryViewSet(viewsets.ModelViewSet):
     queryset = PaymentCategory.objects.all()
     serializer_class = PaymentCategorySerializer
-    permission_classes = [permissions.IsAuthenticated, IsManager]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrAccountant]
 
 
 class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
