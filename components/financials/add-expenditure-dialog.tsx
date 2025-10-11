@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from '@/hooks/use-toast';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover";
+import { CurrencyInput } from "@/components/ui/core/currency-input";
 
 interface AddExpenditureDialogProps {
   isOpen: boolean;
@@ -88,7 +89,19 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
           </div>
           <div className="grid gap-2">
             <Label htmlFor="amount">Amount</Label>
-            <Input id="amount" type="number" {...register('amount', { required: true, valueAsNumber: true })} />
+            <Controller
+              name="amount"
+              control={control}
+              rules={{ required: true, min: 1 }}
+              render={({ field }) => (
+                <CurrencyInput
+                  id="amount"
+                  placeholder="Enter amount"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                />
+              )}
+            />
             {errors.amount && <p className="text-red-500 text-xs">Amount is required.</p>}
           </div>
           <div className="grid gap-2">
@@ -107,7 +120,7 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
                       disabled={isRefundMode}
                     >
                       {field.value
-                        ? taskOptions.find((task) => task.value === field.value)?.label
+                        ? taskOptions.find((task: { label: string; value: string; }) => task.value === field.value)?.label
                         : "Select task..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -129,12 +142,12 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
                              <Check className={cn("mr-2 h-4 w-4", !field.value ? "opacity-100" : "opacity-0")} />
                             None
                           </CommandItem>
-                          {taskOptions.map((task) => (
+                          {taskOptions.map((task: { label: string; value: string; }) => (
                             <CommandItem
                               key={task.value}
                               value={task.label}
                               onSelect={(currentValue) => {
-                                const selectedTask = taskOptions.find(opt => opt.label.toLowerCase() === currentValue.toLowerCase());
+                                const selectedTask = taskOptions.find((opt: { label: string; value: string; }) => opt.label.toLowerCase() === currentValue.toLowerCase());
                                 if (selectedTask) {
                                   field.onChange(selectedTask.value === field.value ? 'null' : selectedTask.value);
                                 }
