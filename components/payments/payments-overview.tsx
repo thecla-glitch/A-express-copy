@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
+import { Calendar as CalendarIcon, Plus } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
 import { Button } from "@/components/ui/core/button"
 import { Badge } from "@/components/ui/core/badge"
@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/core/input";
 import { useAuth } from "@/lib/auth-context";
 import { PendingRefundsList } from "./pending-refunds-list";
+import { AddExpenditureDialog } from "../financials/add-expenditure-dialog";
+import { ExpenditureRequestsList } from "../financials/expenditure-requests-list";
 
 interface Payment {
   id: any;
@@ -43,6 +45,8 @@ export function PaymentsOverview() {
   const [activeTab, setActiveTab] = useState("task_payments")
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [searchTerm, setSearchTerm] = useState("");
+  const [isAddExpenditureOpen, setIsAddExpenditureOpen] = useState(false);
+
 
   const { data: payments, isLoading, isError } = usePayments({
     method: methodFilter,
@@ -92,6 +96,12 @@ export function PaymentsOverview() {
           <p className='text-muted-foreground'>Manage and track all payment transactions</p>
         </div>
         <div className="flex items-center space-x-2">
+          {isAccountant && (
+            <Button onClick={() => setIsAddExpenditureOpen(true)}>
+              <Plus className='mr-2 h-4 w-4' />
+              Add Expenditure
+            </Button>
+          )}
           <Button>
             <Download className='mr-2 h-4 w-4' />
             Export Report
@@ -156,6 +166,7 @@ export function PaymentsOverview() {
                 <TabsTrigger value='task_payments'>Task Payments</TabsTrigger>
                 <TabsTrigger value='expenditure'>Expenditure</TabsTrigger>
                 {(isManager || isAccountant) && <TabsTrigger value='pending'>Pending Refunds</TabsTrigger>}
+                {(isManager || isAccountant) && <TabsTrigger value='expenditure_requests'>Expenditure Requests</TabsTrigger>}
               </TabsList>
 
               <div className='flex items-center space-x-2'>
@@ -289,9 +300,13 @@ export function PaymentsOverview() {
             <TabsContent value='pending'>
               <PendingRefundsList />
             </TabsContent>
+            <TabsContent value='expenditure_requests'>
+              <ExpenditureRequestsList />
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+      <AddExpenditureDialog isOpen={isAddExpenditureOpen} onClose={() => setIsAddExpenditureOpen(false)} />
     </div>
   )
 }

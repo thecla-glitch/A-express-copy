@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import Payment, PaymentCategory, PaymentMethod, Account, CostBreakdown
+from .models import ExpenditureRequest, Payment, PaymentCategory, PaymentMethod, Account, CostBreakdown
 from users.serializers import UserSerializer
 
 class CostBreakdownSerializer(serializers.ModelSerializer):
@@ -48,3 +48,26 @@ class PaymentSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'amount': {'validators': [MinValueValidator(Decimal('0.00'))]},
         }
+
+class ExpenditureRequestSerializer(serializers.ModelSerializer):
+    requester = UserSerializer(read_only=True)
+    approver = UserSerializer(read_only=True)
+    task_title = serializers.CharField(source='task.title', read_only=True, allow_null=True)
+    category = PaymentCategorySerializer(read_only=True)
+    payment_method = PaymentMethodSerializer(read_only=True)
+
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=PaymentCategory.objects.all(), source='category', write_only=True
+    )
+    payment_method_id = serializers.PrimaryKeyRelatedField(
+        queryset=PaymentMethod.objects.all(), source='payment_method', write_only=True
+    )
+
+    class Meta:
+        model = ExpenditureRequest
+        fields = (
+            'id', 'description', 'amount', 'task', 'task_title', 'category', 'payment_method', 
+            'status', 'cost_type', 'requester', 'approver', 'created_at', 'updated_at',
+            'category_id', 'payment_method_id'
+        )
+        read_only_fields = ('status', 'requester', 'approver', 'created_at', 'updated_at')

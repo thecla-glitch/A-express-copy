@@ -95,3 +95,31 @@ class Account(models.Model):
 
     class Meta:
         ordering = ['name']
+
+
+class ExpenditureRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'Pending', _('Pending')
+        APPROVED = 'Approved', _('Approved')
+        REJECTED = 'Rejected', _('Rejected')
+
+    description = models.TextField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    task = models.ForeignKey('Eapp.Task', on_delete=models.SET_NULL, null=True, blank=True, related_name='expenditure_requests')
+    category = models.ForeignKey(PaymentCategory, on_delete=models.PROTECT)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    cost_type = models.CharField(max_length=20, choices=CostBreakdown.CostType.choices, default=CostBreakdown.CostType.INCLUSIVE)
+
+    requester = models.ForeignKey(User, on_delete=models.PROTECT, related_name='expenditure_requests_made')
+    approver = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenditure_requests_approved')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Expenditure request for {self.amount} by {self.requester.username}'
+
+    class Meta:
+        ordering = ['-created_at']

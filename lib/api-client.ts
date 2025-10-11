@@ -98,3 +98,9 @@ export const createPaymentCategory = (data: any) => apiClient.post('/payment-cat
 export const updatePaymentCategory = (categoryId: number, data: any) => apiClient.patch(`/payment-categories/${categoryId}/`, data);
 export const deletePaymentCategory = (categoryId: number) => apiClient.delete(`/payment-categories/${categoryId}/`);
 export const getPendingRefunds = () => apiClient.get('/cost-breakdowns/pending_refunds/');
+
+// Expenditure Requests
+export const getExpenditureRequests = (params: any = {}) => apiClient.get('/expenditure-requests/', { params });
+export const createExpenditureRequest = (data: any) => apiClient.post('/expenditure-requests/', data);
+export const approveExpenditureRequest = (id: number) => apiClient.post(`/expenditure-requests/${id}/approve/`);
+export const rejectExpenditureRequest = (id: number) => apiClient.post(`/expenditure-requests/${id}/reject/`);
