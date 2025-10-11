@@ -130,8 +130,9 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='login', permission_classes=[permissions.AllowAny])
-    def login_user(self, request):
+    def login(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']

@@ -11,10 +11,14 @@ router.register(r'users', views.UserViewSet, basename='user')
 list_router = DefaultRouter()
 list_router.register(r'list', views.UserListViewSet, basename='list')
 
+auth_router = DefaultRouter()
+auth_router.register(r'', views.AuthViewSet, basename='auth')
+
 urlpatterns = [
     # Authentication endpoints
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     path('', include(router.urls)),
     path('', include(list_router.urls)),
+    path('', include(auth_router.urls)),
 ]
