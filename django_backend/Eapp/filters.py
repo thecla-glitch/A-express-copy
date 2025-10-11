@@ -1,5 +1,6 @@
 import django_filters
-from .models import Task, Payment
+from .models import Task
+from financials.models import Payment
 from django.utils import timezone
 
 class TaskFilter(django_filters.FilterSet):

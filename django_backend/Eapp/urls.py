@@ -3,10 +3,6 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
-router.register(r'accounts', views.AccountViewSet, basename='account')
-router.register(r'payment-methods', views.PaymentMethodViewSet)
-router.register(r'payment-categories', views.PaymentCategoryViewSet, basename='payment-category')
-router.register(r'payments', views.PaymentViewSet, basename='payment')
 router.register(r'tasks', views.TaskViewSet, basename='task')
 
 urlpatterns = [
@@ -16,10 +12,6 @@ urlpatterns = [
     path('tasks/<path:task_id>/payments/', views.task_payments, name='task_payments'),
     path('tasks/<path:task_id>/add-payment/', views.add_task_payment, name='add_task_payment'),
     path('tasks/<path:task_id>/send-update/', views.send_customer_update, name='send_customer_update'),
-    path('tasks/<path:task_id>/cost-breakdowns/', views.CostBreakdownViewSet.as_view({'post': 'create'}), name='task-cost-breakdowns'),
-    path('tasks/<path:task_id>/cost-breakdowns/<int:pk>/', views.CostBreakdownViewSet.as_view({'delete': 'destroy'}), name='task-cost-breakdown-detail'),
-    path('cost-breakdowns/<int:pk>/approve/', views.CostBreakdownViewSet.as_view({'post': 'approve'}), name='cost-breakdown-approve'),
-    path('cost-breakdowns/<int:pk>/reject/', views.CostBreakdownViewSet.as_view({'post': 'reject'}), name='cost-breakdown-reject'),
 
     path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
     path('tasks/urgency-options/', views.get_task_urgency_options, name='get_task_urgency_options'),

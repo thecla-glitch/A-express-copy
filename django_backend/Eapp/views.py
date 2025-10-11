@@ -7,20 +7,34 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-
 from common.serializers import LocationSerializer
+from financials.serializers import PaymentSerializer
 from users.serializers import UserSerializer
-from .models import Task, TaskActivity, Payment, CostBreakdown, PaymentMethod, Account, PaymentCategory
+from .models import Task, TaskActivity
 from .serializers import (
-    TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
-    CostBreakdownSerializer, PaymentMethodSerializer, AccountSerializer,PaymentCategorySerializer
+    TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer
 )
+from financials.models import Payment, PaymentCategory
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from datetime import datetime
-from users.permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
+from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 from users.models import User
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def list_workshop_locations(request):
+    locations = Location.objects.filter(is_workshop=True)
+    serializer = LocationSerializer(locations, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def list_workshop_technicians(request):
+    technicians = User.objects.filter(is_workshop=True, is_active=True)
+    serializer = UserSerializer(technicians, many=True, context={'request': request})
+    return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -317,148 +331,6 @@ def send_customer_update(request, task_id):
         return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-class AccountViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows accounts to be viewed or edited by managers.
-    """
-    queryset = Account.objects.all()
-    serializer_class = AccountSerializer
-    permission_classes = [IsManager]
-
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_workshop_locations(request):
-    locations = Location.objects.filter(is_workshop=True)
-    serializer = LocationSerializer(locations, many=True)
-    return Response(serializer.data)
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_workshop_technicians(request):
-    technicians = User.objects.filter(is_workshop=True, is_active=True)
-    serializer = UserSerializer(technicians, many=True, context={'request': request})
-    return Response(serializer.data)
-
-class TaskActivityViewSet(viewsets.ModelViewSet):
-    queryset = TaskActivity.objects.all()
-    serializer_class = TaskActivitySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-class PaymentMethodViewSet(viewsets.ModelViewSet):
-    queryset = PaymentMethod.objects.filter(is_user_selectable=True)
-    serializer_class = PaymentMethodSerializer
-    permission_classes = [permissions.IsAuthenticated, IsManager]
-
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.IsAuthenticated()]
-        return super().get_permissions()
-
-class PaymentCategoryViewSet(viewsets.ModelViewSet):
-    queryset = PaymentCategory.objects.all()
-    serializer_class = PaymentCategorySerializer
-    permission_classes = [permissions.IsAuthenticated, IsManager]
-
-
-class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    API endpoint that allows payments to be viewed.
-    """
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = PaymentFilter
-
-
-class CostBreakdownViewSet(viewsets.ModelViewSet):
-    queryset = CostBreakdown.objects.all()
-    serializer_class = CostBreakdownSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_permissions(self):
-        if self.action in ['approve', 'reject']:
-            self.permission_classes = [IsManager]
-        elif self.action == 'create':
-            self.permission_classes = [IsAdminOrManagerOrFrontDeskOrAccountant]
-        else:
-            self.permission_classes = [permissions.IsAuthenticated]
-        return super().get_permissions()
-
-    def create(self, request, *args, **kwargs):
-        task_id = kwargs.get('task_id')
-        task = get_object_or_404(Task, title=task_id)
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        if request.user.role == 'Accountant':
-            serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.PENDING, payment_method=serializer.validated_data.get('payment_method'))
-        elif request.user.role == 'Manager':
-            cost_breakdown = serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.APPROVED, approved_by=request.user)
-            if cost_breakdown.cost_type == 'Subtractive':
-                tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
-                Payment.objects.create(
-                    task=task,
-                    amount=-cost_breakdown.amount,
-                    method=cost_breakdown.payment_method,
-                    description=cost_breakdown.description,
-                    category=tech_support_category
-                )
-                TaskActivity.objects.create(
-                    task=task,
-                    user=request.user,
-                    type=TaskActivity.ActivityType.NOTE,
-                    message=f"Refund of {cost_breakdown.amount} issued. Reason: {cost_breakdown.reason}"
-                )
-        else:
-            return Response({"error": "You do not have permission to create a refund request."}, status=status.HTTP_403_FORBIDDEN)
-
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    @action(detail=True, methods=['post'])
-    def approve(self, request, pk=None):
-        cost_breakdown = self.get_object()
-        cost_breakdown.status = CostBreakdown.RefundStatus.APPROVED
-        cost_breakdown.approved_by = request.user
-        cost_breakdown.save()
-
-        if cost_breakdown.cost_type == 'Subtractive':
-            payment_method = cost_breakdown.payment_method
-            if not payment_method:
-                payment_method, _ = PaymentMethod.objects.get_or_create(name='Refund')
-            
-            tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
-            Payment.objects.create(
-                task=cost_breakdown.task,
-                amount=-cost_breakdown.amount,
-                method=payment_method,
-                description=cost_breakdown.description,
-                category=tech_support_category
-            )
-            TaskActivity.objects.create(
-                task=cost_breakdown.task,
-                user=request.user,
-                type=TaskActivity.ActivityType.NOTE,
-                message=f"Refund of {cost_breakdown.amount} approved. Reason: {cost_breakdown.reason}"
-            )
-
-        return Response(self.get_serializer(cost_breakdown).data)
-
-    @action(detail=True, methods=['post'])
-    def reject(self, request, pk=None):
-        cost_breakdown = self.get_object()
-        cost_breakdown.status = CostBreakdown.RefundStatus.REJECTED
-        cost_breakdown.save()
-        return Response(self.get_serializer(cost_breakdown).data)
 
 
 from django.utils import timezone

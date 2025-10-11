@@ -3,28 +3,11 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from common.serializers import BrandSerializer, LocationSerializer
 from customers.serializers import CustomerSerializer, ReferrerSerializer, CustomerListSerializer
-from .models import PaymentCategory, Task, TaskActivity, Payment, CostBreakdown, PaymentMethod, Account
+from .models import Task, TaskActivity
 from django.utils import timezone
 from users.serializers import UserSerializer, UserListSerializer
 from users.models import User
-
-class CostBreakdownSerializer(serializers.ModelSerializer):
-    requested_by = UserSerializer(read_only=True)
-
-    class Meta:
-        model = CostBreakdown
-        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'status', 'requested_by', 'payment_method']
-        extra_kwargs = {
-            'payment_method': {'write_only': True}
-        }
-
-class AccountSerializer(serializers.ModelSerializer):
-    created_by = UserSerializer(read_only=True)
-
-    class Meta:
-        model = Account
-        fields = ['id', 'name', 'balance', 'created_by', 'created_at']
-        read_only_fields = ('id', 'created_by', 'created_at')
+from financials.serializers import CostBreakdownSerializer, PaymentSerializer
 
 class TaskActivitySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -32,34 +15,6 @@ class TaskActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskActivity
         fields = ('id', 'user', 'timestamp', 'type', 'message')
-
-
-class PaymentMethodSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PaymentMethod
-        fields = '__all__'
-
-
-class PaymentCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PaymentCategory
-        fields = '__all__'
-
-
-class PaymentSerializer(serializers.ModelSerializer):
-    method_name = serializers.CharField(source='method.name', read_only=True)
-    task_title = serializers.CharField(source='task.title', read_only=True)
-    task_status = serializers.CharField(source='task.status', read_only=True)
-    category_name = serializers.CharField(source='category.name', read_only=True, allow_null=True)
-
-    class Meta:
-        model = Payment
-        fields = ('id', 'task', 'task_title', 'task_status', 'amount', 'date', 'method', 'method_name', 'description', 'category', 'category_name')
-        read_only_fields = ('task',)
-        extra_kwargs = {
-            'amount': {'validators': [MinValueValidator(Decimal('0.00'))]},
-        }
-
 
 class TaskListSerializer(serializers.ModelSerializer):
     customer_details = CustomerListSerializer(source='customer', read_only=True)
