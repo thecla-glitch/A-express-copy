@@ -22,13 +22,6 @@ from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 from users.models import User
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_workshop_locations(request):
-    locations = Location.objects.filter(is_workshop=True)
-    serializer = LocationSerializer(locations, many=True)
-    return Response(serializer.data)
-
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

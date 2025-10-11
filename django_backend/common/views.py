@@ -2,7 +2,11 @@ from rest_framework import permissions, viewsets
 from .models import Brand, Location
 from .serializers import BrandSerializer, LocationSerializer
 from users.permissions import IsManager
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
 
+
+from rest_framework.decorators import action
 
 class LocationViewSet(viewsets.ModelViewSet):
     """
@@ -11,6 +15,12 @@ class LocationViewSet(viewsets.ModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def workshops(self, request):
+        locations = self.get_queryset().filter(is_workshop=True)
+        serializer = self.get_serializer(locations, many=True)
+        return Response(serializer.data)
 
 class BrandViewSet(viewsets.ModelViewSet):
     """

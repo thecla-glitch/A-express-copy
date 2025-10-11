@@ -19,7 +19,7 @@ urlpatterns = [
     
     # Technician endpoints
     
-    path('workshop-locations/', views.list_workshop_locations, name='list_workshop_locations'),
+    
     
 
     # Revenue overview endpoint
