@@ -125,6 +125,20 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
   const handleAddPayment = async () => {
     if (!newPaymentAmount || !newPaymentMethod || !taskData) return
+
+    const totalCost = parseFloat(taskData.total_cost || '0');
+    const paidAmount = taskData.payments.reduce((acc: any, p: any) => acc + parseFloat(p.amount), 0);
+    const remainingAmount = totalCost - paidAmount;
+    
+    if (parseFloat(newPaymentAmount.toString()) > remainingAmount) {
+      toast({
+        title: "Payment Exceeds Total Cost",
+        description: "The payment amount cannot be more than the remaining amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     addTaskPaymentMutation.mutate({ amount: newPaymentAmount, method: parseInt(newPaymentMethod, 10), date: new Date().toISOString().split('T')[0] });
     setNewPaymentAmount("")
     setNewPaymentMethod("")

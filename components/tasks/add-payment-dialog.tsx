@@ -19,12 +19,14 @@ import {
   SelectValue,
 } from '@/components/ui/core/select';
 import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 interface AddPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (amount: number, methodId: number) => void;
   taskTitle: string;
+  outstandingBalance: number;
 }
 
 export default function AddPaymentDialog({
@@ -32,6 +34,7 @@ export default function AddPaymentDialog({
   onClose,
   onSubmit,
   taskTitle,
+  outstandingBalance,
 }: AddPaymentDialogProps) {
   const [amount, setAmount] = useState(0);
   const [paymentMethodId, setPaymentMethodId] = useState<string | undefined>(undefined);
@@ -44,6 +47,14 @@ export default function AddPaymentDialog({
   }, [paymentMethods, paymentMethodId]);
 
   const handleSubmit = () => {
+    if (amount > outstandingBalance) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Amount',
+        description: 'Payment amount cannot be greater than the outstanding balance.',
+      });
+      return;
+    }
     if (paymentMethodId) {
       onSubmit(amount, parseInt(paymentMethodId, 10));
     }

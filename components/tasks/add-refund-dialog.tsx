@@ -40,8 +40,8 @@ export function AddRefundDialog({ taskId, open, onOpenChange, taskTitle }: AddRe
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       toast({
-        title: 'Refund Added',
-        description: 'The refund has been successfully added to the task.',
+        title: 'Refund Request Sent',
+        description: 'Your refund request has been successfully sent for approval.',
       });
       onOpenChange(false);
       setAmount('');
