@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, ChevronsUpDown } from "lucide-react"
+
+import { cn } from "@/lib/utils"
 import { createExpenditureRequest, getTasks, getPaymentCategories, getPaymentMethods } from '@/lib/api-client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/feedback/dialog";
 import { Button } from "@/components/ui/core/button";
@@ -11,7 +14,8 @@ import { Textarea } from "@/components/ui/core/textarea";
 import { Label } from "@/components/ui/core/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select";
 import { useToast } from '@/hooks/use-toast';
-import { SimpleCombobox } from '@/components/ui/core/combobox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/popover";
 
 interface AddExpenditureDialogProps {
   isOpen: boolean;
@@ -26,16 +30,13 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
   const { toast } = useToast();
   const { register, handleSubmit, control, watch, formState: { errors }, setValue, reset } = useForm();
 
-  const [taskSearch, setTaskSearch] = useState('');
+  const [openTaskCombobox, setOpenTaskCombobox] = useState(false)
 
   const { data: tasksData } = useQuery({ queryKey: ['tasks'], queryFn: () => getTasks({ limit: 1000 }) });
   const { data: categories } = useQuery({ queryKey: ['paymentCategories'], queryFn: getPaymentCategories });
   const { data: methods } = useQuery({ queryKey: ['paymentMethods'], queryFn: getPaymentMethods });
 
-  const taskOptions = tasksData?.data.results.map((task: any) => ({ label: task.title, value: task.id })) || [];
-  const filteredTaskOptions = taskSearch
-    ? taskOptions.filter(option => option.label.toLowerCase().includes(taskSearch.toLowerCase()))
-    : taskOptions;
+  const taskOptions = tasksData?.data.results.map((task: any) => ({ label: task.title, value: String(task.id) })) || [];
 
   useEffect(() => {
     if (isOpen) {
@@ -46,7 +47,6 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
       }
     } else {
       reset();
-      setTaskSearch('');
     }
   }, [isOpen, mode, taskId, taskTitle, setValue, reset]);
 
@@ -97,14 +97,64 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
               name="task"
               control={control}
               render={({ field }) => (
-                <SimpleCombobox
-                  options={filteredTaskOptions}
-                  value={field.value}
-                  onChange={field.onChange}
-                  onInputChange={setTaskSearch}
-                  placeholder="Search for a task..."
-                  disabled={isRefundMode}
-                />
+                <Popover open={openTaskCombobox} onOpenChange={setOpenTaskCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openTaskCombobox}
+                      className="w-full justify-between"
+                      disabled={isRefundMode}
+                    >
+                      {field.value
+                        ? taskOptions.find((task) => task.value === field.value)?.label
+                        : "Select task..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search tasks..." />
+                      <CommandList>
+                        <CommandEmpty>No task found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            key="null-task"
+                            value="null"
+                            onSelect={() => {
+                              field.onChange('null');
+                              setOpenTaskCombobox(false);
+                            }}
+                          >
+                             <Check className={cn("mr-2 h-4 w-4", !field.value ? "opacity-100" : "opacity-0")} />
+                            None
+                          </CommandItem>
+                          {taskOptions.map((task) => (
+                            <CommandItem
+                              key={task.value}
+                              value={task.label}
+                              onSelect={(currentValue) => {
+                                const selectedTask = taskOptions.find(opt => opt.label.toLowerCase() === currentValue.toLowerCase());
+                                if (selectedTask) {
+                                  field.onChange(selectedTask.value === field.value ? 'null' : selectedTask.value);
+                                }
+                                setOpenTaskCombobox(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value === task.value ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {task.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               )}
             />
           </div>
@@ -141,14 +191,14 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
               name="category_id"
               control={control}
               rules={{ required: true }}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category..." />
                   </SelectTrigger>
                   <SelectContent>
                     {categories?.data.map((category: any) => (
-                      <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                      <SelectItem key={category.id} value={String(category.id)}>{category.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -162,14 +212,14 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
               name="payment_method_id"
               control={control}
               rules={{ required: true }}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a method..." />
                   </SelectTrigger>
                   <SelectContent>
                     {methods?.data.map((method: any) => (
-                      <SelectItem key={method.id} value={method.id}>{method.name}</SelectItem>
+                      <SelectItem key={method.id} value={String(method.id)}>{method.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
