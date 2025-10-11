@@ -16,6 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/layout/
 import { Calendar } from "@/components/ui/core/calendar"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/core/input";
+import { useAuth } from "@/lib/auth-context";
+import { PendingRefundsList } from "./pending-refunds-list";
 
 interface Payment {
   id: any;
@@ -38,20 +40,25 @@ const fetcher = (url: string) => apiClient.get(url).then(res => res.data)
 export function PaymentsOverview() {
   const [methodFilter, setMethodFilter] = useState("all")
   const [categoryFilter, setCategoryFilter] = useState("all")
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState("task_payments")
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: payments, isLoading, isError } = usePayments({
     method: methodFilter,
     category: categoryFilter,
-    is_refunded: activeTab === "refunded",
+    is_refunded: activeTab === "expenditure",
+    task_payments: activeTab === "task_payments",
     date: date ? format(date, "yyyy-MM-dd") : undefined,
     search: searchTerm,
   })
   const { data: revenueData, error: revenueError } = useSWR('/revenue-overview/', fetcher)
   const { data: paymentMethods } = usePaymentMethods()
   const { data: paymentCategories } = useSWR('/payment-categories/', fetcher)
+  const { user } = useAuth();
+
+  const isManager = user?.role === 'Manager';
+  const isAccountant = user?.role === 'Accountant';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -141,11 +148,12 @@ export function PaymentsOverview() {
           <CardDescription>View and manage all payment transactions</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue='all' onValueChange={setActiveTab} className='space-y-4'>
+          <Tabs defaultValue='task_payments' onValueChange={setActiveTab} className='space-y-4'>
             <div className='flex items-center justify-between'>
               <TabsList>
-                <TabsTrigger value='all'>All Payments</TabsTrigger>
-                <TabsTrigger value='refunded'>Refunded</TabsTrigger>
+                <TabsTrigger value='task_payments'>Task Payments</TabsTrigger>
+                <TabsTrigger value='expenditure'>Expenditure</TabsTrigger>
+                {(isManager || isAccountant) && <TabsTrigger value='pending'>Pending Refunds</TabsTrigger>}
               </TabsList>
 
               <div className='flex items-center space-x-2'>
@@ -208,7 +216,7 @@ export function PaymentsOverview() {
               </div>
             </div>
 
-            <TabsContent value='all' className='space-y-4'>
+            <TabsContent value='task_payments' className='space-y-4'>
               <div className='rounded-md border'>
                 <Table>
                   <TableHeader>
@@ -242,7 +250,7 @@ export function PaymentsOverview() {
                 </Table>
               </div>
             </TabsContent>
-            <TabsContent value='refunded' className='space-y-4'>
+            <TabsContent value='expenditure' className='space-y-4'>
               <div className='rounded-md border'>
                 <Table>
                   <TableHeader>
@@ -275,6 +283,9 @@ export function PaymentsOverview() {
                   </TableBody>
                 </Table>
               </div>
+            </TabsContent>
+            <TabsContent value='pending'>
+              <PendingRefundsList />
             </TabsContent>
           </Tabs>
         </CardContent>

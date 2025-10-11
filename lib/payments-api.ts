@@ -6,6 +6,7 @@ interface PaymentFilters {
     date?: string;
     category?: string;
     search?: string;
+    task_payments?: boolean;
 }
 
 export const getPayments = async (filters: PaymentFilters = {}) => {
@@ -16,6 +17,7 @@ export const getPayments = async (filters: PaymentFilters = {}) => {
         if (filters.is_refunded) params.append('is_refunded', String(filters.is_refunded));
         if (filters.date) params.append('date', filters.date);
         if (filters.search) params.append('search', filters.search);
+        if (filters.task_payments) params.append('task_payments', String(filters.task_payments));
 
         const response = await apiClient.get('/payments/', { params });
         return response.data;

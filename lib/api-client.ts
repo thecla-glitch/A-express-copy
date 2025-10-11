@@ -97,3 +97,4 @@ export const getPaymentCategories = () => apiClient.get('/payment-categories/');
 export const createPaymentCategory = (data: any) => apiClient.post('/payment-categories/', data);
 export const updatePaymentCategory = (categoryId: number, data: any) => apiClient.patch(`/payment-categories/${categoryId}/`, data);
 export const deletePaymentCategory = (categoryId: number) => apiClient.delete(`/payment-categories/${categoryId}/`);
+export const getPendingRefunds = () => apiClient.get('/cost-breakdowns/pending_refunds/');

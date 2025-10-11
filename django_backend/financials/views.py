@@ -10,6 +10,7 @@ from .serializers import (
     AccountSerializer, 
     CostBreakdownSerializer
 )
+from Eapp.models import Task
 from users.permissions import IsManager, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
 
 class AccountViewSet(viewsets.ModelViewSet):
@@ -43,15 +44,34 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows payments to be viewed.
     """
-    queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]
+
+    def get_queryset(self):
+        queryset = Payment.objects.all()
+        task_payments = self.request.query_params.get('task_payments')
+        is_refunded = self.request.query_params.get('is_refunded')
+
+        if task_payments:
+            queryset = queryset.filter(task__isnull=False)
+        
+        if is_refunded:
+            queryset = queryset.filter(amount__lt=0)
+
+        return queryset
 
 
 class CostBreakdownViewSet(viewsets.ModelViewSet):
     queryset = CostBreakdown.objects.all()
     serializer_class = CostBreakdownSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = CostBreakdown.objects.all()
+        task_id = self.kwargs.get('task_id')
+        if task_id:
+            queryset = queryset.filter(task__title=task_id)
+        return queryset
 
     def get_permissions(self):
         if self.action in ['approve', 'reject']:
@@ -128,3 +148,9 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
         cost_breakdown.status = CostBreakdown.RefundStatus.REJECTED
         cost_breakdown.save()
         return Response(self.get_serializer(cost_breakdown).data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminOrManagerOrAccountant])
+    def pending_refunds(self, request):
+        pending_refunds = CostBreakdown.objects.filter(status=CostBreakdown.RefundStatus.PENDING)
+        serializer = self.get_serializer(pending_refunds, many=True)
+        return Response(serializer.data)

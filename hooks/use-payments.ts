@@ -9,6 +9,7 @@ interface PaymentFilters {
     date?: string;
     category?: string;
     search?: string;
+    task_payments?: boolean;
 }
 
 export function usePayments(filters: PaymentFilters = {}) {
