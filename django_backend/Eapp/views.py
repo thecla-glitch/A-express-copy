@@ -29,12 +29,6 @@ def list_workshop_locations(request):
     serializer = LocationSerializer(locations, many=True)
     return Response(serializer.data)
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_workshop_technicians(request):
-    technicians = User.objects.filter(is_workshop=True, is_active=True)
-    serializer = UserSerializer(technicians, many=True, context={'request': request})
-    return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -286,15 +280,6 @@ def add_task_payment(request, task_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_technicians(request):
-    """
-    Get all users with Technician role
-    """
-    technicians = User.objects.filter(role='Technician', is_active=True)
-    serializer = UserSerializer(technicians, many=True, context={'request': request})
-    return Response(serializer.data)
 
 
 @api_view(['POST'])
