@@ -12,15 +12,8 @@ urlpatterns = [
     path('tasks/<path:task_id>/payments/', views.task_payments, name='task_payments'),
     path('tasks/<path:task_id>/add-payment/', views.add_task_payment, name='add_task_payment'),
     path('tasks/<path:task_id>/send-update/', views.send_customer_update, name='send_customer_update'),
-
     path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
     path('tasks/urgency-options/', views.get_task_urgency_options, name='get_task_urgency_options'),
-
-    
-    # Technician endpoints
-    
-    
-    
 
     # Revenue overview endpoint
     path('revenue-overview/', views.revenue_overview, name='revenue_overview'),

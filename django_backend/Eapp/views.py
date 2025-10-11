@@ -1,15 +1,13 @@
 from common.models import Location
 from customers.serializers import CustomerSerializer
-from rest_framework import status, permissions, viewsets, generics
+from rest_framework import status, permissions, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from common.serializers import LocationSerializer
 from financials.serializers import PaymentSerializer
-from users.serializers import UserSerializer
 from .models import Task, TaskActivity
 from .serializers import (
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer
@@ -17,7 +15,6 @@ from .serializers import (
 from financials.models import Payment, PaymentCategory
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from datetime import datetime
 from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 from users.models import User
@@ -271,8 +268,6 @@ def add_task_payment(request, task_id):
         payment.task.update_payment_status()  # Trigger update
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 @api_view(['POST'])
