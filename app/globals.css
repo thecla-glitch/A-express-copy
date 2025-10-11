@@ -1,8 +1,10 @@
+@import "../styles/timeline.css";
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import "../styles/timeline.css";
 
 @layer base {
   :root {
