@@ -8,23 +8,13 @@ from rest_framework_simplejwt.views import (
 router = DefaultRouter()
 router.register(r'users', views.UserViewSet, basename='user')
 
+list_router = DefaultRouter()
+list_router.register(r'list', views.UserListViewSet, basename='list')
+
 urlpatterns = [
     # Authentication endpoints
-    path('login/', views.login_user, name='login'),
-    path('logout/', views.logout, name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
-    # User management endpoints
-    path('profile/', views.get_user_profile, name='profile'),
-    path('profile/update/', views.update_profile, name='update_profile'),
-    path('profile/upload-picture/', views.upload_profile_picture, name='upload_profile_picture'),
-    path('profile/change-password/', views.change_password, name='change_password'),
-    
-    path('users/role/<str:role>/', views.list_users_by_role, name='list_users_by_role'),
-    
-    
-    path('technicians/', views.list_technicians, name='list_technicians'),
-    path('workshop-technicians/', views.list_workshop_technicians, name='list_workshop_technicians'),
-
     path('', include(router.urls)),
+    path('', include(list_router.urls)),
 ]

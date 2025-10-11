@@ -1,5 +1,5 @@
 from rest_framework import status, permissions, viewsets
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
@@ -11,7 +11,7 @@ from .serializers import (
     ChangePasswordSerializer, 
     UserProfileUpdateSerializer
 )
-from .permissions import IsAdminOrManager, IsAdminOrManagerOrFrontDeskOrAccountant
+from .permissions import IsAdminOrManager
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -80,130 +80,95 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save()
         return Response({"message": "User activated successfully."}, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'], url_path='profile')
+    def get_user_profile(self, request):
+        serializer = UserSerializer(request.user, context={'request': request})
+        return Response(serializer.data)
 
-@api_view(['POST'])
-@permission_classes([permissions.AllowAny])
-def login_user(request):
-    serializer = LoginSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.validated_data['user']
-        user.last_login = timezone.now()
-        user.save(update_fields=['last_login'])
+    @action(detail=False, methods=['put', 'patch'], url_path='profile/update')
+    def update_profile(self, request):
+        user = request.user
+        serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(UserSerializer(user, context={'request': request}).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], url_path='profile/change-password')
+    def change_password(self, request):
+        user = request.user
+        serializer = ChangePasswordSerializer(data=request.data)
         
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'user': UserSerializer(user).data,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        })
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def get_user_profile(request):
-    serializer = UserSerializer(request.user, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def logout(request):
-    try:
-        refresh_token = request.data.get('refresh_token')
-        if refresh_token:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-        return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-
-@api_view(['PUT', 'PATCH'])
-@permission_classes([permissions.IsAuthenticated])
-def update_profile(request):
-    user = request.user
-    serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True, context={'request': request})
-    if serializer.is_valid():
-        serializer.save()
-        return Response(UserSerializer(user, context={'request': request}).data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def upload_profile_picture(request):
-    user = request.user
-    if 'profile_picture' not in request.FILES:
-        return Response({"error": "No profile picture provided"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    serializer = UserProfileUpdateSerializer(
-        user, 
-        data=request.data, 
-        partial=True, 
-        context={'request': request}
-    )
-    
-    if serializer.is_valid():
-        serializer.save()
-        user_serializer = UserSerializer(user, context={'request': request})
-        return Response(user_serializer.data)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-@api_view(['GET'])
-@permission_classes([IsAdminOrManagerOrFrontDeskOrAccountant])
-def list_users_by_role(request, role):
-    valid_roles = [choice[0] for choice in User.Role.choices]
-    if role not in valid_roles:
-        return Response(
-            {"error": f"Invalid role. Valid roles are: {', '.join(valid_roles)}"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    users = User.objects.filter(role=role)
-    serializer = UserSerializer(users, many=True, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def change_password(request):
-    user = request.user
-    serializer = ChangePasswordSerializer(data=request.data)
-    
-    if serializer.is_valid():
-        if not user.check_password(serializer.validated_data['current_password']):
+        if serializer.is_valid():
+            if not user.check_password(serializer.validated_data['current_password']):
+                return Response(
+                    {"error": "Current password is incorrect."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            
             return Response(
-                {"error": "Current password is incorrect."},
+                {"message": "Password updated successfully."},
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    @action(detail=False, methods=['get'], url_path='by_role/(?P<role>[^/.]+)')
+    def list_users_by_role(self, request, role=None):
+        valid_roles = [choice[0] for choice in User.Role.choices]
+        if role not in valid_roles:
+            return Response(
+                {"error": f"Invalid role. Valid roles are: {', '.join(valid_roles)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        user.set_password(serializer.validated_data['new_password'])
-        user.save()
-        
-        return Response(
-            {"message": "Password updated successfully."},
-            status=status.HTTP_200_OK
-        )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        users = User.objects.filter(role=role)
+        serializer = UserSerializer(users, many=True, context={'request': request})
+        return Response(serializer.data)
 
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_technicians(request):
-    """
-    Get all users with Technician role
-    """
-    technicians = User.objects.filter(role='Technician', is_active=True)
-    serializer = UserSerializer(technicians, many=True, context={'request': request})
-    return Response(serializer.data)
+    @action(detail=False, methods=['post'], url_path='login', permission_classes=[permissions.AllowAny])
+    def login_user(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
+            
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'user': UserSerializer(user).data,
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_workshop_technicians(request):
-    technicians = User.objects.filter(is_workshop=True, is_active=True)
-    serializer = UserSerializer(technicians, many=True, context={'request': request})
-    return Response(serializer.data)
+    @action(detail=False, methods=['post'], url_path='logout')
+    def logout(self, request):
+        try:
+            refresh_token = request.data.get('refresh_token')
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserListViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'], url_path='technicians')
+    def list_technicians(self, request):
+        technicians = User.objects.filter(role='Technician', is_active=True)
+        serializer = UserSerializer(technicians, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='workshop-technicians')
+    def list_workshop_technicians(self, request):
+        technicians = User.objects.filter(is_workshop=True, is_active=True)
+        serializer = UserSerializer(technicians, many=True, context={'request': request})
+        return Response(serializer.data)
