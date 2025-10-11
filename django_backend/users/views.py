@@ -116,7 +116,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-    @action(detail=False, methods=['get'], url_path='by_role/(?P<role>[^/.]+)')
+    @action(detail=False, methods=['get'], url_path='role/(?P<role>[^/.]+)')
     def list_users_by_role(self, request, role=None):
         valid_roles = [choice[0] for choice in User.Role.choices]
         if role not in valid_roles:

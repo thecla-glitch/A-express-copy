@@ -63,6 +63,8 @@ from .filters import TaskFilter, PaymentFilter
 from .pagination import StandardResultsSetPagination
 
 
+from customers.models import Customer
+
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.select_related(
         'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician', 'customer'
@@ -95,11 +97,35 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         data = request.data.copy()
         data['title'] = generate_task_id()
+
+        # Customer creation logic
+        customer_name = data.pop('customer_name', None)
+        customer_phone = data.pop('customer_phone', None)
+        customer_email = data.pop('customer_email', None)
+        customer_type = data.pop('customer_type', 'Normal')
+        
+        customer_created = False
+        if customer_phone:
+            customer, created = Customer.objects.get_or_create(
+                phone=customer_phone,
+                defaults={
+                    'name': customer_name,
+                    'email': customer_email,
+                    'customer_type': customer_type,
+                }
+            )
+            data['customer'] = customer.id
+            customer_created = created
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(created_by=request.user)
+        
+        response_data = serializer.data
+        response_data['customer_created'] = customer_created
+        
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)

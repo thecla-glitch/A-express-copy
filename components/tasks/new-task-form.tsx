@@ -170,28 +170,19 @@ export function NewTaskForm({}: NewTaskFormProps) {
 
     setIsSubmitting(true)
     try {
-      let customerId = formData.customer_id;
-      if (!customerId) {
-        const response = await createCustomer({
-          name: formData.customer_name,
-          phone: formData.customer_phone,
-          email: formData.customer_email,
-          customer_type: formData.customer_type,
-        });
-        customerId = response.data.id;
+      const taskData = {
+        ...formData,
+        customer: formData.customer_id,
+        negotiated_by: formData.negotiated_by || null,
+        referred_by: formData.is_referred ? formData.referred_by : null,
+      };
+      const response = await createTask(taskData)
+      if (response.data.customer_created) {
         toast({
           title: 'Customer Created',
           description: `Customer ${formData.customer_name} has been added to the database.`,
         });
       }
-
-      const taskData = {
-        ...formData,
-        customer: customerId,
-        negotiated_by: formData.negotiated_by || null,
-        referred_by: formData.is_referred ? formData.referred_by : null,
-      };
-      await createTask(taskData)
       setSubmitSuccess(true)
     } catch (error: any) {
       if (error.response) {
