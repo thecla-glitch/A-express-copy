@@ -91,10 +91,12 @@ export function PaymentsOverview() {
           <h1 className='text-3xl font-bold tracking-tight'>Payments</h1>
           <p className='text-muted-foreground'>Manage and track all payment transactions</p>
         </div>
-        <Button>
-          <Download className='mr-2 h-4 w-4' />
-          Export Report
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button>
+            <Download className='mr-2 h-4 w-4' />
+            Export Report
+          </Button>
+        </div>
       </div>
 
       {/* Payment Statistics */}

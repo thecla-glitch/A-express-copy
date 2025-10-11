@@ -20,6 +20,11 @@ import {
   Activity,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/feedback/dialog";
+import ManagePaymentMethodsDialog from "../tasks/manage-payment-methods-dialog";
+import ManagePaymentCategoriesDialog from "../payments/manage-payment-categories-dialog";
+import { Plus } from "lucide-react";
+import { useState } from "react";
 
 interface SettingCard {
   id: string
@@ -136,6 +141,8 @@ const settingsCategories: SettingCard[] = [
 
 export function SettingsOverview() {
   const { user } = useAuth()
+  const [isManagePaymentMethodsDialogOpen, setIsManagePaymentMethodsDialogOpen] = useState(false);
+  const [isManagePaymentCategoriesDialogOpen, setIsManagePaymentCategoriesDialogOpen] = useState(false);
 
   const isAdmin = user?.role === "Administrator"
   const isManager = user?.role === "Manager"
@@ -256,6 +263,38 @@ export function SettingsOverview() {
                   <Users className="h-4 w-4 mr-2" />
                   Manage Users
                 </Button>
+              )}
+              {(isAdmin || isManager) && (
+                <>
+                  <Dialog open={isManagePaymentMethodsDialogOpen} onOpenChange={setIsManagePaymentMethodsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Payment Methods
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Manage Payment Methods</DialogTitle>
+                      </DialogHeader>
+                      <ManagePaymentMethodsDialog onClose={() => setIsManagePaymentMethodsDialogOpen(false)} />
+                    </DialogContent>
+                  </Dialog>
+                  <Dialog open={isManagePaymentCategoriesDialogOpen} onOpenChange={setIsManagePaymentCategoriesDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Payment Categories
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Manage Payment Categories</DialogTitle>
+                      </DialogHeader>
+                      <ManagePaymentCategoriesDialog onClose={() => setIsManagePaymentCategoriesDialogOpen(false)} />
+                    </DialogContent>
+                  </Dialog>
+                </>
               )}
             </div>
           </div>
