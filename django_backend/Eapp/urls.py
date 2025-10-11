@@ -1,34 +1,15 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-)
 
 router = DefaultRouter()
 router.register(r'accounts', views.AccountViewSet, basename='account')
 router.register(r'payment-methods', views.PaymentMethodViewSet)
 router.register(r'payment-categories', views.PaymentCategoryViewSet, basename='payment-category')
 router.register(r'payments', views.PaymentViewSet, basename='payment')
-router.register(r'users', views.UserViewSet, basename='user')
 router.register(r'tasks', views.TaskViewSet, basename='task')
 
 urlpatterns = [
-    # Authentication endpoints
-    path('login/', views.login_user, name='login'),
-    path('logout/', views.logout, name='logout'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    
-    # User management endpoints
-    path('profile/', views.get_user_profile, name='profile'),
-    path('profile/update/', views.update_profile, name='update_profile'),
-    path('profile/upload-picture/', views.upload_profile_picture, name='upload_profile_picture'),
-    path('profile/change-password/', views.change_password, name='change_password'),
-    
-    path('users/role/<str:role>/', views.list_users_by_role, name='list_users_by_role'),
-
-
-    
     # Task management endpoints
     path('tasks/<path:task_id>/activities/', views.task_activities, name='task_activities'),
     path('tasks/<path:task_id>/add-activity/', views.add_task_activity, name='add_task_activity'),

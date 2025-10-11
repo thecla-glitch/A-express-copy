@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
      'corsheaders',  
     'Eapp',
+    'users',
     'common',
     'customers',
     'rest_framework',
@@ -101,7 +102,7 @@ DATABASES = {
 }
 
 
-AUTH_USER_MODEL = 'Eapp.User'
+AUTH_USER_MODEL = 'users.User'
 
 # REST Framework settings
 REST_FRAMEWORK = {
