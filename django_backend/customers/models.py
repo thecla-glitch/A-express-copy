@@ -22,7 +22,6 @@ class Customer(models.Model):
 
     class Meta:
         ordering = ['name']
-        db_table = 'Eapp_customer'
 
 
 class Referrer(models.Model):
@@ -35,4 +34,4 @@ class Referrer(models.Model):
 
     class Meta:
         ordering = ['name']
-        db_table = 'Eapp_referrer'
+        

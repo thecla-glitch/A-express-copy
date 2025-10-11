@@ -8,7 +8,7 @@ class Brand(models.Model):
 
     class Meta:
         ordering = ['name']
-        db_table = 'Eapp_brand'
+
 
 
 class Location(models.Model):
@@ -20,4 +20,3 @@ class Location(models.Model):
 
     class Meta:
         ordering = ['name']
-        db_table = 'Eapp_location'

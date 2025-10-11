@@ -6,9 +6,9 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod, Account, PaymentCategory
+from .models import User, Brand, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod, Account, PaymentCategory
 from .serializers import (
-    UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, 
+    UserSerializer, BrandSerializer, 
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
     LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer, AccountSerializer,
     UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer,PaymentCategorySerializer
@@ -19,44 +19,6 @@ from datetime import datetime
 from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def customer_search(request):
-    query = request.query_params.get('query', '')
-    customers = Customer.objects.filter(name__icontains=query)
-    serializer = CustomerSerializer(customers, many=True)
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def customer_create(request):
-    """
-    Create a new customer or retrieve an existing one.
-    """
-    phone = request.data.get('phone')
-    email = request.data.get('email')
-
-    if phone:
-        customer = Customer.objects.filter(phone=phone).first()
-        if customer:
-            serializer = CustomerSerializer(customer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-    if email:
-        customer = Customer.objects.filter(email=email).first()
-        if customer:
-            serializer = CustomerSerializer(customer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-    serializer = CustomerSerializer(data=request.data)
-    if serializer.is_valid():
-        customer = serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -522,30 +484,10 @@ def send_customer_update(request, task_id):
     except Exception as e:
         return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class CustomerSearchView(generics.ListAPIView):
-    serializer_class = CustomerSerializer
-
-    def get_queryset(self):
-        query = self.request.query_params.get('query', '')
-        if query:
-            return Customer.objects.filter(
-                Q(name__icontains=query) |
-                Q(phone__icontains=query)
-            ).order_by('name')
-        return Customer.objects.none()
 
 
-class ReferrerSearchView(generics.ListAPIView):
-    serializer_class = ReferrerSerializer
 
-    def get_queryset(self):
-        query = self.request.query_params.get('query', '')
-        if query:
-            return Referrer.objects.filter(
-                Q(name__icontains=query) |
-                Q(phone__icontains=query)
-            ).order_by('name')
-        return Referrer.objects.none()
+
 
 
 class LocationViewSet(viewsets.ModelViewSet):

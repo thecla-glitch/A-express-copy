@@ -2,7 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import PaymentCategory, User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod, Account
+from customers.serializers import CustomerSerializer, ReferrerSerializer, CustomerListSerializer
+from .models import PaymentCategory, User, Task, TaskActivity, Payment, Location, Brand, CostBreakdown, PaymentMethod, Account
 from django.utils import timezone
 
 
@@ -49,22 +50,7 @@ class AccountSerializer(serializers.ModelSerializer):
 
 
 
-class CustomerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Customer
-        fields = ['id', 'name', 'email', 'phone', 'address', 'customer_type']
 
-
-class ReferrerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Referrer
-        fields = ['id', 'name', 'phone']
-
-
-class CustomerListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Customer
-        fields = ['name', 'phone']
 
 class UserListSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
