@@ -76,8 +76,7 @@ export const getCostBreakdowns = (taskId: any) => apiClient.get(`/tasks/${taskId
 export const createCostBreakdown = (taskId: string, costBreakdownData: any) => apiClient.post(`/tasks/${taskId}/cost-breakdowns/`, costBreakdownData);
 export const updateCostBreakdown = (taskId: any, costBreakdownId: any, costBreakdownData: any) => apiClient.patch(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`, costBreakdownData);
 export const deleteCostBreakdown = (taskId: string, costBreakdownId: number) => apiClient.delete(`/tasks/${taskId}/cost-breakdowns/${costBreakdownId}/`);
-export const approveRefund = (costBreakdownId: number) => apiClient.post(`/cost-breakdowns/${costBreakdownId}/approve/`);
-export const rejectRefund = (costBreakdownId: number) => apiClient.post(`/cost-breakdowns/${costBreakdownId}/reject/`);
+
 export const getBrands = () => apiClient.get('/brands/');
 export const createBrand = (brandData: { name: string; }) => apiClient.post('/brands/', brandData);
 export const updateBrand = (brandId: number, brandData: { name: string; }) => apiClient.patch(`/brands/${brandId}/`, brandData);
@@ -97,7 +96,7 @@ export const getPaymentCategories = () => apiClient.get('/payment-categories/');
 export const createPaymentCategory = (data: any) => apiClient.post('/payment-categories/', data);
 export const updatePaymentCategory = (categoryId: number, data: any) => apiClient.patch(`/payment-categories/${categoryId}/`, data);
 export const deletePaymentCategory = (categoryId: number) => apiClient.delete(`/payment-categories/${categoryId}/`);
-export const getPendingRefunds = () => apiClient.get('/cost-breakdowns/pending_refunds/');
+
 
 // Expenditure Requests
 export const getExpenditureRequests = (params: any = {}) => apiClient.get('/expenditure-requests/', { params });

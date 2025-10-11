@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createExpenditureRequest, getTasks, getPaymentCategories, getPaymentMethods } from '@/lib/api-client';
@@ -11,30 +11,55 @@ import { Textarea } from "@/components/ui/core/textarea";
 import { Label } from "@/components/ui/core/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select";
 import { useToast } from '@/hooks/use-toast';
+import { SimpleCombobox } from '@/components/ui/core/combobox';
 
 interface AddExpenditureDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: 'expenditure' | 'refund';
+  taskId?: string;
+  taskTitle?: string;
 }
 
-export function AddExpenditureDialog({ isOpen, onClose }: AddExpenditureDialogProps) {
+export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', taskId, taskTitle }: AddExpenditureDialogProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { register, handleSubmit, control, watch, formState: { errors } } = useForm();
+  const { register, handleSubmit, control, watch, formState: { errors }, setValue, reset } = useForm();
 
-  const { data: tasks } = useQuery({ queryKey: ['tasks'], queryFn: () => getTasks({ limit: 1000 }) });
+  const [taskSearch, setTaskSearch] = useState('');
+
+  const { data: tasksData } = useQuery({ queryKey: ['tasks'], queryFn: () => getTasks({ limit: 1000 }) });
   const { data: categories } = useQuery({ queryKey: ['paymentCategories'], queryFn: getPaymentCategories });
   const { data: methods } = useQuery({ queryKey: ['paymentMethods'], queryFn: getPaymentMethods });
+
+  const taskOptions = tasksData?.data.results.map((task: any) => ({ label: task.title, value: task.id })) || [];
+  const filteredTaskOptions = taskSearch
+    ? taskOptions.filter(option => option.label.toLowerCase().includes(taskSearch.toLowerCase()))
+    : taskOptions;
+
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === 'refund' && taskId) {
+        setValue('task', taskId);
+        setValue('description', `Refund for task: ${taskTitle}`);
+        setValue('cost_type', 'Subtractive');
+      }
+    } else {
+      reset();
+      setTaskSearch('');
+    }
+  }, [isOpen, mode, taskId, taskTitle, setValue, reset]);
 
   const mutation = useMutation({
     mutationFn: createExpenditureRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenditureRequests'] });
-      toast({ title: "Success", description: "Expenditure request created successfully." });
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+      toast({ title: "Success", description: `${mode === 'refund' ? 'Refund' : 'Expenditure'} request created successfully.` });
       onClose();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.response?.data?.detail || "Failed to create expenditure request.", variant: "destructive" });
+      toast({ title: "Error", description: error.response?.data?.detail || `Failed to create ${mode === 'refund' ? 'refund' : 'expenditure'} request.`, variant: "destructive" });
     },
   });
 
@@ -47,17 +72,18 @@ export function AddExpenditureDialog({ isOpen, onClose }: AddExpenditureDialogPr
   };
 
   const selectedTask = watch('task');
+  const isRefundMode = mode === 'refund';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Expenditure</DialogTitle>
+          <DialogTitle>{isRefundMode ? 'Request Refund' : 'Add New Expenditure'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" {...register('description', { required: true })} />
+            <Textarea id="description" {...register('description', { required: true })} disabled={isRefundMode} />
             {errors.description && <p className="text-red-500 text-xs">Description is required.</p>}
           </div>
           <div className="grid gap-2">
@@ -71,21 +97,18 @@ export function AddExpenditureDialog({ isOpen, onClose }: AddExpenditureDialogPr
               name="task"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a task..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">None</SelectItem>
-                    {tasks?.data.results.map((task: any) => (
-                      <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SimpleCombobox
+                  options={filteredTaskOptions}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onInputChange={setTaskSearch}
+                  placeholder="Search for a task..."
+                  disabled={isRefundMode}
+                />
               )}
             />
           </div>
-          {selectedTask && (
+          {selectedTask && selectedTask !== 'null' && (
             <div className="grid gap-2">
               <Label htmlFor="cost_type">Cost Type</Label>
               <Controller
@@ -93,13 +116,19 @@ export function AddExpenditureDialog({ isOpen, onClose }: AddExpenditureDialogPr
                 control={control}
                 defaultValue="Inclusive"
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isRefundMode}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Inclusive">Inclusive (part of original quote)</SelectItem>
-                      <SelectItem value="Additive">Additive (will be added to final bill)</SelectItem>
+                      {isRefundMode ? (
+                        <SelectItem value="Subtractive">Subtractive (Refund to customer)</SelectItem>
+                      ) : (
+                        <>
+                          <SelectItem value="Inclusive">Inclusive (part of original quote)</SelectItem>
+                          <SelectItem value="Additive">Additive (will be added to final bill)</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 )}

@@ -60,10 +60,6 @@ class CostBreakdown(models.Model):
         SUBTRACTIVE = 'Subtractive', _('Subtractive')
         INCLUSIVE = 'Inclusive', _('Inclusive')
 
-    class RefundStatus(models.TextChoices):
-        PENDING = 'Pending', _('Pending')
-        APPROVED = 'Approved', _('Approved')
-        REJECTED = 'Rejected', _('Rejected')
 
     task = models.ForeignKey('Eapp.Task', on_delete=models.CASCADE, related_name='cost_breakdowns')
     description = models.CharField(max_length=255)
@@ -72,9 +68,6 @@ class CostBreakdown(models.Model):
     category = models.CharField(max_length=100, default='Inclusive')
     created_at = models.DateTimeField(auto_now_add=True)
     reason = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=RefundStatus.choices, default=RefundStatus.APPROVED)
-    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='requested_refunds')
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_refunds')
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):

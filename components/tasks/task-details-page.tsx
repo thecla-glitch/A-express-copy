@@ -46,8 +46,8 @@ import { useToast } from "@/hooks/use-toast";
 import { CostBreakdown } from "./cost-breakdown";
 import { Combobox } from "@/components/ui/core/combobox";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
-import { AddRefundDialog } from "./add-refund-dialog";
-import { PendingRefunds } from "./pending-refunds";
+import { AddExpenditureDialog } from "@/components/financials/add-expenditure-dialog";
+
 
 
 
@@ -73,7 +73,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState<number | "">("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
-  const [isAddRefundOpen, setIsAddRefundOpen] = useState(false);
+  const [isAddExpenditureOpen, setIsAddExpenditureOpen] = useState(false);
 
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
 
@@ -629,7 +629,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         {/* Financials Tab */}
         <TabsContent value="financials" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-1">
-            {isManager && <PendingRefunds task={taskData} />}
+
             <CostBreakdown task={taskData} />
 
 
@@ -669,7 +669,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       Add Payment
                     </Button>
                     {(isAccountant) && (<Button
-                        onClick={() => setIsAddRefundOpen(true)}
+                        onClick={() => setIsAddExpenditureOpen(true)}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         <Plus className="h-4 w-4 mr-1" />
@@ -705,7 +705,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </Card>
         </TabsContent>
       </Tabs>
-      <AddRefundDialog taskId={taskId} open={isAddRefundOpen} onOpenChange={setIsAddRefundOpen} taskTitle={taskData.title} />
+            <AddExpenditureDialog
+        isOpen={isAddExpenditureOpen}
+        onClose={() => setIsAddExpenditureOpen(false)}
+        mode="refund"
+        taskId={taskId}
+        taskTitle={taskData.title}
+      />
     </div>
   )
 }

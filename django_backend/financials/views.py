@@ -68,7 +68,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 class CostBreakdownViewSet(viewsets.ModelViewSet):
     queryset = CostBreakdown.objects.all()
     serializer_class = CostBreakdownSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrAccountant]
 
     def get_queryset(self):
         queryset = CostBreakdown.objects.all()
@@ -77,87 +77,10 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(task__title=task_id)
         return queryset
 
-    def get_permissions(self):
-        if self.action in ['approve', 'reject']:
-            self.permission_classes = [IsManager]
-        elif self.action == 'create':
-            self.permission_classes = [IsAdminOrManagerOrFrontDeskOrAccountant]
-        else:
-            self.permission_classes = [permissions.IsAuthenticated]
-        return super().get_permissions()
-
-    def create(self, request, *args, **kwargs):
-        task_id = kwargs.get('task_id')
+    def perform_create(self, serializer):
+        task_id = self.kwargs.get('task_id')
         task = get_object_or_404(Task, title=task_id)
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        if request.user.role == 'Accountant':
-            serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.PENDING, payment_method=serializer.validated_data.get('payment_method'))
-        elif request.user.role == 'Manager':
-            cost_breakdown = serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.APPROVED, approved_by=request.user)
-            if cost_breakdown.cost_type == 'Subtractive':
-                tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
-                Payment.objects.create(
-                    task=task,
-                    amount=-cost_breakdown.amount,
-                    method=cost_breakdown.payment_method,
-                    description=cost_breakdown.description,
-                    category=tech_support_category
-                )
-                TaskActivity.objects.create(
-                    task=task,
-                    user=request.user,
-                    type=TaskActivity.ActivityType.NOTE,
-                    message=f"Refund of {cost_breakdown.amount} issued. Reason: {cost_breakdown.reason}"
-                )
-        else:
-            return Response({"error": "You do not have permission to create a refund request."}, status=status.HTTP_403_FORBIDDEN)
-
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    @action(detail=True, methods=['post'])
-    def approve(self, request, pk=None):
-        cost_breakdown = self.get_object()
-        cost_breakdown.status = CostBreakdown.RefundStatus.APPROVED
-        cost_breakdown.approved_by = request.user
-        cost_breakdown.save()
-
-        if cost_breakdown.cost_type == 'Subtractive':
-            payment_method = cost_breakdown.payment_method
-            if not payment_method:
-                payment_method, _ = PaymentMethod.objects.get_or_create(name='Refund')
-            
-            tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
-            Payment.objects.create(
-                task=cost_breakdown.task,
-                amount=-cost_breakdown.amount,
-                method=payment_method,
-                description=cost_breakdown.description,
-                category=tech_support_category
-            )
-            TaskActivity.objects.create(
-                task=cost_breakdown.task,
-                user=request.user,
-                type=TaskActivity.ActivityType.NOTE,
-                message=f"Refund of {cost_breakdown.amount} approved. Reason: {cost_breakdown.reason}"
-            )
-
-        return Response(self.get_serializer(cost_breakdown).data)
-
-    @action(detail=True, methods=['post'])
-    def reject(self, request, pk=None):
-        cost_breakdown = self.get_object()
-        cost_breakdown.status = CostBreakdown.RefundStatus.REJECTED
-        cost_breakdown.save()
-        return Response(self.get_serializer(cost_breakdown).data)
-
-    @action(detail=False, methods=['get'], permission_classes=[IsAdminOrManagerOrAccountant])
-    def pending_refunds(self, request):
-        pending_refunds = CostBreakdown.objects.filter(status=CostBreakdown.RefundStatus.PENDING)
-        serializer = self.get_serializer(pending_refunds, many=True)
-        return Response(serializer.data)
+        serializer.save(task=task)
 
 class ExpenditureRequestViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenditureRequestSerializer
@@ -213,9 +136,6 @@ class ExpenditureRequestViewSet(viewsets.ModelViewSet):
                 amount=expenditure.amount,
                 cost_type=expenditure.cost_type,
                 category=expenditure.category.name,
-                status=CostBreakdown.RefundStatus.APPROVED, # Assuming approved status for breakdown
-                requested_by=expenditure.requester,
-                approved_by=request.user,
                 payment_method=expenditure.payment_method
             )
 
