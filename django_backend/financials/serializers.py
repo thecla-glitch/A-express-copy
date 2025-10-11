@@ -5,12 +5,11 @@ from .models import ExpenditureRequest, Payment, PaymentCategory, PaymentMethod,
 from users.serializers import UserSerializer
 
 class CostBreakdownSerializer(serializers.ModelSerializer):
-    requested_by = UserSerializer(read_only=True)
     task_title = serializers.CharField(source='task.title', read_only=True)
 
     class Meta:
         model = CostBreakdown
-        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'status', 'requested_by', 'payment_method', 'task_title']
+        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'payment_method', 'task_title']
         extra_kwargs = {
             'payment_method': {'write_only': True}
         }
