@@ -6,11 +6,11 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Brand, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod, Account, PaymentCategory
+from .models import User, Task, TaskActivity, Payment, CostBreakdown, PaymentMethod, Account, PaymentCategory
 from .serializers import (
-    UserSerializer, BrandSerializer, 
+    UserSerializer, 
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
-    LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer, AccountSerializer,
+    CostBreakdownSerializer, PaymentMethodSerializer, AccountSerializer,
     UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer,PaymentCategorySerializer
 )
 from django.db.models import Q
@@ -18,6 +18,17 @@ from django.shortcuts import get_object_or_404
 from datetime import datetime
 from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_task_status_options(request):
+    return Response(Task.Status.choices)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_task_urgency_options(request):
+    return Response(Task.Urgency.choices)
 
 
 
@@ -485,45 +496,6 @@ def send_customer_update(request, task_id):
         return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
-
-
-
-
-class LocationViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows locations to be viewed or edited.
-    """
-    queryset = Location.objects.all()
-    serializer_class = LocationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def get_task_status_options(request):
-    return Response(Task.Status.choices)
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def get_task_urgency_options(request):
-    return Response(Task.Urgency.choices)
-
-class BrandViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows brands to be viewed or edited.
-    """
-    queryset = Brand.objects.all()
-    serializer_class = BrandSerializer
-    
-    def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if self.action == 'list':
-            self.permission_classes = [permissions.IsAuthenticated]
-        else:
-            self.permission_classes = [IsManager]
-        return super().get_permissions()
 
 
 class AccountViewSet(viewsets.ModelViewSet):

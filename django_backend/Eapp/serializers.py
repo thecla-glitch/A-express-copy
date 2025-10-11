@@ -2,8 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+from common.serializers import BrandSerializer, LocationSerializer
 from customers.serializers import CustomerSerializer, ReferrerSerializer, CustomerListSerializer
-from .models import PaymentCategory, User, Task, TaskActivity, Payment, Location, Brand, CostBreakdown, PaymentMethod, Account
+from .models import PaymentCategory, User, Task, TaskActivity, Payment, CostBreakdown, PaymentMethod, Account
 from django.utils import timezone
 
 
@@ -32,12 +33,6 @@ class CostBreakdownSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'payment_method': {'write_only': True}
         }
-
-
-class BrandSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Brand
-        fields = ['id', 'name']
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -173,11 +168,6 @@ class PaymentSerializer(serializers.ModelSerializer):
             'amount': {'validators': [MinValueValidator(Decimal('0.00'))]},
         }
 
-
-class LocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Location
-        fields = ['id', 'name', 'is_workshop']
 
 class TaskListSerializer(serializers.ModelSerializer):
     customer_details = CustomerListSerializer(source='customer', read_only=True)
