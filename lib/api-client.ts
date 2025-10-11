@@ -28,6 +28,15 @@ export const createTask = (data: any) => apiClient.post('/tasks/', data);
 export const updateTask = (id: string, data: any) => apiClient.patch(`/tasks/${id}/`, data);
 export const deleteTask = (id: string) => apiClient.delete(`/tasks/${id}/`);
 export const createCustomer = (data: any) => apiClient.post('/customers/create/', data);
+export const getCustomers = () => apiClient.get('/customers/');
+export const getCustomer = (customerId: number) => apiClient.get(`/customers/${customerId}/`);
+export const updateCustomer = (customerId: number, data: any) => apiClient.patch(`/customers/${customerId}/`, data);
+export const deleteCustomer = (customerId: number) => apiClient.delete(`/customers/${customerId}/`);
+
+export const getReferrers = () => apiClient.get('/referrers/');
+export const createReferrer = (data: any) => apiClient.post('/referrers/', data);
+export const updateReferrer = (referrerId: number, data: any) => apiClient.patch(`/referrers/${referrerId}/`, data);
+export const deleteReferrer = (referrerId: number) => apiClient.delete(`/referrers/${referrerId}/`);
 
 export const getTaskActivities = (taskId: string) => apiClient.get(`/tasks/${taskId}/activities/`);
 export const addTaskActivity = (taskId: string, data: any) => apiClient.post(`/tasks/${taskId}/add-activity/`, data);
@@ -40,6 +49,9 @@ export const addTaskPayment = (taskId: string, data: any) => apiClient.post(`/ta
 
 export const listTechnicians = () => apiClient.get('/technicians/');
 export const getLocations = () => apiClient.get('/locations/');
+export const addLocation = (locationData: { name: string; }) => apiClient.post('/locations/', locationData);
+export const updateLocation = (locationId: number, locationData: { name: string; }) => apiClient.patch(`/locations/${locationId}/`, locationData);
+export const deleteLocation = (locationId: number) => apiClient.delete(`/locations/${locationId}/`);
 export const listWorkshopLocations = () => apiClient.get('/workshop-locations/');
 export const listWorkshopTechnicians = () => apiClient.get('/workshop-technicians/');
 
@@ -68,6 +80,8 @@ export const approveRefund = (costBreakdownId: number) => apiClient.post(`/cost-
 export const rejectRefund = (costBreakdownId: number) => apiClient.post(`/cost-breakdowns/${costBreakdownId}/reject/`);
 export const getBrands = () => apiClient.get('/brands/');
 export const createBrand = (brandData: { name: string; }) => apiClient.post('/brands/', brandData);
+export const updateBrand = (brandId: number, brandData: { name: string; }) => apiClient.patch(`/brands/${brandId}/`, brandData);
+export const deleteBrand = (brandId: number) => apiClient.delete(`/brands/${brandId}/`);
 
 export const getPaymentMethods = () => apiClient.get('/payment-methods/');
 export const createPaymentMethod = (paymentMethodData: { name: string; }) => apiClient.post('/payment-methods/', paymentMethodData);
@@ -78,3 +92,8 @@ export const getAccounts = () => apiClient.get('/accounts/');
 export const createAccount = (accountData: { name: string; balance: number; }) => apiClient.post('/accounts/', accountData);
 export const updateAccount = (accountId: number, accountData: { name: string; }) => apiClient.patch(`/accounts/${accountId}/`, accountData);
 export const deleteAccount = (accountId: number) => apiClient.delete(`/accounts/${accountId}/`);
+
+export const getPaymentCategories = () => apiClient.get('/payment-categories/');
+export const createPaymentCategory = (data: any) => apiClient.post('/payment-categories/', data);
+export const updatePaymentCategory = (categoryId: number, data: any) => apiClient.patch(`/payment-categories/${categoryId}/`, data);
+export const deletePaymentCategory = (categoryId: number) => apiClient.delete(`/payment-categories/${categoryId}/`);
