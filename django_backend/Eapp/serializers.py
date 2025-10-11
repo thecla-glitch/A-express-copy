@@ -6,7 +6,25 @@ from customers.serializers import CustomerSerializer, ReferrerSerializer, Custom
 from .models import PaymentCategory, Task, TaskActivity, Payment, CostBreakdown, PaymentMethod, Account
 from django.utils import timezone
 from users.serializers import UserSerializer, UserListSerializer
+from users.models import User
 
+class CostBreakdownSerializer(serializers.ModelSerializer):
+    requested_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = CostBreakdown
+        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'status', 'requested_by', 'payment_method']
+        extra_kwargs = {
+            'payment_method': {'write_only': True}
+        }
+
+class AccountSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Account
+        fields = ['id', 'name', 'balance', 'created_by', 'created_at']
+        read_only_fields = ('id', 'created_by', 'created_at')
 
 class TaskActivitySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

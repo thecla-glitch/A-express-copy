@@ -1,3 +1,5 @@
+from common.models import Location
+from customers.serializers import CustomerSerializer
 from rest_framework import status, permissions, viewsets, generics
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
@@ -5,6 +7,9 @@ from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
+
+from common.serializers import LocationSerializer
+from users.serializers import UserSerializer
 from .models import Task, TaskActivity, Payment, CostBreakdown, PaymentMethod, Account, PaymentCategory
 from .serializers import (
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
@@ -16,6 +21,16 @@ from datetime import datetime
 from users.permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 from users.models import User
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_task_status_options(request):
+    return Response(Task.Status.choices)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_task_urgency_options(request):
+    return Response(Task.Urgency.choices)
 
 
 def generate_task_id():

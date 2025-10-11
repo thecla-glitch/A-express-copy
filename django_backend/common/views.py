@@ -1,7 +1,7 @@
 from rest_framework import permissions, viewsets
 from .models import Brand, Location
 from .serializers import BrandSerializer, LocationSerializer
-from Eapp.permissions import IsManager
+from users.permissions import IsManager
 
 
 class LocationViewSet(viewsets.ModelViewSet):
