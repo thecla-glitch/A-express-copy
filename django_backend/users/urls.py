@@ -21,6 +21,10 @@ urlpatterns = [
     path('profile/change-password/', views.change_password, name='change_password'),
     
     path('users/role/<str:role>/', views.list_users_by_role, name='list_users_by_role'),
+    
+    
+    path('technicians/', views.list_technicians, name='list_technicians'),
+    path('workshop-technicians/', views.list_workshop_technicians, name='list_workshop_technicians'),
 
     path('', include(router.urls)),
 ]
