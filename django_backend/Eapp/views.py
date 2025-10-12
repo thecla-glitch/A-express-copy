@@ -1,32 +1,22 @@
 from common.models import Location
 from customers.serializers import CustomerSerializer
 from rest_framework import status, permissions, viewsets
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
-from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
+from users.models import User
 from financials.serializers import PaymentSerializer
 from .models import Task, TaskActivity
 from .serializers import (
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer
 )
-from financials.models import Payment, PaymentCategory
-from django.db.models import Q
+from financials.models import PaymentCategory
 from django.shortcuts import get_object_or_404
 from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
-from users.models import User
 
-
-    @action(detail=False, methods=['get'])
-    def status_options(self, request):
-        return Response(Task.Status.choices)
-
-    @action(detail=False, methods=['get'])
-    def urgency_options(self, request):
-        return Response(Task.Urgency.choices)
 
 
 def generate_task_id():
@@ -73,6 +63,14 @@ class TaskViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     lookup_field = 'title'
     lookup_url_kwarg = 'task_id'
+
+    @action(detail=False, methods=['get'])
+    def status_options(self, request):
+        return Response(Task.Status.choices)
+
+    @action(detail=False, methods=['get'])
+    def urgency_options(self, request):
+        return Response(Task.Urgency.choices)
 
     def get_serializer_class(self):
         if self.action == 'list':
