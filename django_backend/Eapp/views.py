@@ -246,14 +246,14 @@ class TaskViewSet(viewsets.ModelViewSet):
 
 
     @action(detail=True, methods=['get'])
-    def activities(self, request, title=None):
+    def activities(self, request, task_id=None):
         task = self.get_object()
         activities = task.activities.all()
         serializer = TaskActivitySerializer(activities, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'])
-    def add_activity(self, request, title=None):
+    @action(detail=True, methods=['post'], url_path='add-activity')
+    def add_activity(self, request, task_id=None):
         task = self.get_object()
         serializer = TaskActivitySerializer(data=request.data)
         if serializer.is_valid():
@@ -262,14 +262,14 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['get'])
-    def payments(self, request, title=None):
+    def payments(self, request, task_id=None):
         task = self.get_object()
         payments = task.payments.all()
         serializer = PaymentSerializer(payments, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
-    def add_payment(self, request, title=None):
+    def add_payment(self, request, task_id=None):
         if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
             return Response(
                 {"error": "You do not have permission to add payments."},
@@ -285,7 +285,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
-    def send_update(self, request, title=None):
+    def send_update(self, request, task_id=None):
         if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
             return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
 
