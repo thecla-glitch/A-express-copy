@@ -20,15 +20,13 @@ from .status_transitions import can_transition
 from users.models import User
 
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def get_task_status_options(request):
-    return Response(Task.Status.choices)
+    @action(detail=False, methods=['get'])
+    def status_options(self, request):
+        return Response(Task.Status.choices)
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def get_task_urgency_options(request):
-    return Response(Task.Urgency.choices)
+    @action(detail=False, methods=['get'])
+    def urgency_options(self, request):
+        return Response(Task.Urgency.choices)
 
 
 def generate_task_id():
@@ -249,86 +247,78 @@ class TaskViewSet(viewsets.ModelViewSet):
 
 
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def task_activities(request, task_id):
-    task = get_object_or_404(Task, title=task_id)
-    activities = task.activities.all()
-    serializer = TaskActivitySerializer(activities, many=True)
-    return Response(serializer.data)
+    @action(detail=True, methods=['get'])
+    def activities(self, request, title=None):
+        task = self.get_object()
+        activities = task.activities.all()
+        serializer = TaskActivitySerializer(activities, many=True)
+        return Response(serializer.data)
 
+    @action(detail=True, methods=['post'])
+    def add_activity(self, request, title=None):
+        task = self.get_object()
+        serializer = TaskActivitySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(task=task, user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def add_task_activity(request, task_id):
-    task = get_object_or_404(Task, title=task_id)
-    serializer = TaskActivitySerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(task=task, user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=True, methods=['get'])
+    def payments(self, request, title=None):
+        task = self.get_object()
+        payments = task.payments.all()
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(serializer.data)
 
+    @action(detail=True, methods=['post'])
+    def add_payment(self, request, title=None):
+        if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
+            return Response(
+                {"error": "You do not have permission to add payments."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        task = self.get_object()
+        serializer = PaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
+            payment = serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
+            payment.task.update_payment_status()  # Trigger update
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def task_payments(request, task_id):
-    task = get_object_or_404(Task, title=task_id)
-    payments = task.payments.all()
-    serializer = PaymentSerializer(payments, many=True)
-    return Response(serializer.data)
+    @action(detail=True, methods=['post'])
+    def send_update(self, request, title=None):
+        if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
+            return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
 
+        try:
+            task = self.get_object()
+            if not task.customer.email:
+                return Response({'error': 'No customer email available for this task.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            subject = request.data.get('subject')
+            message = request.data.get('message')
+            if not subject or not message:
+                return Response({'error': 'Subject and message are required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [task.customer.email],
+                fail_silently=False,
+            )
+            TaskActivity.objects.create(
+                task=task, 
+                user=request.user, 
+                type='customer_contact', 
+                message=f'Sent customer update: "{subject}"'
+            )
+            return Response({'message': 'Customer update sent successfully.'}, status=status.HTTP_200_OK)
+        except Task.DoesNotExist:
+            return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def add_task_payment(request, task_id):
-    if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
-        return Response(
-            {"error": "You do not have permission to add payments."},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    task = get_object_or_404(Task, title=task_id)
-    serializer = PaymentSerializer(data=request.data)
-    if serializer.is_valid():
-        tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
-        payment = serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
-        payment.task.update_payment_status()  # Trigger update
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def send_customer_update(request, task_id):
-    if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
-        return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
-
-    try:
-        task = get_object_or_404(Task, title=task_id)
-        if not task.customer.email:
-            return Response({'error': 'No customer email available for this task.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        subject = request.data.get('subject')
-        message = request.data.get('message')
-        if not subject or not message:
-            return Response({'error': 'Subject and message are required.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [task.customer.email],
-            fail_silently=False,
-        )
-        TaskActivity.objects.create(
-            task=task, 
-            user=request.user, 
-            type='customer_contact', 
-            message=f'Sent customer update: "{subject}"'
-        )
-        return Response({'message': 'Customer update sent successfully.'}, status=status.HTTP_200_OK)
-    except Task.DoesNotExist:
-        return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
