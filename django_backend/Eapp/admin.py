@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Task
+from .models import User, Task, TaskActivity
 from django.utils.html import format_html
 
 class UserAdmin(BaseUserAdmin):
@@ -32,7 +32,7 @@ class UserAdmin(BaseUserAdmin):
         (None, {
             'classes': ('wide',),
             'fields': ('username', 'email', 'first_name', 'last_name', 'phone', 
-                        'role', 'password1', 'password2', 'is_active', 'is_staff', 'profile_picture'),  # Added profile_picture
+                        'role', 'password', 'is_active', 'is_staff', 'profile_picture'),  # Added profile_picture
         }),
     )
     
@@ -63,3 +63,9 @@ class TaskAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description')
     autocomplete_fields = ['assigned_to', 'created_by']
     date_hierarchy = 'created_at'
+
+@admin.register(TaskActivity)
+class TaskActivityAdmin(admin.ModelAdmin):
+    list_display = ('task', 'user', 'timestamp', 'type', 'message')
+    list_filter = ('type', 'user')
+    search_fields = ('message',)
