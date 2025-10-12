@@ -7,12 +7,12 @@ from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from users.models import User
-from financials.serializers import PaymentSerializer
+from financials.serializers import PaymentSerializer, CostBreakdownSerializer
 from .models import Task, TaskActivity
 from .serializers import (
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer
 )
-from financials.models import PaymentCategory
+from financials.models import PaymentCategory, CostBreakdown
 from django.shortcuts import get_object_or_404
 from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
@@ -317,6 +317,15 @@ class TaskViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='cost-breakdowns')
+    def cost_breakdowns(self, request, task_id=None):
+        task = self.get_object()
+        serializer = CostBreakdownSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(task=task)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
