@@ -124,7 +124,7 @@ class ExpenditureRequestViewSet(viewsets.ModelViewSet):
             task=expenditure.task,
             amount=-expenditure.amount,  # Expenditures are negative amounts
             method=expenditure.payment_method,
-            description=f"Expenditure: {expenditure.description}",
+            description=f"{expenditure.description}",
             category=expenditure.category
         )
 
