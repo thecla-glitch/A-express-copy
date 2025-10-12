@@ -29,7 +29,7 @@ class PaymentCategory(models.Model):
 
 class Payment(models.Model):
 
-    task = models.ForeignKey('Eapp.Task', on_delete=models.CASCADE, related_name='payments')
+    task = models.ForeignKey('Eapp.Task', on_delete=models.CASCADE, related_name='payments', null=True, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date = models.DateField(default=get_current_date)
     method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
@@ -50,7 +50,8 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        self.task.update_payment_status()
+        if self.task:
+            self.task.update_payment_status()
 
 
 
