@@ -47,7 +47,7 @@ export const addTaskActivity = (taskId: string, data: any) => apiClient.post(`/t
 export const getTaskPayments = (taskId: string) => apiClient.get(`/tasks/${taskId}/payments/`);
 export const addTaskPayment = (taskId: string, data: any) => apiClient.post(`/tasks/${taskId}/add-payment/`, data);
 
-export const listTechnicians = () => apiClient.get('/technicians/');
+export const listTechnicians = () => apiClient.get('list/technicians/');
 export const getLocations = () => apiClient.get('/locations/');
 export const addLocation = (locationData: { name: string; }) => apiClient.post('/locations/', locationData);
 export const updateLocation = (locationId: number, locationData: { name: string; }) => apiClient.patch(`/locations/${locationId}/`, locationData);
