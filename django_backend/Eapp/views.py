@@ -64,7 +64,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     lookup_field = 'title'
     lookup_url_kwarg = 'task_id'
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='status-options')
     def status_options(self, request):
         return Response(Task.Status.choices)
 
