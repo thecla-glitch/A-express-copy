@@ -68,7 +68,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     def status_options(self, request):
         return Response(Task.Status.choices)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='urgency-options')
     def urgency_options(self, request):
         return Response(Task.Urgency.choices)
 
@@ -268,7 +268,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = PaymentSerializer(payments, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], url_path='add-payment')
     def add_payment(self, request, task_id=None):
         if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
             return Response(
