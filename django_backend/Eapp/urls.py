@@ -16,9 +16,5 @@ urlpatterns = [
     path('tasks/status-options/', views.get_task_status_options, name='get_task_status_options'),
     path('tasks/urgency-options/', views.get_task_urgency_options, name='get_task_urgency_options'),
     path('tasks/<str:task_id>/cost-breakdowns/', CostBreakdownViewSet.as_view({'get': 'list', 'post': 'create'}), name='task-cost-breakdowns'),
-
-    # Revenue overview endpoint
-    path('revenue-overview/', views.revenue_overview, name='revenue_overview'),
-    
     path('', include(router.urls)),
 ]
