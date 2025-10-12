@@ -47,8 +47,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
      'corsheaders',  
-    'rest_framework',  
+    'users',
+    'financials',
     'Eapp',
+    'common',
+    'customers',
+    'rest_framework',
+    'reports',
     
 ]
 
@@ -99,7 +104,7 @@ DATABASES = {
 }
 
 
-AUTH_USER_MODEL = 'Eapp.User'
+AUTH_USER_MODEL = 'users.User'
 
 # REST Framework settings
 REST_FRAMEWORK = {

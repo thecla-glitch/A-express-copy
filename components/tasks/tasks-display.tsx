@@ -573,6 +573,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
             setSelectedTaskToPay(null);
           }}
           taskTitle={selectedTaskToPay.title}
+          outstandingBalance={selectedTaskToPay.outstanding_balance}
         />
       )}
 

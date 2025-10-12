@@ -1,240 +1,22 @@
-from rest_framework import status, permissions, viewsets, generics
-from rest_framework.decorators import api_view, permission_classes, action
+from common.models import Location
+from customers.serializers import CustomerSerializer
+from rest_framework import status, permissions, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
-from django.db.models import Sum, F, DecimalField, Q
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import User, Brand, Customer, Referrer, Task, TaskActivity, Payment, Location, CostBreakdown, PaymentMethod, Account
+from users.models import User
+from financials.serializers import PaymentSerializer, CostBreakdownSerializer
+from .models import Task, TaskActivity
 from .serializers import (
-    UserSerializer, BrandSerializer, CustomerSerializer, ReferrerSerializer, 
-    TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer, PaymentSerializer, 
-    LocationSerializer, CostBreakdownSerializer, PaymentMethodSerializer, AccountSerializer,
-    UserRegistrationSerializer, LoginSerializer, ChangePasswordSerializer, UserProfileUpdateSerializer
+    TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer
 )
-from django.db.models import Q
+from financials.models import PaymentCategory, CostBreakdown
 from django.shortcuts import get_object_or_404
-from datetime import datetime
-from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant, IsAdminOrManagerOrAccountant
+from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def customer_search(request):
-    query = request.query_params.get('query', '')
-    customers = Customer.objects.filter(name__icontains=query)
-    serializer = CustomerSerializer(customers, many=True)
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def customer_create(request):
-    """
-    Create a new customer or retrieve an existing one.
-    """
-    phone = request.data.get('phone')
-    email = request.data.get('email')
-
-    if phone:
-        customer = Customer.objects.filter(phone=phone).first()
-        if customer:
-            serializer = CustomerSerializer(customer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-    if email:
-        customer = Customer.objects.filter(email=email).first()
-        if customer:
-            serializer = CustomerSerializer(customer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-    serializer = CustomerSerializer(data=request.data)
-    if serializer.is_valid():
-        customer = serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return UserRegistrationSerializer
-        return UserSerializer
-
-    def get_permissions(self):
-        if self.action in ['create', 'update_user', 'delete_user', 'deactivate', 'activate']:
-            self.permission_classes = [IsAdminOrManager]
-        else:
-            self.permission_classes = [permissions.IsAuthenticated]
-        return super().get_permissions()
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        refresh = RefreshToken.for_user(user)
-        headers = self.get_success_headers(serializer.data)
-        return Response({
-            'user': UserSerializer(user, context=self.get_serializer_context()).data,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }, status=status.HTTP_201_CREATED, headers=headers)
-
-    @action(detail=True, methods=['patch'], url_path='update')
-    def update_user(self, request, pk=None):
-        user = self.get_object()
-        if user.is_superuser and not request.user.is_superuser:
-            return Response({"error": "Only superusers can update other superusers."}, status=status.HTTP_403_FORBIDDEN)
-        
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['delete'], url_path='delete')
-    def delete_user(self, request, pk=None):
-        user = self.get_object()
-        if user.id == request.user.id:
-            return Response({"error": "You cannot delete your own account."}, status=status.HTTP_403_FORBIDDEN)
-        if user.is_superuser and not request.user.is_superuser:
-            return Response({"error": "Only superusers can delete other superusers."}, status=status.HTTP_403_FORBIDDEN)
-        
-        user.delete()
-        return Response({"message": "User deleted successfully."}, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['post'], url_path='deactivate')
-    def deactivate(self, request, pk=None):
-        user = self.get_object()
-        if user.id == request.user.id:
-            return Response({"error": "You cannot deactivate your own account."}, status=status.HTTP_403_FORBIDDEN)
-        
-        user.is_active = False
-        user.save()
-        return Response({"message": "User deactivated successfully."}, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['post'], url_path='activate')
-    def activate(self, request, pk=None):
-        user = self.get_object()
-        user.is_active = True
-        user.save()
-        return Response({"message": "User activated successfully."}, status=status.HTTP_200_OK)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.AllowAny])
-def login_user(request):
-    serializer = LoginSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.validated_data['user']
-        user.last_login = timezone.now()
-        user.save(update_fields=['last_login'])
-        
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'user': UserSerializer(user).data,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        })
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def get_user_profile(request):
-    serializer = UserSerializer(request.user, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def logout(request):
-    try:
-        refresh_token = request.data.get('refresh_token')
-        if refresh_token:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-        return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-
-@api_view(['PUT', 'PATCH'])
-@permission_classes([permissions.IsAuthenticated])
-def update_profile(request):
-    user = request.user
-    serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True, context={'request': request})
-    if serializer.is_valid():
-        serializer.save()
-        return Response(UserSerializer(user, context={'request': request}).data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def upload_profile_picture(request):
-    user = request.user
-    if 'profile_picture' not in request.FILES:
-        return Response({"error": "No profile picture provided"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    serializer = UserProfileUpdateSerializer(
-        user, 
-        data=request.data, 
-        partial=True, 
-        context={'request': request}
-    )
-    
-    if serializer.is_valid():
-        serializer.save()
-        user_serializer = UserSerializer(user, context={'request': request})
-        return Response(user_serializer.data)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-@api_view(['GET'])
-@permission_classes([IsAdminOrManagerOrFrontDeskOrAccountant])
-def list_users_by_role(request, role):
-    valid_roles = [choice[0] for choice in User.Role.choices]
-    if role not in valid_roles:
-        return Response(
-            {"error": f"Invalid role. Valid roles are: {', '.join(valid_roles)}"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    users = User.objects.filter(role=role)
-    serializer = UserSerializer(users, many=True, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def change_password(request):
-    user = request.user
-    serializer = ChangePasswordSerializer(data=request.data)
-    
-    if serializer.is_valid():
-        if not user.check_password(serializer.validated_data['current_password']):
-            return Response(
-                {"error": "Current password is incorrect."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        user.set_password(serializer.validated_data['new_password'])
-        user.save()
-        
-        return Response(
-            {"message": "Password updated successfully."},
-            status=status.HTTP_200_OK
-        )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 def generate_task_id():
@@ -269,6 +51,8 @@ from .filters import TaskFilter, PaymentFilter
 from .pagination import StandardResultsSetPagination
 
 
+from customers.models import Customer
+
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.select_related(
         'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician', 'customer'
@@ -279,6 +63,14 @@ class TaskViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     lookup_field = 'title'
     lookup_url_kwarg = 'task_id'
+
+    @action(detail=False, methods=['get'], url_path='status-options')
+    def status_options(self, request):
+        return Response(Task.Status.choices)
+
+    @action(detail=False, methods=['get'], url_path='urgency-options')
+    def urgency_options(self, request):
+        return Response(Task.Urgency.choices)
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -301,11 +93,35 @@ class TaskViewSet(viewsets.ModelViewSet):
             )
         data = request.data.copy()
         data['title'] = generate_task_id()
+
+        # Customer creation logic
+        customer_name = data.pop('customer_name', None)
+        customer_phone = data.pop('customer_phone', None)
+        customer_email = data.pop('customer_email', None)
+        customer_type = data.pop('customer_type', 'Normal')
+        
+        customer_created = False
+        if customer_phone:
+            customer, created = Customer.objects.get_or_create(
+                phone=customer_phone,
+                defaults={
+                    'name': customer_name,
+                    'email': customer_email,
+                    'customer_type': customer_type,
+                }
+            )
+            data['customer'] = customer.id
+            customer_created = created
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(created_by=request.user)
+        
+        response_data = serializer.data
+        response_data['customer_created'] = customer_created
+        
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -429,332 +245,87 @@ class TaskViewSet(viewsets.ModelViewSet):
 
 
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def task_activities(request, task_id):
-    task = get_object_or_404(Task, title=task_id)
-    activities = task.activities.all()
-    serializer = TaskActivitySerializer(activities, many=True)
-    return Response(serializer.data)
+    @action(detail=True, methods=['get'])
+    def activities(self, request, task_id=None):
+        task = self.get_object()
+        activities = task.activities.all()
+        serializer = TaskActivitySerializer(activities, many=True)
+        return Response(serializer.data)
 
+    @action(detail=True, methods=['post'], url_path='add-activity')
+    def add_activity(self, request, task_id=None):
+        task = self.get_object()
+        serializer = TaskActivitySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(task=task, user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def add_task_activity(request, task_id):
-    task = get_object_or_404(Task, title=task_id)
-    serializer = TaskActivitySerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(task=task, user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @action(detail=True, methods=['get'])
+    def payments(self, request, task_id=None):
+        task = self.get_object()
+        payments = task.payments.all()
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(serializer.data)
 
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def task_payments(request, task_id):
-    task = get_object_or_404(Task, title=task_id)
-    payments = task.payments.all()
-    serializer = PaymentSerializer(payments, many=True)
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def add_task_payment(request, task_id):
-    if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
-        return Response(
-            {"error": "You do not have permission to add payments."},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    task = get_object_or_404(Task, title=task_id)
-    serializer = PaymentSerializer(data=request.data)
-    if serializer.is_valid():
-        payment = serializer.save(task=task)
-        payment.task.update_payment_status()  # Trigger update
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_technicians(request):
-    """
-    Get all users with Technician role
-    """
-    technicians = User.objects.filter(role='Technician', is_active=True)
-    serializer = UserSerializer(technicians, many=True, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def send_customer_update(request, task_id):
-    if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
-        return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
-
-    try:
-        task = get_object_or_404(Task, title=task_id)
-        if not task.customer.email:
-            return Response({'error': 'No customer email available for this task.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        subject = request.data.get('subject')
-        message = request.data.get('message')
-        if not subject or not message:
-            return Response({'error': 'Subject and message are required.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [task.customer.email],
-            fail_silently=False,
-        )
-        TaskActivity.objects.create(
-            task=task, 
-            user=request.user, 
-            type='customer_contact', 
-            message=f'Sent customer update: "{subject}"'
-        )
-        return Response({'message': 'Customer update sent successfully.'}, status=status.HTTP_200_OK)
-    except Task.DoesNotExist:
-        return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class CustomerSearchView(generics.ListAPIView):
-    serializer_class = CustomerSerializer
-
-    def get_queryset(self):
-        query = self.request.query_params.get('query', '')
-        if query:
-            return Customer.objects.filter(
-                Q(name__icontains=query) |
-                Q(phone__icontains=query)
-            ).order_by('name')
-        return Customer.objects.none()
-
-
-class ReferrerSearchView(generics.ListAPIView):
-    serializer_class = ReferrerSerializer
-
-    def get_queryset(self):
-        query = self.request.query_params.get('query', '')
-        if query:
-            return Referrer.objects.filter(
-                Q(name__icontains=query) |
-                Q(phone__icontains=query)
-            ).order_by('name')
-        return Referrer.objects.none()
-
-
-class LocationViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows locations to be viewed or edited.
-    """
-    queryset = Location.objects.all()
-    serializer_class = LocationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def get_task_status_options(request):
-    return Response(Task.Status.choices)
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def get_task_urgency_options(request):
-    return Response(Task.Urgency.choices)
-
-class BrandViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows brands to be viewed or edited.
-    """
-    queryset = Brand.objects.all()
-    serializer_class = BrandSerializer
-    
-    def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if self.action == 'list':
-            self.permission_classes = [permissions.IsAuthenticated]
-        else:
-            self.permission_classes = [IsManager]
-        return super().get_permissions()
-
-
-class AccountViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows accounts to be viewed or edited by managers.
-    """
-    queryset = Account.objects.all()
-    serializer_class = AccountSerializer
-    permission_classes = [IsManager]
-
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_workshop_locations(request):
-    locations = Location.objects.filter(is_workshop=True)
-    serializer = LocationSerializer(locations, many=True)
-    return Response(serializer.data)
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def list_workshop_technicians(request):
-    technicians = User.objects.filter(is_workshop=True, is_active=True)
-    serializer = UserSerializer(technicians, many=True, context={'request': request})
-    return Response(serializer.data)
-
-class TaskActivityViewSet(viewsets.ModelViewSet):
-    queryset = TaskActivity.objects.all()
-    serializer_class = TaskActivitySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-class PaymentMethodViewSet(viewsets.ModelViewSet):
-    queryset = PaymentMethod.objects.filter(is_user_selectable=True)
-    serializer_class = PaymentMethodSerializer
-    permission_classes = [permissions.IsAuthenticated, IsManager]
-
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.IsAuthenticated()]
-        return super().get_permissions()
-
-class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    API endpoint that allows payments to be viewed.
-    """
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = PaymentFilter
-
-
-class CostBreakdownViewSet(viewsets.ModelViewSet):
-    queryset = CostBreakdown.objects.all()
-    serializer_class = CostBreakdownSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_permissions(self):
-        if self.action in ['approve', 'reject']:
-            self.permission_classes = [IsManager]
-        elif self.action == 'create':
-            self.permission_classes = [IsAdminOrManagerOrFrontDeskOrAccountant]
-        else:
-            self.permission_classes = [permissions.IsAuthenticated]
-        return super().get_permissions()
-
-    def create(self, request, *args, **kwargs):
-        task_id = kwargs.get('task_id')
-        task = get_object_or_404(Task, title=task_id)
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        if request.user.role == 'Accountant':
-            serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.PENDING, payment_method=serializer.validated_data.get('payment_method'))
-        elif request.user.role == 'Manager':
-            cost_breakdown = serializer.save(task=task, requested_by=request.user, status=CostBreakdown.RefundStatus.APPROVED, approved_by=request.user)
-            if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
-                Payment.objects.create(
-                    task=task,
-                    amount=-cost_breakdown.amount,
-                    method=cost_breakdown.payment_method
-                )
-                TaskActivity.objects.create(
-                    task=task,
-                    user=request.user,
-                    type=TaskActivity.ActivityType.NOTE,
-                    message=f"Refund of {cost_breakdown.amount} issued. Reason: {cost_breakdown.reason}"
-                )
-        else:
-            return Response({"error": "You do not have permission to create a refund request."}, status=status.HTTP_403_FORBIDDEN)
-
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    @action(detail=True, methods=['post'], url_path='add-payment')
+    def add_payment(self, request, task_id=None):
+        if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
+            return Response(
+                {"error": "You do not have permission to add payments."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        task = self.get_object()
+        serializer = PaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
+            payment = serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
+            payment.task.update_payment_status()  # Trigger update
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
-    def approve(self, request, pk=None):
-        cost_breakdown = self.get_object()
-        cost_breakdown.status = CostBreakdown.RefundStatus.APPROVED
-        cost_breakdown.approved_by = request.user
-        cost_breakdown.save()
+    def send_update(self, request, task_id=None):
+        if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
+            return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
 
-        if cost_breakdown.cost_type == 'Subtractive' and cost_breakdown.description == 'Refund':
-            payment_method = cost_breakdown.payment_method
-            if not payment_method:
-                payment_method, _ = PaymentMethod.objects.get_or_create(name='Refund')
+        try:
+            task = self.get_object()
+            if not task.customer.email:
+                return Response({'error': 'No customer email available for this task.'}, status=status.HTTP_400_BAD_REQUEST)
             
-            Payment.objects.create(
-                task=cost_breakdown.task,
-                amount=-cost_breakdown.amount,
-                method=payment_method
+            subject = request.data.get('subject')
+            message = request.data.get('message')
+            if not subject or not message:
+                return Response({'error': 'Subject and message are required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [task.customer.email],
+                fail_silently=False,
             )
             TaskActivity.objects.create(
-                task=cost_breakdown.task,
-                user=request.user,
-                type=TaskActivity.ActivityType.NOTE,
-                message=f"Refund of {cost_breakdown.amount} approved. Reason: {cost_breakdown.reason}"
+                task=task, 
+                user=request.user, 
+                type='customer_contact', 
+                message=f'Sent customer update: "{subject}"'
             )
+            return Response({'message': 'Customer update sent successfully.'}, status=status.HTTP_200_OK)
+        except Task.DoesNotExist:
+            return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return Response(self.get_serializer(cost_breakdown).data)
+    @action(detail=True, methods=['post'], url_path='cost-breakdowns')
+    def cost_breakdowns(self, request, task_id=None):
+        task = self.get_object()
+        serializer = CostBreakdownSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(task=task)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'])
-    def reject(self, request, pk=None):
-        cost_breakdown = self.get_object()
-        cost_breakdown.status = CostBreakdown.RefundStatus.REJECTED
-        cost_breakdown.save()
-        return Response(self.get_serializer(cost_breakdown).data)
 
 
-from django.utils import timezone
-from datetime import timedelta
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def revenue_overview(request):
-    """
-    Calculate revenue for this month and today, with comparisons to the previous period.
-    """
-    now = timezone.now()
-    today = now.date()
-
-    # This month's revenue
-    this_month_start = today.replace(day=1)
-    this_month_revenue = Payment.objects.filter(
-        date__gte=this_month_start
-    ).aggregate(total=Sum('amount'))['total'] or 0
-
-    # Last month's revenue
-    last_month_end = this_month_start - timedelta(days=1)
-    last_month_start = last_month_end.replace(day=1)
-    last_month_revenue = Payment.objects.filter(
-        date__gte=last_month_start,
-        date__lt=this_month_start
-    ).aggregate(total=Sum('amount'))['total'] or 0
-
-    # Today's revenue
-    today_revenue = Payment.objects.filter(
-        date=today
-    ).aggregate(total=Sum('amount'))['total'] or 0
-
-    # Yesterday's revenue
-    yesterday = today - timedelta(days=1)
-    yesterday_revenue = Payment.objects.filter(
-        date=yesterday
-    ).aggregate(total=Sum('amount'))['total'] or 0
-
-    # Percentage changes
-    month_over_month_change = ((this_month_revenue - last_month_revenue) / last_month_revenue * 100) if last_month_revenue else 100
-    day_over_day_change = ((today_revenue - yesterday_revenue) / yesterday_revenue * 100) if yesterday_revenue else 100
-
-    return Response({
-        'this_month_revenue': this_month_revenue,
-        'month_over_month_change': month_over_month_change,
-        'today_revenue': today_revenue,
-        'day_over_day_change': day_over_day_change,
-    })

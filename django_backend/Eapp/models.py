@@ -1,162 +1,17 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_lazy as _
-import os
-from uuid import uuid4
+from customers.models import Customer, Referrer
 from decimal import Decimal
 from datetime import datetime
+from users.models import User
 
 def get_current_date():
     return timezone.now().date()
-
-class CustomUserManager(BaseUserManager):
-    def create_user(self, username, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError('The Email field must be set')
-        email = self.normalize_email(email)
-        user = self.model(username=username, email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, username, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'Manager')
-        
-        return self.create_user(username, email, password, **extra_fields)
-    
-def user_profile_picture_path(instance, filename):
-    """Generate file path for user profile pictures"""
-    ext = filename.split('.')[-1]
-    filename = f"{uuid4().hex}.{ext}"
-    return os.path.join('profile_pictures', str(instance.id), filename)
-
-
-class User(AbstractBaseUser, PermissionsMixin):
-    class Role(models.TextChoices):
-        MANAGER = 'Manager', _('Manager')
-        FRONT_DESK = 'Front Desk', _('Front Desk')
-        TECHNICIAN = 'Technician', _('Technician')
-        ACCOUNTANT = 'Accountant', _('Accountant')
-    
-    profile_picture = models.ImageField(
-        upload_to=user_profile_picture_path,
-        blank=True,
-        null=True,
-        verbose_name=_('Profile Picture'),
-        default='profile_pictures/default.png'
-    )
-    username = models.CharField(max_length=50, unique=True, verbose_name=_('Username'))
-    email = models.EmailField(max_length=100, unique=True, verbose_name=_('Email'))
-    first_name = models.CharField(max_length=50, verbose_name=_('First Name'))
-    last_name = models.CharField(max_length=50, verbose_name=_('Last Name'))
-    phone = models.CharField(max_length=20, blank=True, null=True, verbose_name=_('Phone'))
-    role = models.CharField(max_length=20, choices=Role.choices, verbose_name=_('Role'))
-    is_workshop = models.BooleanField(default=False, verbose_name=_('Workshop'))
-    is_active = models.BooleanField(default=True, verbose_name=_('Active'))
-    created_at = models.DateTimeField(default=timezone.now, verbose_name=_('Created At'))
-    last_login = models.DateTimeField(null=True, blank=True, verbose_name=_('Last Login'))
-    
-    is_staff = models.BooleanField(default=False, verbose_name=_('Staff Status'))
-    
-    objects = CustomUserManager()
-    
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['email', 'first_name', 'last_name', 'role']
-    
-    class Meta:
-        verbose_name = _('User')
-        verbose_name_plural = _('Users')
-        ordering = ['id']  # Changed from 'user_id' to 'id'
-    
-    def __str__(self):
-        return f"{self.username} ({self.get_full_name()})"
-    
-    def get_full_name(self):
-        return f"{self.first_name} {self.last_name}"
-    
-    def get_short_name(self):
-        return self.first_name
-    
-    def get_profile_picture_url(self):
-        """Return the URL for the user's profile picture or a default"""
-        if self.profile_picture and hasattr(self.profile_picture, 'url'):
-            return self.profile_picture.url
-        return '/media/profile_pictures/default.png'
-    
-    def save(self, *args, **kwargs):
-        # Update last_login if password is being set (during login)
-        if 'update_fields' in kwargs and 'last_login' in kwargs['update_fields']:
-            self.last_login = timezone.now()
-        
-        # Delete old profile picture when updating to a new one
-        if self.pk:
-            try:
-                old_instance = User.objects.get(pk=self.pk)
-                if old_instance.profile_picture and old_instance.profile_picture != self.profile_picture:
-                    old_instance.profile_picture.delete(save=False)
-            except User.DoesNotExist:
-                pass
-        
-        super().save(*args, **kwargs)
-    
-    def delete(self, *args, **kwargs):
-        """Delete the profile picture when user is deleted"""
-        if self.profile_picture:
-            self.profile_picture.delete(save=False)
-        super().delete(*args, **kwargs)
-    
-    def has_add_user_permission(self):
-        """Check if user has permission to add other users"""
-        return self.is_superuser or self.role == 'Manager'
     
 
-class Brand(models.Model):
-    name = models.CharField(max_length=100, unique=True)
 
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
-
-
-class Customer(models.Model):
-    class CustomerType(models.TextChoices):
-        NORMAL = 'Normal', _('Normal')
-        REPAIRMAN = 'Repairman', _('Repairman')
-
-    name = models.CharField(max_length=100)
-    email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
-    phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
-    customer_type = models.CharField(
-        max_length=20,
-        choices=CustomerType.choices,
-        default=CustomerType.NORMAL,
-        verbose_name=_('Customer Type')
-    )
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
-
-
-class Referrer(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
 
 
 class Task(models.Model):
@@ -209,8 +64,8 @@ class Task(models.Model):
     due_date = models.DateField(null=True, blank=True)
 
     # New fields
-    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='tasks')
-    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True)
+    customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, related_name='tasks')
+    brand = models.ForeignKey('common.Brand', on_delete=models.SET_NULL, null=True, blank=True)
     device_type = models.CharField(max_length=20, choices=DeviceType.choices, default=DeviceType.FULL)
     device_notes = models.TextField(blank=True)
     laptop_model = models.CharField(max_length=100)
@@ -240,7 +95,7 @@ class Task(models.Model):
     is_debt = models.BooleanField(default=False)
     is_referred = models.BooleanField(default=False)
     referred_by = models.ForeignKey(
-        'Referrer', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_tasks'
+        'customers.Referrer', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_tasks'
     )
 
     # Workshop fields
@@ -251,7 +106,7 @@ class Task(models.Model):
         blank=True
     )
     workshop_location = models.ForeignKey(
-        'Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='workshop_tasks'
+        'common.Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='workshop_tasks'
     )
     workshop_technician = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='workshop_assigned_tasks'
@@ -336,83 +191,3 @@ class TaskActivity(models.Model):
     class Meta:
         ordering = ['-timestamp']
 
-
-class PaymentMethod(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    is_user_selectable = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
-
-
-class Payment(models.Model):
-
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='payments')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateField(default=get_current_date)
-    method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
-
-    def __str__(self):
-        return f'Payment of {self.amount} for {self.task.title} on {self.date}'
-
-    class Meta:
-        ordering = ['-date']
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.task.update_payment_status()
-
-class Location(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    is_workshop = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
-
-class CostBreakdown(models.Model):
-    class CostType(models.TextChoices):
-        ADDITIVE = 'Additive', _('Additive')
-        SUBTRACTIVE = 'Subtractive', _('Subtractive')
-        INCLUSIVE = 'Inclusive', _('Inclusive')
-
-    class RefundStatus(models.TextChoices):
-        PENDING = 'Pending', _('Pending')
-        APPROVED = 'Approved', _('Approved')
-        REJECTED = 'Rejected', _('Rejected')
-
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='cost_breakdowns')
-    description = models.CharField(max_length=255)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    cost_type = models.CharField(max_length=20, choices=CostType.choices, default=CostType.INCLUSIVE)
-    category = models.CharField(max_length=100, default='Inclusive')
-    created_at = models.DateTimeField(auto_now_add=True)
-    reason = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=RefundStatus.choices, default=RefundStatus.APPROVED)
-    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='requested_refunds')
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_refunds')
-    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True)
-
-    def __str__(self):
-        return f'{self.get_cost_type_display()} cost of {self.amount} for {self.task.title}'
-
-    class Meta:
-        ordering = ['created_at']
-
-
-class Account(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name']
