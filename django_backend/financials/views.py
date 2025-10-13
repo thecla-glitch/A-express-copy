@@ -136,7 +136,8 @@ class ExpenditureRequestViewSet(viewsets.ModelViewSet):
                 amount=expenditure.amount,
                 cost_type=expenditure.cost_type,
                 category=expenditure.category.name,
-                payment_method=expenditure.payment_method
+                payment_method=expenditure.payment_method,
+                status=CostBreakdown.Status.APPROVED
             )
 
         serializer = self.get_serializer(expenditure)
