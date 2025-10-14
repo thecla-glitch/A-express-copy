@@ -395,8 +395,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       Add Phone Number
                     </Button>
                       </div>
-                    ))}
-                  </div>
+
                 </div>
               </CardContent>
             </Card>
