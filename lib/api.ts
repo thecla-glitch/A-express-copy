@@ -35,6 +35,7 @@ export interface CostBreakdown {
   cost_type: 'Additive' | 'Subtractive' | 'Inclusive';
   category: string;
   created_at: string;
+  status: string;
 }
 
 export interface Referrer {
