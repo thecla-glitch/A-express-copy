@@ -15,7 +15,7 @@ import { useAuth } from '@/lib/auth-context'
 import { Checkbox } from '@/components/ui/core/checkbox'
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/feedback/alert-dialog";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
-import { useTechnicians, useManagers, useBrands, useLocations } from '@/hooks/use-data'
+import { useTechnicians, useManagers, useBrands, useLocations, useWorkshopTechnicians } from '@/hooks/use-data'
 import { useCustomers } from '@/hooks/use-customers'
 import { useReferrers } from '@/hooks/use-referrers'
 import { SimpleCombobox } from '@/components/ui/core/combobox'
@@ -76,6 +76,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const [referrerSearch, setReferrerSearch] = useState('')
 
   const { data: technicians, isLoading: isLoadingTechnicians } = useTechnicians()
+  const { data: workshopTechnicians, isLoading: isLoadingWorkshopTechnicians } = useWorkshopTechnicians()
   const { data: managers, isLoading: isLoadingManagers } = useManagers()
   const { data: brands, isLoading: isLoadingBrands } = useBrands()
   const { data: locations, isLoading: isLoadingLocations } = useLocations()
@@ -426,12 +427,15 @@ export function NewTaskForm({}: NewTaskFormProps) {
               </FormField>
             {canAssignTechnician && (
               <FormField id='assigned_to' label='Assign Technician'>
-                <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)} disabled={isLoadingTechnicians}>
+                <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)} disabled={isLoadingTechnicians || isLoadingWorkshopTechnicians}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select technician" />
                   </SelectTrigger>
                   <SelectContent>
-                    {technicians?.map((technician) => (
+                    {(locations?.find(l => l.name === formData.current_location)?.is_workshop
+                      ? workshopTechnicians
+                      : technicians
+                    )?.map((technician) => (
                       <SelectItem key={technician.id} value={technician.id.toString()}>
                         {technician.first_name} {technician.last_name}
                       </SelectItem>
