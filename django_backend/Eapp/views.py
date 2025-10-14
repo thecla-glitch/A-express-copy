@@ -12,10 +12,15 @@ from .models import Task, TaskActivity
 from .serializers import (
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer
 )
-from financials.models import PaymentCategory, CostBreakdown
+from financials.models import PaymentCategory
 from django.shortcuts import get_object_or_404
 from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import TaskFilter
+from .pagination import StandardResultsSetPagination
+from customers.models import Customer
+
 
 
 
@@ -45,13 +50,6 @@ def generate_task_id():
         new_seq = 1
 
     return f"{month_prefix}-{new_seq:03d}"
-
-from django_filters.rest_framework import DjangoFilterBackend
-from .filters import TaskFilter, PaymentFilter
-from .pagination import StandardResultsSetPagination
-
-
-from customers.models import Customer
 
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.select_related(

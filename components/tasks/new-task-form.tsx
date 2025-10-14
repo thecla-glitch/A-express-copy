@@ -28,11 +28,9 @@ interface FormData {
   customer_id: string;
   customer_name: string
   customer_phone: string
-  customer_email: string
   customer_type?: string
   brand: string
   laptop_model: string
-  serial_number: string
   description: string
   urgency: string
   current_location: string
@@ -89,11 +87,9 @@ export function NewTaskForm({}: NewTaskFormProps) {
     customer_id: '',
     customer_name: '',
     customer_phone: '',
-    customer_email: '',
     customer_type: 'Normal',
     brand: '',
     laptop_model: '',
-    serial_number: '',
     description: '',
     urgency: 'Yupo',
     current_location: '',
@@ -236,7 +232,6 @@ export function NewTaskForm({}: NewTaskFormProps) {
                     handleInputChange('customer_id', selectedCustomer.id)
                     handleInputChange('customer_name', selectedCustomer.name)
                     handleInputChange('customer_phone', selectedCustomer.phone)
-                    handleInputChange('customer_email', selectedCustomer.email)
                     handleInputChange('customer_type', selectedCustomer.customer_type)
                   } else {
                     handleInputChange('customer_id', '')
@@ -257,16 +252,6 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 onChange={(e) => handleInputChange('customer_phone', e.target.value)}
                 className={errors.customer_phone ? 'border-red-500' : ''}
                 placeholder="e.g. 0712 345 678"
-              />
-            </FormField>
-            <FormField id='customer_email' label='Email Address' error={errors.customer_email}>
-              <Input
-                id='customer_email'
-                type='email'
-                value={formData.customer_email}
-                onChange={(e) => handleInputChange('customer_email', e.target.value)}
-                className={errors.customer_email ? 'border-red-500' : ''}
-                placeholder="e.g. john.doe@example.com"
               />
             </FormField>
             <FormField id='customer_type' label='Customer Type'>
@@ -312,15 +297,6 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 />
               </FormField>
             </div>
-            <FormField id='serial_number' label='Serial Number' error={errors.serial_number}>
-              <Input
-                id='serial_number'
-                value={formData.serial_number}
-                onChange={(e) => handleInputChange('serial_number', e.target.value)}
-                className={errors.serial_number ? 'border-red-500' : ''}
-                placeholder="e.g. C02G812JHC85"
-              />
-            </FormField>
           </div>
 
           <div className='space-y-4'>

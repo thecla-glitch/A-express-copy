@@ -7,7 +7,6 @@ class Customer(models.Model):
         REPAIRMAN = 'Repairman', _('Repairman')
 
     name = models.CharField(max_length=100)
-    email = models.EmailField(max_length=100, unique=True, blank=True, null=True)
     phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     customer_type = models.CharField(

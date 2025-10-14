@@ -51,13 +51,11 @@ export interface Task {
   due_date: string;
   customer_name: string;
   customer_phone: string;
-  customer_email: string;
   brand: number;
   brand_details: Brand;
   device_type: string;
   device_notes: string;
   laptop_model: string;
-  serial_number: string;
   estimated_cost: string;
   total_cost: string;
   payment_status: string;

@@ -114,7 +114,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
 
   const handleFieldUpdate = async (field: string, value: any) => {
-    if (["name", "phone", "email"].includes(field)) {
+    if (["name", "phone"].includes(field)) {
       updateTaskMutation.mutate({ field: "customer", value: { [field]: value } });
     } else {
       updateTaskMutation.mutate({ field, value });
@@ -367,16 +367,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       />
                     </div>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Email Address</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <Input
-                        value={taskData.customer_details?.email || ''}
-                        onChange={(e) => handleFieldUpdate("email", e.target.value)}
-                      />
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -439,20 +429,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                           {taskData.laptop_model || "N/A"}
                         </p>
                       </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Serial Number</Label>
-                    {isEditingLaptop ? (
-                      <Input
-                        value={taskData.serial_number || ''}
-                        onChange={(e) => handleFieldUpdate("serial_number", e.target.value)}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="text-gray-900 font-mono text-sm bg-gray-50 p-2 rounded border">
-                        {taskData.serial_number}
-                      </p>
                     )}
                   </div>
                   <div>

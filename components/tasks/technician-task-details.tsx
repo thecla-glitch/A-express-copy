@@ -249,10 +249,6 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                   <p className="text-lg font-semibold text-gray-900">{task.laptop_model}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Serial Number</label>
-                  <p className="text-lg font-semibold text-gray-900">{task.serial_number}</p>
-                </div>
-                <div>
                   <label className="text-sm font-medium text-gray-700">Date In</label>
                   <p className="text-lg font-semibold text-gray-900">{task.date_in}</p>
                 </div>

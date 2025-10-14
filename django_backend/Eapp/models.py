@@ -69,7 +69,6 @@ class Task(models.Model):
     device_type = models.CharField(max_length=20, choices=DeviceType.choices, default=DeviceType.FULL)
     device_notes = models.TextField(blank=True)
     laptop_model = models.CharField(max_length=100)
-    serial_number = models.CharField(max_length=100, blank=True, default='Not Available')
     estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     payment_status = models.CharField(
         max_length=20,

@@ -5,7 +5,7 @@ from .models import Customer, Referrer
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ['id', 'name', 'email', 'phone', 'address', 'customer_type']
+        fields = ['id', 'name', 'phone', 'address', 'customer_type']
 
 
 class ReferrerSerializer(serializers.ModelSerializer):

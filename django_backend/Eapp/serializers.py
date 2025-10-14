@@ -76,7 +76,7 @@ class TaskDetailSerializer(serializers.ModelSerializer):
             'assigned_to', 'assigned_to_details', 'created_by_details',
             'created_at', 'updated_at', 'due_date',
             'customer', 'customer_details',
-            'brand', 'brand_details', 'laptop_model', 'serial_number',
+            'brand', 'brand_details', 'laptop_model',
             'device_type', 'device_notes',
             'estimated_cost', 'total_cost', 'payment_status',
             'current_location', 'date_in', 'approved_at', 'approved_by',
