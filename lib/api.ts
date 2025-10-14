@@ -12,6 +12,7 @@ export interface UserResponse {
   role: "Manager" | "Technician" | "Front Desk"
   first_name: string
   last_name: string
+  full_name: string
   phone: string
   profile_picture: string
   is_active: boolean
@@ -41,6 +42,14 @@ export interface PhoneNumber {
   phone_number: string;
 }
 
+export interface Customer {
+  id: number;
+  name: string;
+  address: string;
+  customer_type: string;
+  phone_numbers: PhoneNumber[];
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -56,6 +65,7 @@ export interface Task {
   due_date: string;
   customer_name: string;
   customer_phone_numbers: PhoneNumber[];
+  customer_details: Customer;
   brand: number;
   brand_details: Brand;
   device_type: string;

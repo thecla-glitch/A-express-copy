@@ -83,6 +83,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const { data: customers, isLoading: isLoadingCustomers } = useCustomers(customerSearch)
   const { data: referrers, isLoading: isLoadingReferrers } = useReferrers(referrerSearch)
 
+
   const [formData, setFormData] = useState<FormData>({
     title: '',
     customer_id: '',
@@ -103,6 +104,21 @@ export function NewTaskForm({}: NewTaskFormProps) {
     referred_by: ''
   })
   const [errors, setErrors] = useState<FormErrors>({})
+  const [filteredLocations, setFilteredLocations] = useState(locations)
+
+  useEffect(() => {
+    if (locations) {
+      const selectedTechnicianId = formData.assigned_to;
+      const allTechnicians = [...(technicians || []), ...(workshopTechnicians || [])];
+      const selectedTechnician = allTechnicians.find(t => t.id.toString() === selectedTechnicianId);
+
+      if (selectedTechnician?.is_workshop) {
+        setFilteredLocations(locations.filter(l => l.is_workshop));
+      } else {
+        setFilteredLocations(locations);
+      }
+    }
+  }, [formData.assigned_to, locations, technicians, workshopTechnicians]);
 
   useEffect(() => {
     if (locations && locations.length > 0) {
@@ -394,7 +410,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
-                  {locations?.map((location) => (
+                  {filteredLocations?.map((location) => (
                     <SelectItem key={location.id} value={location.name}>
                       {location.name}
                     </SelectItem>
@@ -459,7 +475,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                   options={referrerOptions}
                   value={formData.referred_by}
                   onChange={(value) => {
-                    const selectedReferrer = referrers.find((r: any) => r.id.toString() === value)
+                    const selectedReferrer = referrers?.find((r: any) => r.id.toString() === value)
                     if(selectedReferrer){
                       handleInputChange('referred_by', selectedReferrer.name)
                     } else {
