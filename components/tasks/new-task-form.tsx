@@ -27,7 +27,7 @@ interface FormData {
   title: string;
   customer_id: string;
   customer_name: string
-  customer_phone: string
+  customer_phone_numbers: { phone_number: string }[]
   customer_type?: string
   brand: string
   laptop_model: string
@@ -86,7 +86,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
     title: '',
     customer_id: '',
     customer_name: '',
-    customer_phone: '',
+    customer_phone_numbers: [{ phone_number: '' }],
     customer_type: 'Normal',
     brand: '',
     laptop_model: '',
@@ -119,15 +119,17 @@ export function NewTaskForm({}: NewTaskFormProps) {
     const newErrors: FormErrors = {}
 
     if (!formData.customer_name.trim()) newErrors.customer_name = 'Name is required'
-    
-    if (!formData.customer_phone.trim()) {
-        newErrors.customer_phone = 'Phone is required'
-    } else {
-        const phoneRegex = /^0\s?\d{3}\s?\d{3}\s?\d{3}$/;
-        if (!phoneRegex.test(formData.customer_phone)) {
-            newErrors.customer_phone = 'Invalid phone number format. Example: 0XXX XXX XXX'
+
+    formData.customer_phone_numbers.forEach((phone, index) => {
+        if (!phone.phone_number.trim()) {
+            newErrors[`customer_phone_${index}`] = 'Phone is required'
+        } else {
+            const phoneRegex = /^0\s?\d{3}\s?\d{3}\s?\d{3}$/;
+            if (!phoneRegex.test(phone.phone_number)) {
+                newErrors[`customer_phone_${index}`] = 'Invalid phone number format. Example: 0XXX XXX XXX'
+            }
         }
-    }
+    })
 
     if (!formData.brand && !formData.laptop_model.trim()) {
         newErrors.brand = 'Either brand or model is required';
@@ -145,7 +147,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData(prev => {
         const newFormData = { ...prev, [field]: value };
         if (field === 'device_type' && value === 'Motherboard Only') {
@@ -160,6 +162,22 @@ export function NewTaskForm({}: NewTaskFormProps) {
     }
   }
 
+  const handlePhoneNumberChange = (index: number, value: string) => {
+    const newPhoneNumbers = [...formData.customer_phone_numbers];
+    newPhoneNumbers[index].phone_number = value;
+    handleInputChange('customer_phone_numbers', newPhoneNumbers);
+  };
+
+  const addPhoneNumber = () => {
+    handleInputChange('customer_phone_numbers', [...formData.customer_phone_numbers, { phone_number: '' }]);
+  };
+
+  const removePhoneNumber = (index: number) => {
+    const newPhoneNumbers = [...formData.customer_phone_numbers];
+    newPhoneNumbers.splice(index, 1);
+    handleInputChange('customer_phone_numbers', newPhoneNumbers);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
@@ -168,7 +186,12 @@ export function NewTaskForm({}: NewTaskFormProps) {
     try {
       const taskData = {
         ...formData,
-        customer: formData.customer_id,
+        customer: {
+          id: formData.customer_id,
+          name: formData.customer_name,
+          phone_numbers: formData.customer_phone_numbers,
+          customer_type: formData.customer_type,
+        },
         negotiated_by: formData.negotiated_by || null,
         referred_by: formData.is_referred ? formData.referred_by : null,
       };
@@ -231,7 +254,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                   if(selectedCustomer){
                     handleInputChange('customer_id', selectedCustomer.id)
                     handleInputChange('customer_name', selectedCustomer.name)
-                    handleInputChange('customer_phone', selectedCustomer.phone)
+                    handleInputChange('customer_phone_numbers', selectedCustomer.phone_numbers)
                     handleInputChange('customer_type', selectedCustomer.customer_type)
                   } else {
                     handleInputChange('customer_id', '')
@@ -244,16 +267,24 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 placeholder="Search or create customer..."
               />
             </FormField>
-            <FormField id='customer_phone' label='Phone Number' required error={errors.customer_phone}>
-              <Input
-                id='customer_phone'
-                type='text'
-                value={formData.customer_phone}
-                onChange={(e) => handleInputChange('customer_phone', e.target.value)}
-                className={errors.customer_phone ? 'border-red-500' : ''}
-                placeholder="e.g. 0712 345 678"
-              />
-            </FormField>
+            {formData.customer_phone_numbers.map((phone, index) => (
+              <FormField key={index} id={`customer_phone_${index}`} label={`Phone Number ${index + 1}`} required error={errors[`customer_phone_${index}`]}>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id={`customer_phone_${index}`}
+                    type='text'
+                    value={phone.phone_number}
+                    onChange={(e) => handlePhoneNumberChange(index, e.target.value)}
+                    className={errors[`customer_phone_${index}`] ? 'border-red-500' : ''}
+                    placeholder="e.g. 0712 345 678"
+                  />
+                  {formData.customer_phone_numbers.length > 1 && (
+                    <Button type="button" variant="outline" onClick={() => removePhoneNumber(index)}>-</Button>
+                  )}
+                </div>
+              </FormField>
+            ))}
+            <Button type="button" variant="outline" onClick={addPhoneNumber}>+ Add Phone Number</Button>
             <FormField id='customer_type' label='Customer Type'>
               <Tabs
                 value={formData.customer_type}

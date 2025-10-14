@@ -36,6 +36,11 @@ export interface CostBreakdown {
   created_at: string;
 }
 
+export interface PhoneNumber {
+  id: number;
+  phone_number: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -50,7 +55,7 @@ export interface Task {
   updated_at: string;
   due_date: string;
   customer_name: string;
-  customer_phone: string;
+  customer_phone_numbers: PhoneNumber[];
   brand: number;
   brand_details: Brand;
   device_type: string;

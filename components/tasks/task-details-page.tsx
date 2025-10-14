@@ -114,7 +114,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
 
   const handleFieldUpdate = async (field: string, value: any) => {
-    if (["name", "phone"].includes(field)) {
+    if (["name", "phone_numbers"].includes(field)) {
       updateTaskMutation.mutate({ field: "customer", value: { [field]: value } });
     } else {
       updateTaskMutation.mutate({ field, value });
@@ -358,14 +358,44 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Phone Number</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <Input
-                        value={taskData.customer_details?.phone || ''}
-                        onChange={(e) => handleFieldUpdate("phone", e.target.value)}
-                      />
-                    </div>
+                    <Label className="text-sm font-medium text-gray-600">Phone Numbers</Label>
+                    {taskData.customer_details?.phone_numbers.map((phone, index) => (
+                      <div key={index} className="flex items-center gap-2 mt-1">
+                        <Phone className="h-4 w-4 text-gray-400" />
+                        <Input
+                          value={phone.phone_number || ''}
+                          onChange={(e) => {
+                            const newPhoneNumbers = [...taskData.customer_details.phone_numbers];
+                            newPhoneNumbers[index] = { ...newPhoneNumbers[index], phone_number: e.target.value };
+                            handleFieldUpdate("phone_numbers", newPhoneNumbers);
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newPhoneNumbers = [...taskData.customer_details.phone_numbers];
+                            newPhoneNumbers.splice(index, 1);
+                            handleFieldUpdate("phone_numbers", newPhoneNumbers);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => {
+                        const newPhoneNumbers = [...taskData.customer_details.phone_numbers, { phone_number: '' }];
+                        handleFieldUpdate("phone_numbers", newPhoneNumbers);
+                      }}
+                    >
+                      Add Phone Number
+                    </Button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </CardContent>
