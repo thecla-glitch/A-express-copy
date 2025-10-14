@@ -15,6 +15,7 @@ class PaymentMethod(models.Model):
 
     class Meta:
         ordering = ['name']
+        verbose_name_plural = 'Payment Methods'
 
 
 class PaymentCategory(models.Model):
@@ -25,6 +26,7 @@ class PaymentCategory(models.Model):
 
     class Meta:
         ordering = ['name']
+        verbose_name_plural = 'Payment Categories'
 
 
 class Payment(models.Model):
@@ -43,7 +45,9 @@ class Payment(models.Model):
     )
 
     def __str__(self):
-        return f'Payment of {self.amount} for {self.task.title} on {self.date}'
+        if self.task:
+            return f'Payment of {self.amount} for {self.task.title} on {self.date}'
+        return f'Payment of {self.amount} on {self.date}'
 
     class Meta:
         ordering = ['-date']
@@ -82,6 +86,7 @@ class CostBreakdown(models.Model):
 
     class Meta:
         ordering = ['created_at']
+        verbose_name_plural = 'Cost Breakdowns'
 
 
 class Account(models.Model):
@@ -123,3 +128,4 @@ class ExpenditureRequest(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        verbose_name_plural = 'Expenditure Requests'
