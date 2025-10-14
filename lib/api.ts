@@ -37,6 +37,12 @@ export interface CostBreakdown {
   created_at: string;
 }
 
+export interface Referrer {
+  id: number;
+  name: string;
+  phone: string;
+}
+
 export interface PhoneNumber {
   id: number;
   phone_number: string;
@@ -94,6 +100,8 @@ export interface Task {
   qc_notes: string;
   workshop_status: string | null;
   sent_out_by: number;
+  referred_by: string;
+  referred_by_details: Referrer;
 }
 
 export interface TaskActivity {

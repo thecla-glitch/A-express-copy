@@ -16,7 +16,7 @@ export interface User {
   id: number
   username: string
   email: string
-  role: "Administrator" | "Manager" | "Technician" | "Front Desk"
+  role: "Administrator" | "Manager" | "Technician" | "Front Desk" | "Accountant"
   first_name: string
   last_name: string
   full_name: string
@@ -61,7 +61,7 @@ export function useUserManagement() {
     first_name: string
     last_name: string
     phone: string
-    role: "Administrator" | "Manager" | "Technician" | "Front Desk"
+    role: "Administrator" | "Manager" | "Technician" | "Front Desk" | "Accountant"
     is_workshop: boolean
   }) => {
     setIsLoading(true)

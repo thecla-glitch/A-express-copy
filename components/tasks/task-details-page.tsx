@@ -33,7 +33,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { updateTask, addTaskPayment } from "@/lib/api-client"
+import { updateTask, addTaskPayment, addTaskActivity } from "@/lib/api-client"
 
 import { TaskActivityLog } from "./task-activity-log"
 import { DayPicker } from "react-day-picker"
@@ -44,7 +44,7 @@ import { usePaymentMethods } from "@/hooks/use-payment-methods";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { CostBreakdown } from "./cost-breakdown";
-import { Combobox } from "@/components/ui/core/combobox";
+import { SimpleCombobox as Combobox } from "@/components/ui/core/combobox";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
 import { AddExpenditureDialog } from "@/components/financials/add-expenditure-dialog";
 
@@ -67,7 +67,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { data: statusOptions } = useTaskStatusOptions();
   const { data: urgencyOptions } = useTaskUrgencyOptions();
   const { data: brands } = useBrands();
-  const { data: paymentMethods, refetch: refetchPaymentMethods } = usePaymentMethods();
+  const { data: paymentMethods } = usePaymentMethods();
   const { toast } = useToast();
 
   const [newNote, setNewNote] = useState("")
@@ -154,7 +154,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   };
 
   const handleMarkAsPickedUp = () => {
-    if (taskData?.payment_status !== 'Fully Paid' && !taskData.is_debt) {
+    if (taskData?.payment_status !== 'Fully Paid' && !taskData?.is_debt) {
       toast({
         title: "Payment Required",
         description: "This task cannot be marked as picked up until it is fully paid. Please contact the manager for assistance.",
@@ -537,7 +537,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <Label className="text-sm font-medium text-gray-600">Assigned Technician</Label>
                     {canEditTechnician ? (
                       <Select
-                        value={taskData.assigned_to || ''}
+                        value={taskData.assigned_to?.toString() || ''}
                         onValueChange={(value) => handleFieldUpdate("assigned_to", value)}
                       >
                         <SelectTrigger>
@@ -545,7 +545,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {technicians?.map((tech) => (
-                            <SelectItem key={tech.id} value={tech.id}>
+                            <SelectItem key={tech.id} value={tech.id.toString()}>
                               {tech.full_name}
                             </SelectItem>
                           ))}
