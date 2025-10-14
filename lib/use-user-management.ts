@@ -19,6 +19,7 @@ export interface User {
   role: "Administrator" | "Manager" | "Technician" | "Front Desk"
   first_name: string
   last_name: string
+  full_name: string
   phone: string
   profile_picture: string
   is_active: boolean
