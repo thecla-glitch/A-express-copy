@@ -291,7 +291,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
               </div>
 
               <div className="flex gap-3">
-                {task && task.status !== 'Completed' && (!task.workshop_status || ['Solved', 'Not Solved'].includes(task.workshop_status)) && !user?.is_workshop && (
+                {task && task.status !== 'Completed' && (!task.workshop_status || ['Solved', 'Not Solved'].includes(task.workshop_status)) && (!user?.is_workshop || !task.original_technician) && (
                   <Button
                     className="bg-green-600 hover:bg-green-700 text-white"
                     onClick={handleMarkComplete}
@@ -301,7 +301,7 @@ export function TechnicianTaskDetails({ taskId }: TechnicianTaskDetailsProps) {
                     Mark as Complete
                   </Button>
                 )}
-                {task.status === 'In Progress' && !task.workshop_status && (
+                {task.status === 'In Progress' && !task.workshop_status && task.original_technician && (
                   <Dialog open={isSendToWorkshopDialogOpen} onOpenChange={setIsSendToWorkshopDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-50 bg-transparent">
