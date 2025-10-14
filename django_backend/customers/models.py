@@ -6,7 +6,7 @@ class Customer(models.Model):
         NORMAL = 'Normal', _('Normal')
         REPAIRMAN = 'Repairman', _('Repairman')
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, db_index=True)
     address = models.TextField(blank=True, null=True)
     customer_type = models.CharField(
         max_length=20,

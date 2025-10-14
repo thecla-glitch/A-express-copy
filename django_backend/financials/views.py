@@ -88,7 +88,9 @@ class ExpenditureRequestViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = ExpenditureRequest.objects.all()
+        queryset = ExpenditureRequest.objects.select_related(
+            'task', 'category', 'payment_method', 'requester', 'approver'
+        )
 
         if not user.is_staff and not user.role in ['Manager', 'Admin']:
             queryset = queryset.filter(requester=user)

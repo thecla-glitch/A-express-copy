@@ -51,9 +51,27 @@ def generate_task_id():
     return f"{month_prefix}-{new_seq:03d}"
 
 class TaskViewSet(viewsets.ModelViewSet):
-    queryset = Task.objects.select_related(
-        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician', 'customer'
-    ).prefetch_related('activities', 'payments', 'cost_breakdowns')
+    def get_queryset(self):
+        queryset = Task.objects.all()
+        
+        # Prefetch related objects to avoid N+1 queries
+        if self.action == 'list':
+            return queryset.select_related(
+                'customer', 'assigned_to'
+            ).prefetch_related(
+                'payments', 'cost_breakdowns'
+            )
+            
+        # For detail view, prefetch all related data
+        return queryset.select_related(
+            'assigned_to', 'created_by', 'negotiated_by', 'approved_by', 
+            'sent_out_by', 'brand', 'referred_by', 'customer', 
+            'workshop_location', 'workshop_technician', 'original_technician', 'qc_rejected_by'
+        ).prefetch_related(
+            'activities', 'payments', 'cost_breakdowns'
+        )
+
+
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TaskFilter
@@ -267,14 +285,13 @@ class TaskViewSet(viewsets.ModelViewSet):
         if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
             return Response(
                 {"error": "You do not have permission to add payments."},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_4_FORBIDDEN
             )
         task = self.get_object()
         serializer = PaymentSerializer(data=request.data)
         if serializer.is_valid():
             tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
-            payment = serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
-            payment.task.update_payment_status()  # Trigger update
+            serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
