@@ -109,21 +109,30 @@ class TaskViewSet(viewsets.ModelViewSet):
         data = request.data.copy()
         data['title'] = generate_task_id()
 
-        # Customer creation logic
+        # Customer creation/retrieval logic
         customer_data = data.pop('customer', None)
         customer_created = False
         if customer_data:
-            customer_id = customer_data.get('id')
-            if customer_id:
-                customer = Customer.objects.get(id=customer_id)
-                customer_serializer = CustomerSerializer(customer, data=customer_data, partial=True)
+            phone_numbers = customer_data.get('phone_numbers', [])
+            customer = None
+            if phone_numbers:
+                first_phone_number = phone_numbers[0].get('phone_number')
+                if first_phone_number:
+                    try:
+                        customer = Customer.objects.get(phone_numbers__phone_number=first_phone_number)
+                    except Customer.DoesNotExist:
+                        pass  # Customer not found, will be created
+
+            if customer:
+                # An existing customer was found, use it
+                data['customer'] = customer.id
             else:
+                # No existing customer found, create a new one
                 customer_serializer = CustomerSerializer(data=customer_data)
-            
-            customer_serializer.is_valid(raise_exception=True)
-            customer = customer_serializer.save()
-            data['customer'] = customer.id
-            customer_created = not customer_id
+                customer_serializer.is_valid(raise_exception=True)
+                customer = customer_serializer.save()
+                data['customer'] = customer.id
+                customer_created = True
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)

@@ -44,7 +44,7 @@ class CustomerSerializer(serializers.ModelSerializer):
                     phone_number.save()
             else:
                 # If phone number has no ID, it's a new one
-                PhoneNumber.objects.create(customer=instance, **phone_number_data)
+                PhoneNumber.objects.get_or_create(customer=instance, **phone_number_data)
 
         # Remove phone numbers that are no longer in the list
         for phone_number in existing_phone_numbers.values():

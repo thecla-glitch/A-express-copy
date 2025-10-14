@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from customers.models import Customer
+from customers.models import Customer, PhoneNumber
 from Eapp.models import User
 
 class CustomerAPITests(APITestCase):
