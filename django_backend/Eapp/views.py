@@ -93,23 +93,20 @@ class TaskViewSet(viewsets.ModelViewSet):
         data['title'] = generate_task_id()
 
         # Customer creation logic
-        customer_name = data.pop('customer_name', None)
-        customer_phone = data.pop('customer_phone', None)
-        customer_email = data.pop('customer_email', None)
-        customer_type = data.pop('customer_type', 'Normal')
-        
+        customer_data = data.pop('customer', None)
         customer_created = False
-        if customer_phone:
-            customer, created = Customer.objects.get_or_create(
-                phone=customer_phone,
-                defaults={
-                    'name': customer_name,
-                    'email': customer_email,
-                    'customer_type': customer_type,
-                }
-            )
+        if customer_data:
+            customer_id = customer_data.get('id')
+            if customer_id:
+                customer = Customer.objects.get(id=customer_id)
+                customer_serializer = CustomerSerializer(customer, data=customer_data, partial=True)
+            else:
+                customer_serializer = CustomerSerializer(data=customer_data)
+            
+            customer_serializer.is_valid(raise_exception=True)
+            customer = customer_serializer.save()
             data['customer'] = customer.id
-            customer_created = created
+            customer_created = not customer_id
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
