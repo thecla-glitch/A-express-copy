@@ -34,7 +34,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { updateTask, addTaskPayment } from "@/lib/api-client"
-import { SendCustomerUpdateDialog } from "./send-customer-update-dialog"
+
 import { TaskActivityLog } from "./task-activity-log"
 import { DayPicker } from "react-day-picker"
 import "react-day-picker/dist/style.css"
@@ -274,7 +274,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <SendCustomerUpdateDialog taskId={taskId} customerEmail={taskData.customer_details?.email} />
+          
           {isManager && taskData.payment_status !== 'Fully Paid' && (
             <Button 
               className="bg-yellow-500 hover:bg-yellow-600 text-white"

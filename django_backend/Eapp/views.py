@@ -4,8 +4,7 @@ from rest_framework import status, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
-from django.core.mail import send_mail
-from django.conf import settings
+
 from users.models import User
 from financials.serializers import PaymentSerializer, CostBreakdownSerializer
 from .models import Task, TaskActivity
@@ -279,39 +278,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'])
-    def send_update(self, request, task_id=None):
-        if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
-            return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
 
-        try:
-            task = self.get_object()
-            if not task.customer.email:
-                return Response({'error': 'No customer email available for this task.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            subject = request.data.get('subject')
-            message = request.data.get('message')
-            if not subject or not message:
-                return Response({'error': 'Subject and message are required.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [task.customer.email],
-                fail_silently=False,
-            )
-            TaskActivity.objects.create(
-                task=task, 
-                user=request.user, 
-                type='customer_contact', 
-                message=f'Sent customer update: "{subject}"'
-            )
-            return Response({'message': 'Customer update sent successfully.'}, status=status.HTTP_200_OK)
-        except Task.DoesNotExist:
-            return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=['post'], url_path='cost-breakdowns')
     def cost_breakdowns(self, request, task_id=None):
