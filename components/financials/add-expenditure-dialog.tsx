@@ -4,13 +4,11 @@ import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronsUpDown } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 import { useAuth } from '@/lib/auth-context';
 import { createExpenditureRequest, createAndApproveExpenditureRequest, getTasks, getPaymentCategories, getPaymentMethods } from '@/lib/api-client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/feedback/dialog";
 import { Button } from "@/components/ui/core/button";
-import { Input } from "@/components/ui/core/input";
 import { Textarea } from "@/components/ui/core/textarea";
 import { Label } from "@/components/ui/core/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select";
@@ -53,7 +51,6 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
     }
   }, [isOpen, mode, taskId, taskTitle, setValue, reset]);
 
-  const { user } = useAuth();
   const isManager = user?.role === 'Manager';
 
   const mutation = useMutation({
