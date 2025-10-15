@@ -9,7 +9,8 @@ def update_task_on_payment_change(sender, instance, **kwargs):
     try:
         if instance.task:
             task = instance.task
-            task.paid_amount = task.payments.aggregate(total=Sum('amount'))['total'] or 0
+            # Filter out negative payments (expenditures) when calculating paid_amount
+            task.paid_amount = task.payments.filter(amount__gte=0).aggregate(total=Sum('amount'))['total'] or 0
             task.update_payment_status()
             task.save(update_fields=['paid_amount', 'payment_status', 'paid_date'])
     except Task.DoesNotExist:
