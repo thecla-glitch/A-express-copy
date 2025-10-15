@@ -55,6 +55,7 @@ class Payment(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.task:
+            self.task.refresh_from_db()
             self.task.update_payment_status()
 
 
@@ -80,6 +81,17 @@ class CostBreakdown(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     reason = models.TextField(blank=True, null=True)
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.task:
+            self.task.update_payment_status()
+
+    def delete(self, *args, **kwargs):
+        task = self.task
+        super().delete(*args, **kwargs)
+        if task:
+            task.update_payment_status()
 
     def __str__(self):
         return f'{self.get_cost_type_display()} cost of {self.amount} for {self.task.title}'

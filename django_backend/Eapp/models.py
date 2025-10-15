@@ -154,6 +154,7 @@ class Task(models.Model):
     def update_payment_status(self):
         paid = sum(p.amount for p in self.payments.all()) or Decimal('0.00')
         total = self.calculate_total_cost() or Decimal('0.00')
+        
         if paid == 0:
             self.payment_status = self.PaymentStatus.UNPAID
         elif paid < total:
@@ -162,6 +163,8 @@ class Task(models.Model):
             self.payment_status = self.PaymentStatus.FULLY_PAID
             if not self.paid_date:
                 self.paid_date = timezone.now().date()
+        
+        self.save(update_fields=['payment_status', 'paid_date'])
 
 
 class TaskActivity(models.Model):
