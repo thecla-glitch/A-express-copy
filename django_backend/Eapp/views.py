@@ -154,6 +154,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         self._handle_debt_status(request.data, task, user)
         self._handle_payment_status_update(request.data, task, user)
         self._handle_workshop_logic(request.data, task, user)
+        self._handle_assignment_update(request.data, task, user)
 
         # Handle status transitions
         if 'status' in request.data:
@@ -209,6 +210,29 @@ class TaskViewSet(viewsets.ModelViewSet):
                 task=task, user=user, type=TaskActivity.ActivityType.WORKSHOP,
                 message=f"Task returned from workshop with status: {data['workshop_status']}."
             )
+
+    def _handle_assignment_update(self, data, task, user):
+        if 'assigned_to' in data:
+            new_technician_id = data.get('assigned_to')
+            if new_technician_id:
+                new_technician = get_object_or_404(User, id=new_technician_id)
+                if task.assigned_to != new_technician:
+                    old_technician_name = task.assigned_to.get_full_name() if task.assigned_to else "unassigned"
+                    TaskActivity.objects.create(
+                        task=task,
+                        user=user,
+                        type=TaskActivity.ActivityType.ASSIGNMENT,
+                        message=f"Task reassigned from {old_technician_name} to {new_technician.get_full_name()} by {user.get_full_name()}."
+                    )
+            else: # This means the task is being unassigned
+                if task.assigned_to:
+                    old_technician_name = task.assigned_to.get_full_name()
+                    TaskActivity.objects.create(
+                        task=task,
+                        user=user,
+                        type=TaskActivity.ActivityType.ASSIGNMENT,
+                        message=f"Task unassigned from {old_technician_name} by {user.get_full_name()}."
+                    )
 
     def _handle_status_update(self, data, task, user):
         new_status = data['status']

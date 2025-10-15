@@ -134,9 +134,7 @@ class Task(models.Model):
 
     def save(self, *args, **kwargs):
         if self.pk:
-            original = Task.objects.get(pk=self.pk)
-            if original.status == self.Status.IN_PROGRESS and self.assigned_to != original.assigned_to:
-                raise PermissionDenied("Cannot change the assigned technician for a task that is in progress.")
+            pass
         super().save(*args, **kwargs)
 
     def _calculate_total_cost(self):
@@ -168,6 +166,7 @@ class TaskActivity(models.Model):
         RETURNED = 'returned', _('Returned')
         PICKED_UP = 'picked_up', _('Picked Up')
         DEVICE_NOTE = 'device_note', _('Device Note')
+        ASSIGNMENT = 'assignment', _('Assignment')
 
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='activities')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
