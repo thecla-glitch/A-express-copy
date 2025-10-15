@@ -177,13 +177,8 @@ const navigationItems = {
   "Front Desk": [
     {
       title: "Dashboard",
-      url: "/dashboard",
-      icon: Home,
-    },
-    {
-      title: "Front Desk",
       url: "/dashboard/front-desk",
-      icon: Calendar,
+      icon: Home,
     },
     {
       title: "Customers",
