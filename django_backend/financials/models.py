@@ -9,6 +9,7 @@ def get_current_date():
 class PaymentMethod(models.Model):
     name = models.CharField(max_length=100, unique=True)
     is_user_selectable = models.BooleanField(default=True)
+    account = models.OneToOneField('Account', on_delete=models.CASCADE, null=True, blank=True, related_name='payment_method')
 
     def __str__(self):
         return self.name
