@@ -71,6 +71,8 @@ class Task(models.Model):
     device_notes = models.TextField(blank=True)
     laptop_model = models.CharField(max_length=100)
     estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     payment_status = models.CharField(
         max_length=20,
         choices=PaymentStatus.choices,
@@ -137,34 +139,21 @@ class Task(models.Model):
                 raise PermissionDenied("Cannot change the assigned technician for a task that is in progress.")
         super().save(*args, **kwargs)
 
-    def calculate_total_cost(self):
+    def _calculate_total_cost(self):
         estimated_cost = self.estimated_cost or Decimal('0.00')
         additive_costs = sum(item.amount for item in self.cost_breakdowns.filter(cost_type='Additive'))
         subtractive_costs = sum(item.amount for item in self.cost_breakdowns.filter(cost_type='Subtractive'))
         return estimated_cost + additive_costs - subtractive_costs
 
-    @property
-    def outstanding_balance(self):
-        total_cost = self.calculate_total_cost()
-        if not total_cost:
-            return Decimal('0.00')
-        paid = sum(p.amount for p in self.payments.all()) or Decimal('0.00')
-        return total_cost - paid
-
     def update_payment_status(self):
-        paid = sum(p.amount for p in self.payments.all()) or Decimal('0.00')
-        total = self.calculate_total_cost() or Decimal('0.00')
-        
-        if paid == 0:
+        if self.paid_amount == 0:
             self.payment_status = self.PaymentStatus.UNPAID
-        elif paid < total:
+        elif self.paid_amount < self.total_cost:
             self.payment_status = self.PaymentStatus.PARTIALLY_PAID
-        elif paid >= total:
+        elif self.paid_amount >= self.total_cost:
             self.payment_status = self.PaymentStatus.FULLY_PAID
             if not self.paid_date:
                 self.paid_date = timezone.now().date()
-        
-        self.save(update_fields=['payment_status', 'paid_date'])
 
 
 class TaskActivity(models.Model):
