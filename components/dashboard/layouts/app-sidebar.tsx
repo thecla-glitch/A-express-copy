@@ -201,11 +201,6 @@ const navigationItems = {
         icon: FileText,
     },
     {
-      title: "Payments",
-      url: "/dashboard/payments",
-      icon: CreditCard,
-    },
-    {
       title: "Profile",
       url: "/dashboard/profile",
       icon: User,
