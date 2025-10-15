@@ -9,7 +9,7 @@ class CostBreakdownSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CostBreakdown
-        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'payment_method', 'task_title']
+        fields = ['id', 'description', 'amount', 'cost_type', 'category', 'created_at', 'reason', 'payment_method', 'task_title', 'status']
         extra_kwargs = {
             'payment_method': {'write_only': True}
         }

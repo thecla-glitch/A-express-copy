@@ -4,18 +4,22 @@ from rest_framework import status, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
-from django.core.mail import send_mail
-from django.conf import settings
+
 from users.models import User
 from financials.serializers import PaymentSerializer, CostBreakdownSerializer
 from .models import Task, TaskActivity
 from .serializers import (
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer
 )
-from financials.models import PaymentCategory, CostBreakdown
+from financials.models import PaymentCategory
 from django.shortcuts import get_object_or_404
 from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import TaskFilter
+from .pagination import StandardResultsSetPagination
+from customers.models import Customer
+
 
 
 
@@ -46,17 +50,28 @@ def generate_task_id():
 
     return f"{month_prefix}-{new_seq:03d}"
 
-from django_filters.rest_framework import DjangoFilterBackend
-from .filters import TaskFilter, PaymentFilter
-from .pagination import StandardResultsSetPagination
-
-
-from customers.models import Customer
-
 class TaskViewSet(viewsets.ModelViewSet):
-    queryset = Task.objects.select_related(
-        'assigned_to', 'created_by', 'negotiated_by', 'brand', 'workshop_location', 'workshop_technician', 'original_technician', 'customer'
-    ).prefetch_related('activities', 'payments', 'cost_breakdowns')
+    def get_queryset(self):
+        queryset = Task.objects.all()
+        
+        # Prefetch related objects to avoid N+1 queries
+        if self.action == 'list':
+            return queryset.select_related(
+                'customer', 'assigned_to'
+            ).prefetch_related(
+                'payments', 'cost_breakdowns'
+            )
+            
+        # For detail view, prefetch all related data
+        return queryset.select_related(
+            'assigned_to', 'created_by', 'negotiated_by', 'approved_by', 
+            'sent_out_by', 'brand', 'referred_by', 'customer', 
+            'workshop_location', 'workshop_technician', 'original_technician', 'qc_rejected_by'
+        ).prefetch_related(
+            'activities', 'payments', 'cost_breakdowns'
+        )
+
+
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TaskFilter
@@ -94,24 +109,30 @@ class TaskViewSet(viewsets.ModelViewSet):
         data = request.data.copy()
         data['title'] = generate_task_id()
 
-        # Customer creation logic
-        customer_name = data.pop('customer_name', None)
-        customer_phone = data.pop('customer_phone', None)
-        customer_email = data.pop('customer_email', None)
-        customer_type = data.pop('customer_type', 'Normal')
-        
+        # Customer creation/retrieval logic
+        customer_data = data.pop('customer', None)
         customer_created = False
-        if customer_phone:
-            customer, created = Customer.objects.get_or_create(
-                phone=customer_phone,
-                defaults={
-                    'name': customer_name,
-                    'email': customer_email,
-                    'customer_type': customer_type,
-                }
-            )
-            data['customer'] = customer.id
-            customer_created = created
+        if customer_data:
+            phone_numbers = customer_data.get('phone_numbers', [])
+            customer = None
+            if phone_numbers:
+                first_phone_number = phone_numbers[0].get('phone_number')
+                if first_phone_number:
+                    try:
+                        customer = Customer.objects.get(phone_numbers__phone_number=first_phone_number)
+                    except Customer.DoesNotExist:
+                        pass  # Customer not found, will be created
+
+            if customer:
+                # An existing customer was found, use it
+                data['customer'] = customer.id
+            else:
+                # No existing customer found, create a new one
+                customer_serializer = CustomerSerializer(data=customer_data)
+                customer_serializer.is_valid(raise_exception=True)
+                customer = customer_serializer.save()
+                data['customer'] = customer.id
+                customer_created = True
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -273,50 +294,17 @@ class TaskViewSet(viewsets.ModelViewSet):
         if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
             return Response(
                 {"error": "You do not have permission to add payments."},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_4_FORBIDDEN
             )
         task = self.get_object()
         serializer = PaymentSerializer(data=request.data)
         if serializer.is_valid():
             tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
-            payment = serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
-            payment.task.update_payment_status()  # Trigger update
+            serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'])
-    def send_update(self, request, task_id=None):
-        if not (request.user.role in ['Manager', 'Front Desk'] or request.user.is_superuser):
-            return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
 
-        try:
-            task = self.get_object()
-            if not task.customer.email:
-                return Response({'error': 'No customer email available for this task.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            subject = request.data.get('subject')
-            message = request.data.get('message')
-            if not subject or not message:
-                return Response({'error': 'Subject and message are required.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [task.customer.email],
-                fail_silently=False,
-            )
-            TaskActivity.objects.create(
-                task=task, 
-                user=request.user, 
-                type='customer_contact', 
-                message=f'Sent customer update: "{subject}"'
-            )
-            return Response({'message': 'Customer update sent successfully.'}, status=status.HTTP_200_OK)
-        except Task.DoesNotExist:
-            return Response({'error': 'Task not found.'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=['post'], url_path='cost-breakdowns')
     def cost_breakdowns(self, request, task_id=None):
