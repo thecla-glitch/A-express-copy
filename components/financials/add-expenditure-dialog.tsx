@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { createExpenditureRequest, getTasks, getPaymentCategories, getPaymentMethods } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth-context';
+import { createExpenditureRequest, createAndApproveExpenditureRequest, getTasks, getPaymentCategories, getPaymentMethods } from '@/lib/api-client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/feedback/dialog";
 import { Button } from "@/components/ui/core/button";
 import { Input } from "@/components/ui/core/input";
@@ -27,6 +28,7 @@ interface AddExpenditureDialogProps {
 }
 
 export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', taskId, taskTitle }: AddExpenditureDialogProps) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { register, handleSubmit, control, watch, formState: { errors }, setValue, reset } = useForm();
@@ -51,12 +53,15 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
     }
   }, [isOpen, mode, taskId, taskTitle, setValue, reset]);
 
+  const { user } = useAuth();
+  const isManager = user?.role === 'Manager';
+
   const mutation = useMutation({
-    mutationFn: createExpenditureRequest,
+    mutationFn: isManager ? createAndApproveExpenditureRequest : createExpenditureRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenditureRequests'] });
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
-      toast({ title: "Success", description: `${mode === 'refund' ? 'Refund' : 'Expenditure'} request created successfully.` });
+      toast({ title: "Success", description: `${mode === 'refund' ? 'Refund' : 'Expenditure'} request ${isManager ? 'created and approved' : 'created'} successfully.` });
       onClose();
     },
     onError: (error: any) => {

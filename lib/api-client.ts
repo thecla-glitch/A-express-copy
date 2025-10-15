@@ -101,5 +101,6 @@ export const deletePaymentCategory = (categoryId: number) => apiClient.delete(`/
 // Expenditure Requests
 export const getExpenditureRequests = (params: any = {}) => apiClient.get('/expenditure-requests/', { params });
 export const createExpenditureRequest = (data: any) => apiClient.post('/expenditure-requests/', data);
+export const createAndApproveExpenditureRequest = (data: any) => apiClient.post('/expenditure-requests/create_and_approve/', data);
 export const approveExpenditureRequest = (id: number) => apiClient.post(`/expenditure-requests/${id}/approve/`);
 export const rejectExpenditureRequest = (id: number) => apiClient.post(`/expenditure-requests/${id}/reject/`);
