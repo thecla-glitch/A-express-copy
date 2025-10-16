@@ -393,3 +393,18 @@ class CostBreakdown(models.Model):
 
     class Meta:
         ordering = ['created_at']
+        
+        
+class SavedReport(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    config = models.JSONField()  # Stores report configuration
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_public = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        ordering = ['-created_at']

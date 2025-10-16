@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from .models import User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod
+from .models import SavedReport, User, Task, TaskActivity, Payment, Location, Brand, Customer, Referrer, CostBreakdown, PaymentMethod
 from django.utils import timezone
 
 
@@ -310,3 +310,20 @@ class TaskSerializer(serializers.ModelSerializer):
 
         return super().update(instance, validated_data)
 
+
+
+class ReportConfigSerializer(serializers.Serializer):
+    reportName = serializers.CharField(max_length=255)
+    selectedType = serializers.CharField()
+    selectedFields = serializers.ListField(child=serializers.CharField())
+    dateRange = serializers.CharField()
+    customStartDate = serializers.DateField(required=False, allow_null=True)
+    customEndDate = serializers.DateField(required=False, allow_null=True)
+
+class SavedReportSerializer(serializers.ModelSerializer):
+    created_by_details = UserSerializer(source='created_by', read_only=True)
+    
+    class Meta:
+        model = SavedReport
+        fields = ['id', 'name', 'description', 'config', 'created_by', 'created_by_details', 'created_at', 'is_public']
+        read_only_fields = ['created_by', 'created_at']
