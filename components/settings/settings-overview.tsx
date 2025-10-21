@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/feedback/dialog";
-import ManagePaymentMethodsDialog from "../tasks/manage-payment-methods-dialog";
+import ManagePaymentMethodsDialog from "../payments/manage-payment-methods-dialog";
 import ManagePaymentCategoriesDialog from "../payments/manage-payment-categories-dialog";
 import { Plus } from "lucide-react";
 import { useState } from "react";
