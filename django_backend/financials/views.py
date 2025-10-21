@@ -44,12 +44,16 @@ class PaymentCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrAccountant]
 
 
+from .pagination import CustomPagination
+
+
 class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows payments to be viewed.
     """
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         queryset = Payment.objects.all()
@@ -85,6 +89,7 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
 class ExpenditureRequestViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenditureRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrAccountant]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         user = self.request.user

@@ -42,24 +42,32 @@ export function PaymentsOverview() {
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddExpenditureOpen, setIsAddExpenditureOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10; // Or a configurable value
 
   const { user } = useAuth();
   const isManager = user?.role === 'Manager';
   const isAccountant = user?.role === 'Accountant';
 
-  const { data: payments, isLoading, isError } = usePayments({
+  const { data: paymentsData, isLoading, isError } = usePayments({
     method: methodFilter,
     category: categoryFilter,
     is_refunded: activeTab === "expenditure",
     date: date ? format(date, "yyyy-MM-dd") : undefined,
     search: searchTerm,
+    page: page,
+    page_size: pageSize,
   });
+
+  const payments = paymentsData?.results || [];
+  const hasNextPage = !!paymentsData?.next;
+  const hasPreviousPage = !!paymentsData?.previous;
 
   const { data: revenueData, error: revenueError } = useSWR('/revenue-overview/', fetcher)
   const { data: paymentMethods } = usePaymentMethods()
   const { data: paymentCategories } = useSWR('/payment-categories/', fetcher)
 
-  const revenuePayments = activeTab === 'revenue' ? payments?.filter((p: Payment) => parseFloat(p.amount) > 0) : [];
+  const revenuePayments = activeTab === 'revenue' ? payments.filter((p: Payment) => parseFloat(p.amount) > 0) : [];
   const expenditurePayments = activeTab === 'expenditure' ? payments : [];
 
   const formatCurrency = (amount: number) => {
@@ -98,6 +106,20 @@ export function PaymentsOverview() {
           ))}
         </TableBody>
       </Table>
+      <div className="flex justify-end space-x-2 p-4">
+        <Button
+          onClick={() => setPage(prev => Math.max(1, prev - 1))}
+          disabled={!hasPreviousPage || isLoading}
+        >
+          Previous
+        </Button>
+        <Button
+          onClick={() => setPage(prev => prev + 1)}
+          disabled={!hasNextPage || isLoading}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 

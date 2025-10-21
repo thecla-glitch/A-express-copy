@@ -10,6 +10,8 @@ interface PaymentFilters {
     category?: string;
     search?: string;
     task_payments?: boolean;
+    page?: number;
+    page_size?: number;
 }
 
 export function usePayments(filters: PaymentFilters = {}) {

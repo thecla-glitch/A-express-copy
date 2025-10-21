@@ -20,6 +20,24 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+export interface ExpenditureRequest {
+  id: number;
+  description: string;
+  amount: string;
+  task: number | null;
+  task_title: string | null;
+  status: string;
+  requester: { username: string };
+  approver: { username: string } | null;
+}
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export const getProfile = () => apiClient.get('/profile/');
 export const getTasks = (params: any = {}) => apiClient.get('/tasks/', { params });
 export const getDebts = (params: any = {}) => apiClient.get('/tasks/debts/', { params });
@@ -99,7 +117,10 @@ export const deletePaymentCategory = (categoryId: number) => apiClient.delete(`/
 
 
 // Expenditure Requests
-export const getExpenditureRequests = (params: any = {}) => apiClient.get('/expenditure-requests/', { params });
+export const getExpenditureRequests = async (params: { page?: number; page_size?: number; [key: string]: any } = {}): Promise<PaginatedResponse<ExpenditureRequest>> => {
+  const response = await apiClient.get('/expenditure-requests/', { params });
+  return response.data;
+};
 export const createExpenditureRequest = (data: any) => apiClient.post('/expenditure-requests/', data);
 export const createAndApproveExpenditureRequest = (data: any) => apiClient.post('/expenditure-requests/create_and_approve/', data);
 export const approveExpenditureRequest = (id: number) => apiClient.post(`/expenditure-requests/${id}/approve/`);
