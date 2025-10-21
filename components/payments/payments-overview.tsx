@@ -147,19 +147,19 @@ export function PaymentsOverview() {
       </div>
 
       {/* Payment Statistics */}
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-2'>
+      <div className='grid gap-4 md:grid-cols-3 lg:grid-cols-3'>
         {revenueError ? <div>Failed to load revenue data</div> : !revenueData ? <div>Loading...</div> : (
           <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Revenue this month</CardTitle>
-                {revenueData.month_over_month_change >= 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(revenueData.this_month_revenue)}</div>
-                <p className="text-xs text-muted-foreground">{revenueData.month_over_month_change.toFixed(2)}% from last month</p>
-              </CardContent>
-            </Card>
+            {revenueData && revenueData.opening_balance !== undefined && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Opening Balance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(revenueData.opening_balance)}</div>
+                </CardContent>
+              </Card>
+            )}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
@@ -170,6 +170,18 @@ export function PaymentsOverview() {
                 <p className="text-xs text-muted-foreground">{revenueData.day_over_day_change.toFixed(2)}% from yesterday</p>
               </CardContent>
             </Card>
+            {revenueData.today_expenditure !== undefined && revenueData.expenditure_day_over_day_change !== undefined && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Today's Expenditure</CardTitle>
+                  {revenueData.expenditure_day_over_day_change >= 0 ? <TrendingUp className="h-4 w-4 text-red-500" /> : <TrendingDown className="h-4 w-4 text-green-500" />}
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(revenueData.today_expenditure)}</div>
+                  <p className="text-xs text-muted-foreground">{revenueData.expenditure_day_over_day_change.toFixed(2)}% from yesterday</p>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </div>
