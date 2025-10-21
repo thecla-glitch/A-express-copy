@@ -73,7 +73,6 @@ export const deleteLocation = (locationId: number) => apiClient.delete(`/locatio
 export const listWorkshopLocations = () => apiClient.get('locations/workshop-locations/');
 export const listWorkshopTechnicians = () => apiClient.get('list/workshop-technicians/');
 
-// Functions from ApiClient class
 export const login = (username: any, password: any) => apiClient.post('/login/', { username, password });
 export const registerUser = (userData: any) => apiClient.post('/users/', userData);
 export const listUsers = () => apiClient.get('/users/');
