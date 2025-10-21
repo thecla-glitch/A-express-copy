@@ -13,6 +13,7 @@ class Customer(models.Model):
         default=CustomerType.NORMAL,
         verbose_name=_('Customer Type')
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name

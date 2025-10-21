@@ -1,24 +1,16 @@
-import { useState, useEffect } from "react"
-import { useCustomers } from "@/hooks/use-customers"
-import { useCustomerStats } from "@/hooks/use-customer-stats"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/layout/card"
-import { Badge } from "@/components/ui/core/badge"
-import { Button } from "@/components/ui/core/button"
-import { Input } from "@/components/ui/core/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table"
-import { Users, TrendingUp, Search, Plus, Edit, Trash2 } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { EditCustomerDialog } from "./edit-customer-dialog"
-import { Customer } from "@/lib/api"
-
-const monthlyData = [
-  { month: "Jan", customers: 45 },
-  { month: "Feb", customers: 52 },
-  { month: "Mar", customers: 48 },
-  { month: "Apr", customers: 61 },
-  { month: "May", customers: 55 },
-  { month: "Jun", customers: 67 },
-]
+import { useCustomerStats } from "@/hooks/use-customer-stats";
+import { useCustomerAcquisition } from "@/hooks/use-customer-acquisition";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/layout/card";
+import { Badge } from "@/components/ui/core/badge";
+import { Button } from "@/components/ui/core/button";
+import { Input } from "@/components/ui/core/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/layout/table";
+import { Users, TrendingUp, Search, Plus, Edit, Trash2 } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { EditCustomerDialog } from "./edit-customer-dialog";
+import { Customer } from "@/lib/api";
+import { useCustomers } from "@/hooks/use-customers";
+import { useState, useEffect } from "react";
 
 export function CustomersOverview() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,6 +20,7 @@ export function CustomersOverview() {
 
   const { data: paginatedCustomers, isLoading, isError } = useCustomers({ query: searchQuery, page });
   const { stats, isLoading: isLoadingStats } = useCustomerStats();
+  const { data: monthlyData, isLoading: isLoadingMonthlyData } = useCustomerAcquisition();
 
   const customers = paginatedCustomers?.results;
   const totalCustomers = paginatedCustomers?.count ?? 0;
@@ -83,15 +76,21 @@ export function CustomersOverview() {
             <CardDescription>New customers acquired each month</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="customers" stroke="#2563eb" strokeWidth={2} dot={{ fill: "#2563eb" }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {isLoadingMonthlyData ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <p>Loading...</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="customers" stroke="#2563eb" strokeWidth={2} dot={{ fill: "#2563eb" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
