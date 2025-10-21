@@ -1,9 +1,7 @@
-'use client'
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useCustomers } from "@/hooks/use-customers"
 import { useCustomerStats } from "@/hooks/use-customer-stats"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/layout/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/layout/card"
 import { Badge } from "@/components/ui/core/badge"
 import { Button } from "@/components/ui/core/button"
 import { Input } from "@/components/ui/core/input"
@@ -24,13 +22,19 @@ const monthlyData = [
 
 export function CustomersOverview() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
-  const { customers, isLoading, isError } = useCustomers(searchQuery);
+  const { data: paginatedCustomers, isLoading, isError } = useCustomers({ query: searchQuery, page });
   const { stats, isLoading: isLoadingStats } = useCustomerStats();
 
-  const totalCustomers = customers?.length ?? 0;
+  const customers = paginatedCustomers?.results;
+  const totalCustomers = paginatedCustomers?.count ?? 0;
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
 
   const handleEditClick = (customer: Customer) => {
     setSelectedCustomer(customer);
@@ -54,7 +58,7 @@ export function CustomersOverview() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{isLoading ? '...' : totalCustomers}</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <p className="text-xs text-muted-foreground">Total number of customers</p>
             </CardContent>
           </Card>
           <Card>
@@ -124,6 +128,7 @@ export function CustomersOverview() {
                   <TableHead>Name</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Customer Type</TableHead>
+                  <TableHead>Tasks</TableHead>
                   <TableHead>Debt</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -131,11 +136,11 @@ export function CustomersOverview() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={7} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : isError ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-red-500">Error fetching customers.</TableCell>
+                    <TableCell colSpan={7} className="text-center text-red-500">Error fetching customers.</TableCell>
                   </TableRow>
                 ) : customers && customers.length > 0 ? (
                   customers.map((customer) => (
@@ -146,6 +151,7 @@ export function CustomersOverview() {
                       <TableCell>
                         <Badge variant="secondary">{customer.customer_type}</Badge>
                       </TableCell>
+                      <TableCell>{customer.tasks_count}</TableCell>
                       <TableCell>
                         <Badge variant={customer.has_debt ? "destructive" : "default"}>{customer.has_debt ? 'Yes' : 'No'}</Badge>
                       </TableCell>
@@ -163,12 +169,28 @@ export function CustomersOverview() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">No customers found.</TableCell>
+                    <TableCell colSpan={7} className="text-center">No customers found.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </CardContent>
+          <CardFooter className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setPage(page - 1)}
+              disabled={!paginatedCustomers?.previous}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setPage(page + 1)}
+              disabled={!paginatedCustomers?.next}
+            >
+              Next
+            </Button>
+          </CardFooter>
         </Card>
       </div>
       <EditCustomerDialog

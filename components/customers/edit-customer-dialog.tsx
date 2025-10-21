@@ -22,7 +22,6 @@ interface EditCustomerDialogProps {
 
 export function EditCustomerDialog({ customer, isOpen, onClose }: EditCustomerDialogProps) {
   const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
   const [customerType, setCustomerType] = useState('Normal');
   const [phoneNumbers, setPhoneNumbers] = useState<{ id?: number; phone_number: string }[]>([]);
 
@@ -31,7 +30,6 @@ export function EditCustomerDialog({ customer, isOpen, onClose }: EditCustomerDi
   useEffect(() => {
     if (customer) {
       setName(customer.name);
-      setAddress(customer.address || '');
       setCustomerType(customer.customer_type || 'Normal');
       setPhoneNumbers(customer.phone_numbers || []);
     }
@@ -42,7 +40,6 @@ export function EditCustomerDialog({ customer, isOpen, onClose }: EditCustomerDi
       const updatedCustomer = {
         ...customer,
         name,
-        address,
         customer_type: customerType,
         phone_numbers: phoneNumbers,
       };
@@ -83,10 +80,6 @@ export function EditCustomerDialog({ customer, isOpen, onClose }: EditCustomerDi
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="customer-type">Customer Type</Label>

@@ -12,10 +12,11 @@ class PhoneNumberSerializer(serializers.ModelSerializer):
 class CustomerSerializer(serializers.ModelSerializer):
     phone_numbers = PhoneNumberSerializer(many=True)
     has_debt = serializers.SerializerMethodField()
+    tasks_count = serializers.ReadOnlyField()
 
     class Meta:
         model = Customer
-        fields = ['id', 'name', 'address', 'customer_type', 'phone_numbers', 'has_debt']
+        fields = ['id', 'name', 'customer_type', 'phone_numbers', 'has_debt', 'tasks_count']
 
     def get_has_debt(self, obj):
         return obj.tasks.filter(is_debt=True).exists()
@@ -30,7 +31,6 @@ class CustomerSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         phone_numbers_data = validated_data.pop('phone_numbers')
         instance.name = validated_data.get('name', instance.name)
-        instance.address = validated_data.get('address', instance.address)
         instance.customer_type = validated_data.get('customer_type', instance.customer_type)
         instance.save()
 

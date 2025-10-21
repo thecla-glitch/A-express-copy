@@ -7,7 +7,6 @@ class Customer(models.Model):
         REPAIRMAN = 'Repairman', _('Repairman')
 
     name = models.CharField(max_length=100, db_index=True)
-    address = models.TextField(blank=True, null=True)
     customer_type = models.CharField(
         max_length=20,
         choices=CustomerType.choices,
