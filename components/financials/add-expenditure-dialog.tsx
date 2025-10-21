@@ -79,12 +79,12 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{isRefundMode ? 'Request Refund' : 'Add New Expenditure'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
-          <div className="grid gap-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+          <div className="grid gap-2 md:col-span-2">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" {...register('description', { required: true })} disabled={isRefundMode} />
             {errors.description && <p className="text-red-500 text-xs">Description is required.</p>}
@@ -127,7 +127,7 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0">
+                  <PopoverContent className="w-full p-0">
                     <Command>
                       <CommandInput placeholder="Search tasks..." />
                       <CommandList>
