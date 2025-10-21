@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Customer, PhoneNumber, Referrer
+from Eapp.models import Task
 
 
 class PhoneNumberSerializer(serializers.ModelSerializer):
@@ -10,10 +11,14 @@ class PhoneNumberSerializer(serializers.ModelSerializer):
 
 class CustomerSerializer(serializers.ModelSerializer):
     phone_numbers = PhoneNumberSerializer(many=True)
+    has_debt = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
-        fields = ['id', 'name', 'address', 'customer_type', 'phone_numbers']
+        fields = ['id', 'name', 'address', 'customer_type', 'phone_numbers', 'has_debt']
+
+    def get_has_debt(self, obj):
+        return obj.tasks.filter(is_debt=True).exists()
 
     def create(self, validated_data):
         phone_numbers_data = validated_data.pop('phone_numbers')

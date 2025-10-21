@@ -55,6 +55,7 @@ export interface Customer {
   address: string;
   customer_type: string;
   phone_numbers: PhoneNumber[];
+  has_debt: boolean;
 }
 
 export interface Task {

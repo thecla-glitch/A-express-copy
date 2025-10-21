@@ -1,19 +1,16 @@
-import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api-client'
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { Customer } from '@/lib/api';
 
 export function useCustomers(query: string) {
-  const { data, isError, isLoading } = useQuery({
+  const { data: customers, isLoading, isError } = useQuery<Customer[]>({
     queryKey: ['customers', query],
     queryFn: async () => {
-      const response = await apiClient.get(`customers/search/?query=${query}`);
+      const url = query ? `customers/search/?query=${query}` : 'customers/';
+      const response = await apiClient.get(url);
       return response.data;
     },
-    enabled: !!query,
   });
 
-  return {
-    data,
-    isLoading,
-    isError,
-  }
+  return { customers, isLoading, isError };
 }

@@ -11,6 +11,14 @@ class CustomerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'])
+    def stats(self, request):
+        credit_customers_count = Customer.objects.filter(tasks__is_debt=True).distinct().count()
+        data = {
+            'credit_customers_count': credit_customers_count
+        }
+        return Response(data)
+
+    @action(detail=False, methods=['get'])
     def search(self, request):
         query = request.query_params.get('query', '')
         if query:
