@@ -2,7 +2,6 @@ from rest_framework import permissions, viewsets
 from .models import Brand, Location
 from .serializers import BrandSerializer, LocationSerializer
 from users.permissions import IsManager
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 

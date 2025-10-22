@@ -4,12 +4,11 @@ import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronsUpDown } from "lucide-react"
-
 import { cn } from "@/lib/utils"
-import { createExpenditureRequest, getTasks, getPaymentCategories, getPaymentMethods } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth-context';
+import { createExpenditureRequest, createAndApproveExpenditureRequest, getTasks, getPaymentCategories, getPaymentMethods } from '@/lib/api-client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/feedback/dialog";
 import { Button } from "@/components/ui/core/button";
-import { Input } from "@/components/ui/core/input";
 import { Textarea } from "@/components/ui/core/textarea";
 import { Label } from "@/components/ui/core/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/core/select";
@@ -27,6 +26,7 @@ interface AddExpenditureDialogProps {
 }
 
 export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', taskId, taskTitle }: AddExpenditureDialogProps) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { register, handleSubmit, control, watch, formState: { errors }, setValue, reset } = useForm();
@@ -51,12 +51,14 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
     }
   }, [isOpen, mode, taskId, taskTitle, setValue, reset]);
 
+  const isManager = user?.role === 'Manager';
+
   const mutation = useMutation({
-    mutationFn: createExpenditureRequest,
+    mutationFn: isManager ? createAndApproveExpenditureRequest : createExpenditureRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenditureRequests'] });
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
-      toast({ title: "Success", description: `${mode === 'refund' ? 'Refund' : 'Expenditure'} request created successfully.` });
+      toast({ title: "Success", description: `${mode === 'refund' ? 'Refund' : 'Expenditure'} request ${isManager ? 'created and approved' : 'created'} successfully.` });
       onClose();
     },
     onError: (error: any) => {
@@ -77,12 +79,12 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{isRefundMode ? 'Request Refund' : 'Add New Expenditure'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
-          <div className="grid gap-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+          <div className="grid gap-2 md:col-span-2">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" {...register('description', { required: true })} disabled={isRefundMode} />
             {errors.description && <p className="text-red-500 text-xs">Description is required.</p>}
@@ -125,7 +127,7 @@ export function AddExpenditureDialog({ isOpen, onClose, mode = 'expenditure', ta
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0">
+                  <PopoverContent className="w-full p-0">
                     <Command>
                       <CommandInput placeholder="Search tasks..." />
                       <CommandList>

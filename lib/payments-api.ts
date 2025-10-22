@@ -7,6 +7,8 @@ interface PaymentFilters {
     category?: string;
     search?: string;
     task_payments?: boolean;
+    page?: number;
+    page_size?: number;
 }
 
 export const getPayments = async (filters: PaymentFilters = {}) => {
@@ -18,6 +20,8 @@ export const getPayments = async (filters: PaymentFilters = {}) => {
         if (filters.date) params.append('date', filters.date);
         if (filters.search) params.append('search', filters.search);
         if (filters.task_payments) params.append('task_payments', String(filters.task_payments));
+        if (filters.page) params.append('page', String(filters.page));
+        if (filters.page_size) params.append('page_size', String(filters.page_size));
 
         const response = await apiClient.get('/payments/', { params });
         return response.data;

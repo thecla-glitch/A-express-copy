@@ -74,13 +74,14 @@ export function NewTaskForm({}: NewTaskFormProps) {
   const [isReferred, setIsReferred] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
   const [referrerSearch, setReferrerSearch] = useState('')
+  const [customerPage, setCustomerPage] = useState(1)
 
   const { data: technicians, isLoading: isLoadingTechnicians } = useTechnicians()
   const { data: workshopTechnicians, isLoading: isLoadingWorkshopTechnicians } = useWorkshopTechnicians()
   const { data: managers, isLoading: isLoadingManagers } = useManagers()
   const { data: brands, isLoading: isLoadingBrands } = useBrands()
   const { data: locations, isLoading: isLoadingLocations } = useLocations()
-  const { data: customers, isLoading: isLoadingCustomers } = useCustomers(customerSearch)
+  const { data: customers, isLoading: isLoadingCustomers } = useCustomers({ query: customerSearch, page: customerPage })
   const { data: referrers, isLoading: isLoadingReferrers } = useReferrers(referrerSearch)
 
 
@@ -245,7 +246,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
 
   const canAssignTechnician = user && (user.role === 'Manager' || user.role === 'Administrator' || user.role === 'Front Desk')
 
-  const customerOptions = customers ? customers.map((c: any) => ({ label: c.name, value: c.id.toString() })) : [];
+  const customerOptions = customers ? customers.results.map((c: any) => ({ label: c.name, value: c.id.toString() })) : [];
   const referrerOptions = referrers ? referrers.map((r: any) => ({ label: r.name, value: r.id.toString() })) : [];
 
   return (
@@ -267,7 +268,7 @@ export function NewTaskForm({}: NewTaskFormProps) {
                 options={customerOptions}
                 value={formData.customer_name}
                 onChange={(value) => {
-                  const selectedCustomer = customers.find((c: any) => c.id.toString() === value)
+                  const selectedCustomer = customers?.results?.find((c: any) => c.id.toString() === value)
                   if(selectedCustomer){
                     handleInputChange('customer_id', selectedCustomer.id)
                     handleInputChange('customer_name', selectedCustomer.name)

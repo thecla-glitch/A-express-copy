@@ -1,10 +1,15 @@
 import { TaskHistoryPage } from "@/components/tasks/task-history-page";
 import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout";
 
-export default function History() {
+export default function ManagerHistoryPage() {
   return (
     <DashboardLayout>
-      <TaskHistoryPage />
+      <TaskHistoryPage
+        title="Manager Task History"
+        description="View all completed and terminated tasks."
+        statusFilter="Picked Up,Terminated"
+        isManagerView={true}
+      />
     </DashboardLayout>
   );
 }

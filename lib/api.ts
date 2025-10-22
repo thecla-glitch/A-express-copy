@@ -4,6 +4,14 @@ export interface ApiResponse<T = any> {
   status: number
 }
 
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+
 
 export interface UserResponse {
   id: number
@@ -52,9 +60,10 @@ export interface PhoneNumber {
 export interface Customer {
   id: number;
   name: string;
-  address: string;
   customer_type: string;
   phone_numbers: PhoneNumber[];
+  has_debt: boolean;
+  tasks_count: number;
 }
 
 export interface Task {
@@ -121,4 +130,15 @@ export interface TaskPayment {
   method: string;
   date: string;
   reference: string;
+}
+
+export interface ExpenditureRequest {
+  id: number;
+  description: string;
+  amount: string;
+  task: number | null;
+  task_title: string | null;
+  status: string;
+  requester: { username: string };
+  approver: { username: string } | null;
 }

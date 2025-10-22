@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getApiUrl } from './config';
+import { ExpenditureRequest, PaginatedResponse } from './api';
 
 export const apiClient = axios.create({
   baseURL: getApiUrl(''),
@@ -19,6 +20,7 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
 
 export const getProfile = () => apiClient.get('/profile/');
 export const getTasks = (params: any = {}) => apiClient.get('/tasks/', { params });
@@ -55,7 +57,6 @@ export const deleteLocation = (locationId: number) => apiClient.delete(`/locatio
 export const listWorkshopLocations = () => apiClient.get('locations/workshop-locations/');
 export const listWorkshopTechnicians = () => apiClient.get('list/workshop-technicians/');
 
-// Functions from ApiClient class
 export const login = (username: any, password: any) => apiClient.post('/login/', { username, password });
 export const registerUser = (userData: any) => apiClient.post('/users/', userData);
 export const listUsers = () => apiClient.get('/users/');
@@ -99,7 +100,11 @@ export const deletePaymentCategory = (categoryId: number) => apiClient.delete(`/
 
 
 // Expenditure Requests
-export const getExpenditureRequests = (params: any = {}) => apiClient.get('/expenditure-requests/', { params });
+export const getExpenditureRequests = async (params: { page?: number; page_size?: number; [key: string]: any } = {}): Promise<PaginatedResponse<ExpenditureRequest>> => {
+  const response = await apiClient.get('/expenditure-requests/', { params });
+  return response.data;
+};
 export const createExpenditureRequest = (data: any) => apiClient.post('/expenditure-requests/', data);
+export const createAndApproveExpenditureRequest = (data: any) => apiClient.post('/expenditure-requests/create_and_approve/', data);
 export const approveExpenditureRequest = (id: number) => apiClient.post(`/expenditure-requests/${id}/approve/`);
 export const rejectExpenditureRequest = (id: number) => apiClient.post(`/expenditure-requests/${id}/reject/`);

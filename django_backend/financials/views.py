@@ -44,12 +44,16 @@ class PaymentCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrAccountant]
 
 
+from .pagination import CustomPagination
+
+
 class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows payments to be viewed.
     """
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         queryset = Payment.objects.all()
@@ -85,6 +89,7 @@ class CostBreakdownViewSet(viewsets.ModelViewSet):
 class ExpenditureRequestViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenditureRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrManagerOrAccountant]
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         user = self.request.user
@@ -102,7 +107,7 @@ class ExpenditureRequestViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        if self.action in ['approve', 'reject']:
+        if self.action in ['approve', 'reject', 'create_and_approve']:
             self.permission_classes = [IsManager]
         else:
             self.permission_classes = [IsAdminOrManagerOrAccountant]
@@ -110,6 +115,41 @@ class ExpenditureRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(requester=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def create_and_approve(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Manually create the expenditure to set all required fields
+        expenditure = serializer.save(
+            requester=request.user,
+            approver=request.user,
+            status=ExpenditureRequest.Status.APPROVED
+        )
+
+        # Create a corresponding payment record
+        Payment.objects.create(
+            task=expenditure.task,
+            amount=-expenditure.amount,  # Expenditures are negative amounts
+            method=expenditure.payment_method,
+            description=f"{expenditure.description}",
+            category=expenditure.category
+        )
+
+        # If linked to a task, create a cost breakdown item
+        if expenditure.task:
+            CostBreakdown.objects.create(
+                task=expenditure.task,
+                description=f"Expenditure: {expenditure.description}",
+                amount=expenditure.amount,
+                cost_type=expenditure.cost_type,
+                category=expenditure.category.name,
+                payment_method=expenditure.payment_method,
+                status=CostBreakdown.Status.APPROVED
+            )
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
