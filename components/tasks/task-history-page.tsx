@@ -1,51 +1,49 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getTasks, listUsersByRole } from "@/lib/api-client";
-import { UserResponse as User } from "@/lib/api";
+import { Button } from "@/components/ui/core/button";
 import { TasksDisplay } from "./tasks-display";
+import { useTasks } from "@/hooks/use-tasks";
+import { useTechnicians } from "@/hooks/use-data";
 import { ReturnTaskDialog } from "./return-task-dialog";
 
-export function TaskHistoryPage() {
+interface GenericTaskHistoryPageProps {
+  title: string;
+  description: string;
+  statusFilter: string;
+  showDateFilter?: boolean;
+  isFrontDeskView?: boolean;
+  isManagerView?: boolean;
+}
+
+export function TaskHistoryPage({
+  title,
+  description,
+  statusFilter,
+  showDateFilter = false,
+  isFrontDeskView = false,
+  isManagerView = false,
+}: GenericTaskHistoryPageProps) {
   const router = useRouter();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [technicians, setTechnicians] = useState<User[]>([]);
+  const [page, setPage] = useState(1);
+  const [showAll, setShowAll] = useState(false);
+
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+  const { data: tasksData, isLoading, isError, error } = useTasks({
+    page,
+    status: statusFilter,
+    updated_at_after: showDateFilter && !showAll ? twoWeeksAgo.toISOString().split('T')[0] : undefined,
+  });
+
+  const { data: technicians } = useTechnicians();
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const tasksResponse = await getTasks();
-        if (tasksResponse.data) {
-          setTasks(tasksResponse.data);
-        } else {
-          setError("Failed to fetch tasks");
-        }
-
-        const techResponse = await listUsersByRole("Technician");
-        if (techResponse.data) {
-          setTechnicians(techResponse.data);
-        } else {
-          setError("Failed to fetch technicians");
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Failed to fetch data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
   const handleRowClick = (task: any) => {
-    router.push(`/dashboard/tasks/${task.id}`);
+    router.push(`/dashboard/tasks/${task.title}`);
   };
 
   const handleReturnTask = (task: any) => {
@@ -53,28 +51,57 @@ export function TaskHistoryPage() {
     setIsReturnDialogOpen(true);
   };
 
-  const historicalTasks = tasks.filter(task => ["Picked Up", "Completed", "Terminated"].includes(task.status));
+  const tasks = useMemo(() => tasksData?.results || [], [tasksData]);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 space-y-6 p-6">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+        <div className="flex-1 space-y-6 p-6">
+            <div className="text-red-500">Error: {error.message}</div>
+        </div>
+    )
+  }
 
   return (
     <div className="flex-1 space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task History</h1>
-          <p className="text-gray-600 mt-2">A log of all completed, picked up and terminated tasks.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">{title}</h1>
+          <p className="text-gray-600 mt-2">{description}</p>
         </div>
+        {showDateFilter && (
+          <Button onClick={() => setShowAll(!showAll)}>
+            {showAll ? "Show Last 2 Weeks" : "Show All"}
+          </Button>
+        )}
       </div>
 
       <TasksDisplay
-        tasks={historicalTasks}
-        technicians={technicians}
+        tasks={tasks}
+        technicians={technicians || []}
         onRowClick={handleRowClick}
         showActions={true}
         isHistoryView={true}
-        onReturnTask={handleReturnTask}
+        onReturnTask={isFrontDeskView ? handleReturnTask : undefined}
         isCompletedTab={true}
+        isManagerView={isManagerView}
       />
 
-      {selectedTask && (
+      <div className="flex justify-end space-x-2 mt-4">
+        <Button onClick={() => setPage(page - 1)} disabled={!tasksData?.previous}>Previous</Button>
+        <Button onClick={() => setPage(page + 1)} disabled={!tasksData?.next}>Next</Button>
+      </div>
+
+      {selectedTask && isFrontDeskView && (
         <ReturnTaskDialog
           task={selectedTask}
           isOpen={isReturnDialogOpen}

@@ -17,6 +17,7 @@ import {
   Shield,
   Activity,
   UserCog,
+  Banknote,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -111,6 +112,16 @@ const navigationItems = {
       icon: UserCog,
     },
     {
+      title: "Account Management",
+      url: "/dashboard/manager/accounts",
+      icon: Banknote,
+    },
+    {
+      title: "Debts",
+      url: "/dashboard/debts",
+      icon: Banknote,
+    },
+    {
       title: "Customers",
       url: "/dashboard/customers",
       icon: Building2,
@@ -166,13 +177,8 @@ const navigationItems = {
   "Front Desk": [
     {
       title: "Dashboard",
-      url: "/dashboard",
-      icon: Home,
-    },
-    {
-      title: "Front Desk",
       url: "/dashboard/front-desk",
-      icon: Calendar,
+      icon: Home,
     },
     {
       title: "Customers",
@@ -188,11 +194,6 @@ const navigationItems = {
         title: "History",
         url: "/dashboard/front-desk/history",
         icon: FileText,
-    },
-    {
-      title: "Payments",
-      url: "/dashboard/payments",
-      icon: CreditCard,
     },
     {
       title: "Profile",
@@ -215,6 +216,11 @@ const navigationItems = {
       title: "History",
       url: "/dashboard/accountant/history",
       icon: FileText,
+    },
+    {
+      title: "Debts",
+      url: "/dashboard/debts",
+      icon: Banknote,
     },
     {
       title: "Payments",

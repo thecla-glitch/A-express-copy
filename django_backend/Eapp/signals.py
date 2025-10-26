@@ -1,13 +1,21 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Task, Customer
+from financials.models import Account, PaymentMethod, Payment
+from django.db.models import F
 
-@receiver(post_save, sender=Task)
-def create_customer_from_task(sender, instance, created, **kwargs):
+
+
+@receiver(post_save, sender=Account)
+def create_payment_method_for_account(sender, instance, created, **kwargs):
     if created:
-        customer_name = instance.customer.name
-        customer_email = instance.customer.email
-        customer_phone = instance.customer.phone
+        payment_method, _ = PaymentMethod.objects.get_or_create(name=instance.name)
+        payment_method.account = instance
+        payment_method.save()
 
-        if not Customer.objects.filter(name=customer_name, email=customer_email, phone=customer_phone).exists():
-            Customer.objects.create(name=customer_name, email=customer_email, phone=customer_phone)
+@receiver(post_save, sender=Payment)
+def update_account_balance_on_payment(sender, instance, created, **kwargs):
+    if created:
+        if instance.method and instance.method.account:
+            account = instance.method.account
+            account.balance = F('balance') + instance.amount
+            account.save()

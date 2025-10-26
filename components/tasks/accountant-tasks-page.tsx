@@ -20,7 +20,7 @@ export default function AccountantTasksPage() {
 
   const addTaskPaymentMutation = useMutation({
     mutationFn: ({ taskId, amount, methodId }: { taskId: string; amount: number; methodId: number }) => 
-      addTaskPayment(taskId, { amount, method: methodId, date: new Date().toISOString().split('T')[0] }),
+      addTaskPayment(taskId, { amount, method: methodId, date: new Date().toISOString().split('T')[0], category: 1 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       toast({
@@ -56,7 +56,7 @@ export default function AccountantTasksPage() {
     )
   }
 
-  const unpaidTasks = tasks?.filter(task => task.payment_status !== "Fully Paid" && task.status !== "Picked Up") || [];
+  const unpaidTasks = tasks?.results?.filter(task => task.payment_status !== "Fully Paid" && task.status !== "Picked Up") || [];
 
   return (
     <div className="flex-1 space-y-6 p-6">

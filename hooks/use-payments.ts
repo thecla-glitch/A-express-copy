@@ -3,9 +3,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { getPayments } from '@/lib/payments-api'
 
-export function usePayments() {
+interface PaymentFilters {
+    method?: string;
+    is_refunded?: boolean;
+    date?: string;
+    category?: string;
+    search?: string;
+    task_payments?: boolean;
+    page?: number;
+    page_size?: number;
+}
+
+export function usePayments(filters: PaymentFilters = {}) {
   return useQuery({
-    queryKey: ['payments'],
-    queryFn: getPayments,
+    queryKey: ['payments', filters],
+    queryFn: () => getPayments(filters),
   });
 }

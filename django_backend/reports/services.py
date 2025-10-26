@@ -1,6 +1,6 @@
 # reports/services.py
 from django.db.models import Q, Sum, Count, Avg
-from Eapp.models import Task, User, Payment, Customer, Brand, Location, CostBreakdown
+from Eapp.models import Task, User, Payment, Customer,  Location, CostBreakdown
 from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal

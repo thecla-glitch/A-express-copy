@@ -33,8 +33,8 @@ import {
   Trash2,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { updateTask, addTaskPayment } from "@/lib/api-client"
-import { SendCustomerUpdateDialog } from "./send-customer-update-dialog"
+import { updateTask, addTaskPayment, addTaskActivity } from "@/lib/api-client"
+
 import { TaskActivityLog } from "./task-activity-log"
 import { DayPicker } from "react-day-picker"
 import "react-day-picker/dist/style.css"
@@ -44,8 +44,10 @@ import { usePaymentMethods } from "@/hooks/use-payment-methods";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { CostBreakdown } from "./cost-breakdown";
-import { Combobox } from "@/components/ui/core/combobox";
+import { SimpleCombobox as Combobox } from "@/components/ui/core/combobox";
 import { CurrencyInput } from "@/components/ui/core/currency-input";
+import { AddExpenditureDialog } from "@/components/financials/add-expenditure-dialog";
+
 
 
 
@@ -65,12 +67,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   const { data: statusOptions } = useTaskStatusOptions();
   const { data: urgencyOptions } = useTaskUrgencyOptions();
   const { data: brands } = useBrands();
-  const { data: paymentMethods, refetch: refetchPaymentMethods } = usePaymentMethods();
+  const { data: paymentMethods } = usePaymentMethods();
   const { toast } = useToast();
 
   const [newNote, setNewNote] = useState("")
   const [newPaymentAmount, setNewPaymentAmount] = useState<number | "">("")
   const [newPaymentMethod, setNewPaymentMethod] = useState("")
+  const [isAddExpenditureOpen, setIsAddExpenditureOpen] = useState(false);
 
   const [isEditingLaptop, setIsEditingLaptop] = useState(false)
 
@@ -111,7 +114,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
 
   const handleFieldUpdate = async (field: string, value: any) => {
-    if (["name", "phone", "email"].includes(field)) {
+    if (["name", "phone_numbers"].includes(field)) {
       updateTaskMutation.mutate({ field: "customer", value: { [field]: value } });
     } else {
       updateTaskMutation.mutate({ field, value });
@@ -122,6 +125,20 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
 
   const handleAddPayment = async () => {
     if (!newPaymentAmount || !newPaymentMethod || !taskData) return
+
+    const totalCost = parseFloat(taskData.total_cost || '0');
+    const paidAmount = taskData.payments.reduce((acc: any, p: any) => acc + parseFloat(p.amount), 0);
+    const remainingAmount = totalCost - paidAmount;
+    
+    if (parseFloat(newPaymentAmount.toString()) > remainingAmount) {
+      toast({
+        title: "Payment Exceeds Total Cost",
+        description: "The payment amount cannot be more than the remaining amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     addTaskPaymentMutation.mutate({ amount: newPaymentAmount, method: parseInt(newPaymentMethod, 10), date: new Date().toISOString().split('T')[0] });
     setNewPaymentAmount("")
     setNewPaymentMethod("")
@@ -137,7 +154,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
   };
 
   const handleMarkAsPickedUp = () => {
-    if (taskData?.payment_status !== 'Fully Paid' && !taskData.is_debt) {
+    if (taskData?.payment_status !== 'Fully Paid' && !taskData?.is_debt) {
       toast({
         title: "Payment Required",
         description: "This task cannot be marked as picked up until it is fully paid. Please contact the manager for assistance.",
@@ -257,7 +274,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <SendCustomerUpdateDialog taskId={taskId} customerEmail={taskData.customer_details?.email} />
+          
           {isManager && taskData.payment_status !== 'Fully Paid' && (
             <Button 
               className="bg-yellow-500 hover:bg-yellow-600 text-white"
@@ -341,25 +358,44 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Phone Number</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <Input
-                        value={taskData.customer_details?.phone || ''}
-                        onChange={(e) => handleFieldUpdate("phone", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Email Address</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <Input
-                        value={taskData.customer_details?.email || ''}
-                        onChange={(e) => handleFieldUpdate("email", e.target.value)}
-                      />
-                    </div>
-                  </div>
+                    <Label className="text-sm font-medium text-gray-600">Phone Numbers</Label>
+                    {taskData.customer_details?.phone_numbers.map((phone, index) => (
+                      <div key={index} className="flex items-center gap-2 mt-1">
+                        <Phone className="h-4 w-4 text-gray-400" />
+                        <Input
+                          value={phone.phone_number || ''}
+                          onChange={(e) => {
+                            const newPhoneNumbers = [...taskData.customer_details.phone_numbers];
+                            newPhoneNumbers[index] = { ...newPhoneNumbers[index], phone_number: e.target.value };
+                            handleFieldUpdate("phone_numbers", newPhoneNumbers);
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newPhoneNumbers = [...taskData.customer_details.phone_numbers];
+                            newPhoneNumbers.splice(index, 1);
+                            handleFieldUpdate("phone_numbers", newPhoneNumbers);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => {
+                        const newPhoneNumbers = [...taskData.customer_details.phone_numbers, { phone_number: '' }];
+                        handleFieldUpdate("phone_numbers", newPhoneNumbers);
+                      }}
+                    >
+                      Add Phone Number
+                    </Button>
+                      </div>
+
                 </div>
               </CardContent>
             </Card>
@@ -422,20 +458,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                           {taskData.laptop_model || "N/A"}
                         </p>
                       </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Serial Number</Label>
-                    {isEditingLaptop ? (
-                      <Input
-                        value={taskData.serial_number || ''}
-                        onChange={(e) => handleFieldUpdate("serial_number", e.target.value)}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="text-gray-900 font-mono text-sm bg-gray-50 p-2 rounded border">
-                        {taskData.serial_number}
-                      </p>
                     )}
                   </div>
                   <div>
@@ -515,7 +537,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <Label className="text-sm font-medium text-gray-600">Assigned Technician</Label>
                     {canEditTechnician ? (
                       <Select
-                        value={taskData.assigned_to || ''}
+                        value={taskData.assigned_to?.toString() || ''}
                         onValueChange={(value) => handleFieldUpdate("assigned_to", value)}
                       >
                         <SelectTrigger>
@@ -523,7 +545,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {technicians?.map((tech) => (
-                            <SelectItem key={tech.id} value={tech.id}>
+                            <SelectItem key={tech.id} value={tech.id.toString()}>
                               {tech.full_name}
                             </SelectItem>
                           ))}
@@ -612,6 +634,7 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
         {/* Financials Tab */}
         <TabsContent value="financials" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-1">
+
             <CostBreakdown task={taskData} />
 
 
@@ -650,6 +673,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <Plus className="h-4 w-4 mr-1" />
                       Add Payment
                     </Button>
+                    {(isAccountant) && (<Button
+                        onClick={() => setIsAddExpenditureOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Refund
+                      </Button>)}
                   </div>
                 )}
               </div>
@@ -661,7 +691,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                     <TableHead>Amount</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Method</TableHead>
-                    <TableHead>Reference</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -670,7 +699,6 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
                       <TableCell className="font-medium text-green-600">TSh {parseFloat(payment.amount).toFixed(2)}</TableCell>
                       <TableCell>{payment.date}</TableCell>
                       <TableCell>{payment.method_name}</TableCell>
-                      <TableCell className="font-mono text-sm">{payment.reference}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -682,6 +710,13 @@ export function TaskDetailsPage({ taskId }: TaskDetailsPageProps) {
           </Card>
         </TabsContent>
       </Tabs>
+            <AddExpenditureDialog
+        isOpen={isAddExpenditureOpen}
+        onClose={() => setIsAddExpenditureOpen(false)}
+        mode="refund"
+        taskId={taskId}
+        taskTitle={taskData.title}
+      />
     </div>
   )
 }

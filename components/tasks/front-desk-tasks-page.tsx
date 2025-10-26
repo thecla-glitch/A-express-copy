@@ -11,10 +11,36 @@ import { useToast } from "@/hooks/use-toast";
 import { useTechnicians } from "@/hooks/use-data";
 import { useAuth } from "@/lib/auth-context";
 
+type PageState = {
+  "not-completed": number;
+  completed: number;
+  pickup: number;
+};
+
 export function FrontDeskTasksPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { data: tasks, isLoading, isError, error } = useTasks();
+  const [pages, setPages] = useState<PageState>({
+    "not-completed": 1,
+    completed: 1,
+    pickup: 1,
+  });
+
+  const { data: notCompletedTasksData, isLoading: isLoadingNotCompleted } = useTasks({
+    page: pages["not-completed"],
+    status: "Pending,In Progress",
+  });
+
+  const { data: completedTasksData, isLoading: isLoadingCompleted } = useTasks({
+    page: pages.completed,
+    status: "Completed",
+  });
+
+  const { data: pickupTasksData, isLoading: isLoadingPickup } = useTasks({
+    page: pages.pickup,
+    status: "Ready for Pickup",
+  });
+  
   const { data: technicians } = useTechnicians();
   const updateTaskMutation = useUpdateTask();
   const { toast } = useToast();
@@ -41,7 +67,7 @@ export function FrontDeskTasksPage() {
   }, [updateTaskMutation]);
 
   const handlePickedUp = useCallback(async (task: any) => {
-    if (task.payment_status !== 'Fully Paid') {
+    if (task.payment_status !== 'Fully Paid' && !task.is_debt) {
       toast({
         title: "Payment Required",
         description: "This task cannot be marked as picked up until it is fully paid. Please contact the manager for assistance.",
@@ -65,27 +91,14 @@ export function FrontDeskTasksPage() {
     alert(`Notifying ${customerName} for task ${taskTitle}`);
   }, []);
 
-  const unassignedTasks = useMemo(() => tasks?.filter(task => task.status === "Pending" || task.status === "In Progress") || [], [tasks]);
-  const completedTasks = useMemo(() => tasks?.filter(task => task.status === "Completed") || [], [tasks]);
-  const readyForPickupTasks = useMemo(() => tasks?.filter(task => task.status === "Ready for Pickup") || [], [tasks]);
+  const handlePageChange = (tab: keyof PageState, direction: 'next' | 'previous') => {
+    setPages(prev => ({
+      ...prev,
+      [tab]: direction === 'next' ? prev[tab] + 1 : prev[tab] - 1,
+    }));
+  };
 
-  if (isLoading) {
-    return (
-      <div className="flex-1 space-y-6 p-6">
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-        <div className="flex-1 space-y-6 p-6">
-            <div className="text-red-500">Error: {error.message}</div>
-        </div>
-    )
-  }
+  const isLoading = isLoadingNotCompleted || isLoadingCompleted || isLoadingPickup;
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -112,16 +125,20 @@ export function FrontDeskTasksPage() {
         </TabsList>
         <TabsContent value="not-completed">
           <TasksDisplay
-            tasks={unassignedTasks}
+            tasks={notCompletedTasksData?.results || []}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={false}
             isManagerView={true}
           />
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => handlePageChange('not-completed', 'previous')} disabled={!notCompletedTasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('not-completed', 'next')} disabled={!notCompletedTasksData?.next}>Next</Button>
+          </div>
         </TabsContent>
         <TabsContent value="completed">
           <TasksDisplay
-            tasks={completedTasks}
+            tasks={completedTasksData?.results || []}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
@@ -129,10 +146,14 @@ export function FrontDeskTasksPage() {
             onReject={handleReject}
             isFrontDeskCompletedView={true}
           />
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => handlePageChange('completed', 'previous')} disabled={!completedTasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('completed', 'next')} disabled={!completedTasksData?.next}>Next</Button>
+          </div>
         </TabsContent>
         <TabsContent value="pickup">
           <TasksDisplay
-            tasks={readyForPickupTasks}
+            tasks={pickupTasksData?.results || []}
             technicians={technicians || []}
             onRowClick={handleRowClick}
             showActions={true}
@@ -140,6 +161,10 @@ export function FrontDeskTasksPage() {
             onPickedUp={handlePickedUp}
             onNotifyCustomer={handleNotifyCustomer}
           />
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button onClick={() => handlePageChange('pickup', 'previous')} disabled={!pickupTasksData?.previous}>Previous</Button>
+            <Button onClick={() => handlePageChange('pickup', 'next')} disabled={!pickupTasksData?.next}>Next</Button>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

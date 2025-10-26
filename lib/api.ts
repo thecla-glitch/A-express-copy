@@ -4,6 +4,14 @@ export interface ApiResponse<T = any> {
   status: number
 }
 
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+
 
 export interface UserResponse {
   id: number
@@ -12,6 +20,7 @@ export interface UserResponse {
   role: "Manager" | "Technician" | "Front Desk"
   first_name: string
   last_name: string
+  full_name: string
   phone: string
   profile_picture: string
   is_active: boolean
@@ -34,6 +43,27 @@ export interface CostBreakdown {
   cost_type: 'Additive' | 'Subtractive' | 'Inclusive';
   category: string;
   created_at: string;
+  status: string;
+}
+
+export interface Referrer {
+  id: number;
+  name: string;
+  phone: string;
+}
+
+export interface PhoneNumber {
+  id: number;
+  phone_number: string;
+}
+
+export interface Customer {
+  id: number;
+  name: string;
+  customer_type: string;
+  phone_numbers: PhoneNumber[];
+  has_debt: boolean;
+  tasks_count: number;
 }
 
 export interface Task {
@@ -50,14 +80,13 @@ export interface Task {
   updated_at: string;
   due_date: string;
   customer_name: string;
-  customer_phone: string;
-  customer_email: string;
+  customer_phone_numbers: PhoneNumber[];
+  customer_details: Customer;
   brand: number;
   brand_details: Brand;
   device_type: string;
   device_notes: string;
   laptop_model: string;
-  serial_number: string;
   estimated_cost: string;
   total_cost: string;
   payment_status: string;
@@ -75,6 +104,14 @@ export interface Task {
   is_commissioned: boolean;
   commissioned_by: string;
   cost_breakdowns: CostBreakdown[];
+  approved_by: number;
+  approved_at: string;
+  is_debt: boolean;
+  qc_notes: string;
+  workshop_status: string | null;
+  sent_out_by: number;
+  referred_by: string;
+  referred_by_details: Referrer;
 }
 
 export interface TaskActivity {
@@ -93,4 +130,15 @@ export interface TaskPayment {
   method: string;
   date: string;
   reference: string;
+}
+
+export interface ExpenditureRequest {
+  id: number;
+  description: string;
+  amount: string;
+  task: number | null;
+  task_title: string | null;
+  status: string;
+  requester: { username: string };
+  approver: { username: string } | null;
 }

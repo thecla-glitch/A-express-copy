@@ -49,9 +49,10 @@ interface TasksDisplayProps {
   onReturnTask?: (task: any) => void;
   isAccountantView?: boolean;
   onAddPayment?: (taskId: string, amount: number, paymentMethodId: number) => void;
+  onRemindDebt?: (taskId: string) => void;
 }
 
-export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask, isAccountantView, onAddPayment }: TasksDisplayProps) {
+export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDeleteTask, onProcessPickup, onApprove, onReject, isCompletedTab, onTerminateTask, isManagerView, isFrontDeskCompletedView, isPickupView, onPickedUp, onNotifyCustomer, isHistoryView, onReturnTask, isAccountantView, onAddPayment, onRemindDebt }: TasksDisplayProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -90,6 +91,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
         searchQuery === "" ||
         task.title.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
         (task.customer_details?.name && task.customer_details.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (task.customer_details?.phone_numbers && task.customer_details.phone_numbers.some((p: any) => p.phone_number.toLowerCase().includes(searchQuery.toLowerCase()))) ||
         task.laptop_model.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.description.toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -265,7 +267,10 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                 <TableCell>
                   <div>
                     <p className="font-medium text-gray-900">{task.customer_details?.name}</p>
-                    <p className="text-sm text-gray-500">{task.customer_details?.phone}</p>
+                    <p className="text-sm text-gray-500">
+                      {task.customer_details?.phone_numbers?.[0]?.phone_number}
+                      {task.customer_details?.phone_numbers?.length > 1 && ' ...'}
+                    </p>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -328,7 +333,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                                 size="sm"
                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                                 onClick={(e) => e.stopPropagation()}
-                                disabled={task.payment_status !== 'Fully Paid'}
+                                disabled={task.payment_status !== 'Fully Paid' && !task.is_debt}
                               >
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 Picked Up
@@ -411,17 +416,31 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
                           </Dialog>
                         </>
                       ) : isAccountantView ? (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTaskToPay(task);
-                            setIsAddPaymentDialogOpen(true);
-                          }}
-                        >
-                          Add Payment
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTaskToPay(task);
+                              setIsAddPaymentDialogOpen(true);
+                            }}
+                          >
+                            Add Payment
+                          </Button>
+                          {onRemindDebt && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRemindDebt(task.title);
+                              }}
+                            >
+                              Remind Debt
+                            </Button>
+                          )}
+                        </>
                       ) : isCompletedTab ? (
                         <>
                           <Button
@@ -558,6 +577,7 @@ export function TasksDisplay({ tasks, technicians, onRowClick, showActions, onDe
             setSelectedTaskToPay(null);
           }}
           taskTitle={selectedTaskToPay.title}
+          outstandingBalance={selectedTaskToPay.outstanding_balance}
         />
       )}
 

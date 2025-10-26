@@ -1,10 +1,17 @@
 import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout";
-import { FrontDeskHistoryPage } from "@/components/tasks/front-desk-history-page";
+import { TaskHistoryPage } from "@/components/tasks/task-history-page";
+import { DashboardLayout } from "@/components/dashboard/layouts/dashboard-layout";
 
-export default function HistoryPage() {
+export default function FrontDeskHistory() {
   return (
     <DashboardLayout>
-      <FrontDeskHistoryPage />
+      <TaskHistoryPage
+        title="Front Desk History"
+        description="View completed and picked up tasks."
+        statusFilter="Picked Up"
+        showDateFilter={true}
+        isFrontDeskView={true}
+      />
     </DashboardLayout>
   );
 }

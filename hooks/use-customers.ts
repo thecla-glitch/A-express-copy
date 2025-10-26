@@ -1,19 +1,22 @@
-import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api-client'
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { Customer, PaginatedResponse } from '@/lib/api';
 
-export function useCustomers(query: string) {
-  const { data, isError, isLoading } = useQuery({
-    queryKey: ['customers', query],
+export function useCustomers({ query, page }: { query: string; page: number }) {
+  const { data, isLoading, isError } = useQuery<PaginatedResponse<Customer>>({
+    queryKey: ['customers', { query, page }],
     queryFn: async () => {
-      const response = await apiClient.get(`customers/search/?query=${query}`);
+      const params = new URLSearchParams();
+      if (query) {
+        params.set('search', query);
+      }
+      if (page) {
+        params.set('page', page.toString());
+      }
+      const response = await apiClient.get(`customers/?${params.toString()}`);
       return response.data;
     },
-    enabled: !!query,
   });
 
-  return {
-    data,
-    isLoading,
-    isError,
-  }
+  return { data, isLoading, isError };
 }
