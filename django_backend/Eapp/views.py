@@ -19,13 +19,13 @@ from django.shortcuts import get_object_or_404
 from datetime import datetime
 from .permissions import IsAdminOrManager, IsManager, IsFrontDesk, IsTechnician, IsAdminOrManagerOrFrontDesk, IsAdminOrManagerOrFrontDeskOrAccountant
 from .status_transitions import can_transition
-from .reports.services import ReportGenerator
+from reports.services import ReportGenerator
 from .models import SavedReport
 from .serializers import ReportConfigSerializer, SavedReportSerializer
 import json
 from django.http import HttpResponse
 import csv
-from .reports.predefined_reports import PredefinedReportGenerator
+from reports.predefined_reports import PredefinedReportGenerator
 
 
 
@@ -1058,3 +1058,44 @@ def get_dashboard_data(request):
         
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated, IsAdminOrManagerOrFrontDeskOrAccountant])
+def get_report_field_options(request):
+    """
+    Get available field options for reports - Updated to match frontend
+    """
+    field_options = {
+        'reportTypes': [
+            {'id': 'financial', 'label': 'Financial Analysis', 'description': 'Revenue, payments, and cost analysis'},
+            {'id': 'operational', 'label': 'Operational Metrics', 'description': 'Task status, turnaround times, efficiency'},
+            {'id': 'performance', 'label': 'Performance Review', 'description': 'Technician productivity and quality metrics'},
+            {'id': 'customer', 'label': 'Customer Analytics', 'description': 'Customer satisfaction and retention data'},
+        ],
+        'dataFields': [
+            {'id': 'task_id', 'label': 'Task ID', 'category': 'basic'},
+            {'id': 'customer_name', 'label': 'Customer Name', 'category': 'basic'},
+            {'id': 'laptop_model', 'label': 'Laptop Model', 'category': 'basic'},
+            {'id': 'technician', 'label': 'Assigned Technician', 'category': 'basic'},
+            {'id': 'status', 'label': 'Current Status', 'category': 'basic'},
+            {'id': 'date_in', 'label': 'Date In', 'category': 'dates'},
+            {'id': 'date_completed', 'label': 'Date Completed', 'category': 'dates'},
+            {'id': 'turnaround_time', 'label': 'Turnaround Time', 'category': 'performance'},
+            {'id': 'total_cost', 'label': 'Total Cost', 'category': 'financial'},
+            {'id': 'parts_cost', 'label': 'Parts Cost', 'category': 'financial'},
+            {'id': 'labor_cost', 'label': 'Labor Cost', 'category': 'financial'},
+            {'id': 'payment_status', 'label': 'Payment Status', 'category': 'financial'},
+            {'id': 'urgency', 'label': 'Urgency Level', 'category': 'basic'},
+            {'id': 'location', 'label': 'Current Location', 'category': 'basic'},
+        ],
+        'dateRanges': [
+            {'value': 'last_7_days', 'label': 'Last 7 Days'},
+            {'value': 'last_30_days', 'label': 'Last 30 Days'},
+            {'value': 'last_3_months', 'label': 'Last 3 Months'},
+            {'value': 'last_6_months', 'label': 'Last 6 Months'},
+            {'value': 'last_year', 'label': 'Last Year'},
+            {'value': 'custom', 'label': 'Custom Range'},
+        ]
+    }
+    return Response(field_options)

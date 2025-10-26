@@ -72,6 +72,7 @@ urlpatterns = [
     path('reports/technician-workload/', views.get_technician_workload, name='technician_workload'),
     path('reports/payment-methods/', views.get_payment_methods_report, name='payment_methods_report'),
     path('reports/download/<str:report_type>/', views.download_predefined_report, name='download_predefined_report'),
+    path('reports/custom/generate/', views.generate_custom_report, name='generate_custom_report'),
     
     # Dashboard data
     path('dashboard/data/', views.get_dashboard_data, name='dashboard_data'),

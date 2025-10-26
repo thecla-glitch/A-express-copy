@@ -3,7 +3,7 @@ from django.db.models import Count, Sum, Avg, Q, F
 from django.utils import timezone
 from datetime import timedelta, datetime
 from decimal import Decimal
-from ..models import Task, Payment, User, Customer, CostBreakdown
+from Eapp.models import Task, Payment, User, Customer, CostBreakdown
 
 class PredefinedReportGenerator:
     
