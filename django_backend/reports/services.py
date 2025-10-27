@@ -1,9 +1,10 @@
 # reports/services.py
 from django.db.models import Q, Sum, Count, Avg
-from Eapp.models import Task, User, Payment, Customer,  Location, CostBreakdown
-from django.utils import timezone
+from Eapp.models import Task, User
+from financials.models import  Payment
 from datetime import datetime, timedelta
 from decimal import Decimal
+from django.utils import timezone
 
 
 class ReportGenerator:

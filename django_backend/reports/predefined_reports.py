@@ -3,7 +3,10 @@ from django.db.models import Count, Sum, Avg, Q, F
 from django.utils import timezone
 from datetime import timedelta, datetime
 from decimal import Decimal
-from Eapp.models import Task, Payment, User, Customer, CostBreakdown
+from Eapp.models import Task, User
+from customers.models import Customer
+from customers.models import PhoneNumber
+from financials.models import Payment, CostBreakdown
 
 class PredefinedReportGenerator:
     
@@ -40,12 +43,13 @@ class PredefinedReportGenerator:
         }
     
     @staticmethod
+    @staticmethod
     def generate_outstanding_payments_report():
         """Generate outstanding payments report"""
         # Get tasks with unpaid or partially paid status
         outstanding_tasks = Task.objects.filter(
             Q(payment_status='Unpaid') | Q(payment_status='Partially Paid')
-        ).select_related('customer').prefetch_related('payments')
+        ).select_related('customer').prefetch_related('payments', 'customer__phone_numbers')
         
         tasks_data = []
         for task in outstanding_tasks:
@@ -68,10 +72,15 @@ class PredefinedReportGenerator:
             if outstanding_balance > 0:
                 days_overdue = (timezone.now().date() - task.date_in).days if task.date_in else 0
                 
+                # Get the first phone number or use 'Not provided'
+                customer_phone = 'Not provided'
+                if hasattr(task.customer, 'phone_numbers') and task.customer.phone_numbers.exists():
+                    customer_phone = task.customer.phone_numbers.first().phone_number
+                
                 tasks_data.append({
                     'task_id': task.title,
                     'customer_name': task.customer.name,
-                    'customer_phone': task.customer.phone or 'Not provided',
+                    'customer_phone': customer_phone,
                     'total_cost': float(total_cost),
                     'paid_amount': float(paid_amount),
                     'outstanding_balance': float(outstanding_balance),

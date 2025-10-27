@@ -43,6 +43,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         default='profile_pictures/default.png'
     )
     username = models.CharField(max_length=50, unique=True, verbose_name=_('Username'))
+    password = models.CharField(max_length=128, verbose_name=_('Password'))
     email = models.EmailField(max_length=100, unique=True, verbose_name=_('Email'))
     first_name = models.CharField(max_length=50, verbose_name=_('First Name'))
     last_name = models.CharField(max_length=50, verbose_name=_('Last Name'))

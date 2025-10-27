@@ -1,7 +1,7 @@
 from common.models import Location
 from customers.serializers import CustomerSerializer
 from rest_framework import status, permissions, viewsets
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 
@@ -13,15 +13,8 @@ from .serializers import (
 )
 from financials.models import PaymentCategory
 from django.shortcuts import get_object_or_404
-from users.permissions import IsAdminOrManagerOrAccountant, IsAdminOrManagerOrFrontDeskOrAccountant
+from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
-from reports.services import ReportGenerator
-
-
-import json
-from django.http import HttpResponse
-import csv
-# from reports.predefined_reports import PredefinedReportGenerator
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import TaskFilter
 from .pagination import StandardResultsSetPagination
@@ -322,6 +315,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='add-payment')
     def add_payment(self, request, task_id=None):
+        print("Add payment called")
         if not (request.user.role in ['Manager', 'Front Desk', 'Accountant'] or request.user.is_superuser):
             return Response(
                 {"error": "You do not have permission to add payments."},
@@ -331,6 +325,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = PaymentSerializer(data=request.data)
         if serializer.is_valid():
             tech_support_category, _ = PaymentCategory.objects.get_or_create(name='Tech Support')
+            print("Saving payment")
             serializer.save(task=task, description=f"{task.customer.name} - {task.title}", category=tech_support_category)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -346,12 +341,4 @@ class TaskViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-    # return Response({
-    #     'this_month_revenue': this_month_revenue,
-    #     'month_over_month_change': month_over_month_change,
-    #     'today_revenue': today_revenue,
-    #     'day_over_day_change': day_over_day_change,
-    # })
 

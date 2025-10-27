@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "customers",
     "rest_framework",
     "reports",
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -99,7 +100,7 @@ WSGI_APPLICATION = "A_express.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "Inventory",
+        "NAME": "Inventory3",
         "USER": "postgres",
         "PASSWORD": "ivan123",
         "HOST": "localhost",
