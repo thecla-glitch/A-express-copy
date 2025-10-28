@@ -1,11 +1,10 @@
 # Eapp/reports/predefined_reports.py
+from itertools import zip_longest
 from django.db.models import Count, Sum, Avg, Q, F
 from django.utils import timezone
 from datetime import timedelta, datetime
 from decimal import Decimal
-from Eapp.models import Task, User
-from customers.models import Customer
-from customers.models import PhoneNumber
+from Eapp.models import Task, User, TaskActivity
 from financials.models import Payment, CostBreakdown
 
 class PredefinedReportGenerator:
@@ -175,51 +174,98 @@ class PredefinedReportGenerator:
         }
     
     @staticmethod
-    def generate_turnaround_time_report():
-        """Generate average turnaround time report"""
-        completed_tasks = Task.objects.filter(
-            status='Completed',
-            date_in__isnull=False,
-            date_out__isnull=False
-        ).prefetch_related('activities')
+    def generate_turnaround_time_report(period_type='weekly'):
+        """Generate average turnaround time report using TaskActivity logs for higher accuracy."""
+        tasks = Task.objects.filter(
+            status__in=['Completed', 'Picked Up']
+        ).filter(
+            activities__type='intake'
+        ).filter(
+            activities__type='picked_up'
+        ).distinct()
 
-        if not completed_tasks.exists():
-            return {'error': 'No completed tasks with date information'}
+        if not tasks.exists():
+            return {'periods': [], 'summary': {'overall_average': 0, 'best_period': 'N/A', 'improvement': 0}}
 
-        turnaround_data = []
-        for task in completed_tasks:
-            total_duration = task.date_out - task.date_in
+        grouped_tasks = {}
+        for task in tasks:
+            try:
+                intake_activity = task.activities.filter(type='intake').latest('timestamp')
+                picked_up_activity = task.activities.filter(type='picked_up').latest('timestamp')
+            except TaskActivity.DoesNotExist:
+                continue
+
+            start_time = intake_activity.timestamp
+            end_time = picked_up_activity.timestamp
+            total_duration = end_time - start_time
+
+            # Calculate workshop duration
             workshop_duration = timedelta(0)
-            if task.workshop_sent_at and task.workshop_returned_at:
-                workshop_duration = task.workshop_returned_at - task.workshop_sent_at
+            workshop_sent_activities = task.activities.filter(type='workshop', message__icontains='sent').order_by('timestamp')
+            workshop_returned_activities = task.activities.filter(type='workshop', message__icontains='returned').order_by('timestamp')
 
+            for sent, returned in zip_longest(workshop_sent_activities, workshop_returned_activities):
+                if sent and returned:
+                    workshop_duration += returned.timestamp - sent.timestamp
+
+            # Calculate returned duration
             returned_duration = timedelta(0)
-            return_activity = task.activities.filter(type='returned').first()
-            if return_activity and task.date_out:
-                # Ensure date_out is offset-aware for comparison
-                date_out_aware = timezone.make_aware(datetime.combine(task.date_out, datetime.min.time()), timezone.get_default_timezone())
-                returned_duration = return_activity.timestamp - date_out_aware
+            returned_activities = task.activities.filter(type='returned').order_by('timestamp')
+            for returned_activity in returned_activities:
+                # Find the next 'In Progress' status update
+                next_in_progress_activity = task.activities.filter(
+                    type='status_update',
+                    message__icontains='In Progress',
+                    timestamp__gt=returned_activity.timestamp
+                ).order_by('timestamp').first()
+
+                if next_in_progress_activity:
+                    returned_duration += next_in_progress_activity.timestamp - returned_activity.timestamp
 
             turnaround_duration = total_duration - workshop_duration - returned_duration
-            days = turnaround_duration.days
-            turnaround_data.append({
-                'task_id': task.title,
-                'customer_name': task.customer.name,
-                'date_in': task.date_in,
-                'date_out': task.date_out,
-                'turnaround_days': days,
-                'technician': task.assigned_to.get_full_name() if task.assigned_to else 'Unassigned'
-            })
+            turnaround_days = turnaround_duration.days
 
-        avg_turnaround = sum(item['turnaround_days'] for item in turnaround_data) / len(turnaround_data)
+            if period_type == 'weekly':
+                period_key = end_time.strftime('%Y-W%U')
+            elif period_type == 'monthly':
+                period_key = end_time.strftime('%Y-%m')
+            else:
+                period_key = 'overall'
+
+            if period_key not in grouped_tasks:
+                grouped_tasks[period_key] = []
+            grouped_tasks[period_key].append(turnaround_days)
+
+        # ... (rest of the calculation logic remains the same) ...
+        periods_data = []
+        all_turnaround_days = []
+        for period, days_list in grouped_tasks.items():
+            avg_turnaround = sum(days_list) / len(days_list) if days_list else 0
+            periods_data.append({
+                'period': period,
+                'average_turnaround': round(avg_turnaround, 1),
+                'tasks_completed': len(days_list),
+                'efficiency': 100  # Placeholder
+            })
+            all_turnaround_days.extend(days_list)
+
+        periods_data.sort(key=lambda x: x['period'])
+
+        overall_average = sum(all_turnaround_days) / len(all_turnaround_days) if all_turnaround_days else 0
+        best_period_data = min(periods_data, key=lambda x: x['average_turnaround']) if periods_data else None
+        best_period = best_period_data['period'] if best_period_data else 'N/A'
+
+        improvement = 0
+        if len(periods_data) > 1:
+            improvement = ((periods_data[-2]['average_turnaround'] - periods_data[-1]['average_turnaround']) 
+                           / periods_data[-2]['average_turnaround'] * 100) if periods_data[-2]['average_turnaround'] > 0 else 0
 
         return {
-            'periods': turnaround_data,
+            'periods': periods_data,
             'summary': {
-                'average_turnaround': round(avg_turnaround, 1),
-                'min_turnaround_days': min(item['turnaround_days'] for item in turnaround_data),
-                'max_turnaround_days': max(item['turnaround_days'] for item in turnaround_data),
-                'total_completed_tasks': len(turnaround_data)
+                'overall_average': round(overall_average, 1),
+                'best_period': best_period,
+                'improvement': round(improvement, 1)
             }
         }    
     @staticmethod

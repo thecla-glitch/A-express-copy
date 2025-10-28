@@ -174,6 +174,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             customer_serializer.is_valid(raise_exception=True)
             customer_serializer.save()
 
+
     def _handle_debt_status(self, data, task, user):
         if data.get('is_debt') is True:
             TaskActivity.objects.create(
@@ -242,6 +243,18 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        # Handle rejection
+        if new_status == 'In Progress' and 'qc_notes' in data and data['qc_notes']:
+            task.qc_rejected_by = user
+            task.qc_rejected_at = timezone.now()
+            TaskActivity.objects.create(
+                task=task,
+                user=user,
+                type=TaskActivity.ActivityType.REJECTED,
+                message=f"Task rejected by {user.get_full_name()} with notes: {data['qc_notes']}"
+            )
+            return None # Prevent other status update logs for this case
+
         # Create activity logs for specific transitions
         activity_messages = {
             'Picked Up': "Task has been picked up by the customer.",
@@ -249,10 +262,14 @@ class TaskViewSet(viewsets.ModelViewSet):
             'Ready for Pickup': "Task has been approved and is ready for pickup."
         }
         if new_status in activity_messages:
-            TaskActivity.objects.create(task=task, user=user, type=TaskActivity.ActivityType.STATUS_UPDATE, message=activity_messages[new_status])
+            activity_type = TaskActivity.ActivityType.STATUS_UPDATE
             if new_status == 'Picked Up':
+                activity_type = TaskActivity.ActivityType.PICKED_UP
                 data['sent_out_by'] = user.id
                 data['date_out'] = timezone.now()
+            elif new_status == 'Ready for Pickup':
+                activity_type = TaskActivity.ActivityType.READY
+            TaskActivity.objects.create(task=task, user=user, type=activity_type, message=activity_messages[new_status])
 
         if new_status == 'In Progress' and user.role == 'Front Desk':
             technician_id = data.get('assigned_to')
@@ -260,8 +277,8 @@ class TaskViewSet(viewsets.ModelViewSet):
                 technician = get_object_or_404(User, id=technician_id, role='Technician')
                 task.assigned_to = technician
                 TaskActivity.objects.create(
-                    task=task, user=user, type=TaskActivity.ActivityType.STATUS_UPDATE,
-                    message=f"Task assigned to {technician.get_full_name()}."
+                    task=task, user=user, type=TaskActivity.ActivityType.ASSIGNMENT,
+                    message=f"Returned task assigned to {technician.get_full_name()}."
                 )
         return None
 

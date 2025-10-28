@@ -206,6 +206,7 @@ def get_turnaround_time(request):
             {"success": True, "report": report_data, "type": "turnaround_time"}
         )
     except Exception as e:
+        print(e)
         return Response(
             {"success": False, "error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

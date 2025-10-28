@@ -3,6 +3,8 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from common.serializers import BrandSerializer, LocationSerializer
 from customers.serializers import CustomerSerializer, ReferrerSerializer, CustomerListSerializer
+from customers.models import Referrer
+from financials.models import Payment, PaymentMethod
 from .models import Task, TaskActivity
 from django.utils import timezone
 from users.serializers import UserSerializer, UserListSerializer
@@ -210,26 +212,8 @@ class TaskDetailSerializer(serializers.ModelSerializer):
                 message=f"Task sent to workshop technician {workshop_technician.get_full_name()} at {workshop_location.name}.",
             )
 
-        if "qc_notes" in validated_data:
-            instance.qc_rejected_at = timezone.now()
-            instance.qc_rejected_by = self.context["request"].user
-            TaskActivity.objects.create(
-                task=instance,
-                user=self.context["request"].user,
-                type=TaskActivity.ActivityType.REJECTED,
-                message=f"Task Rejected with notes: {validated_data['qc_notes']}",
-            )
 
         return super().update(instance, validated_data)
-
-
-class ReportConfigSerializer(serializers.Serializer):
-    reportName = serializers.CharField(max_length=255)
-    selectedType = serializers.CharField()
-    selectedFields = serializers.ListField(child=serializers.CharField())
-    dateRange = serializers.CharField()
-    customStartDate = serializers.DateField(required=False, allow_null=True)
-    customEndDate = serializers.DateField(required=False, allow_null=True)
 
 
 # class SavedReportSerializer(serializers.ModelSerializer):
