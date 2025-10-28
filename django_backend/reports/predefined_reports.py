@@ -181,19 +181,26 @@ class PredefinedReportGenerator:
             status='Completed',
             date_in__isnull=False,
             date_out__isnull=False
-        )
-        
+        ).prefetch_related('activities')
+
         if not completed_tasks.exists():
             return {'error': 'No completed tasks with date information'}
-        
+
         turnaround_data = []
         for task in completed_tasks:
             total_duration = task.date_out - task.date_in
             workshop_duration = timedelta(0)
             if task.workshop_sent_at and task.workshop_returned_at:
                 workshop_duration = task.workshop_returned_at - task.workshop_sent_at
-            
-            turnaround_duration = total_duration - workshop_duration
+
+            returned_duration = timedelta(0)
+            return_activity = task.activities.filter(type='returned').first()
+            if return_activity and task.date_out:
+                # Ensure date_out is offset-aware for comparison
+                date_out_aware = timezone.make_aware(datetime.combine(task.date_out, datetime.min.time()), timezone.get_default_timezone())
+                returned_duration = return_activity.timestamp - date_out_aware
+
+            turnaround_duration = total_duration - workshop_duration - returned_duration
             days = turnaround_duration.days
             turnaround_data.append({
                 'task_id': task.title,
@@ -203,19 +210,18 @@ class PredefinedReportGenerator:
                 'turnaround_days': days,
                 'technician': task.assigned_to.get_full_name() if task.assigned_to else 'Unassigned'
             })
-        
+
         avg_turnaround = sum(item['turnaround_days'] for item in turnaround_data) / len(turnaround_data)
-        
+
         return {
-            'turnaround_data': turnaround_data,
+            'periods': turnaround_data,
             'summary': {
-                'average_turnaround_days': round(avg_turnaround, 1),
+                'average_turnaround': round(avg_turnaround, 1),
                 'min_turnaround_days': min(item['turnaround_days'] for item in turnaround_data),
                 'max_turnaround_days': max(item['turnaround_days'] for item in turnaround_data),
                 'total_completed_tasks': len(turnaround_data)
             }
-        }
-    
+        }    
     @staticmethod
     def generate_technician_workload_report():
         """Generate technician workload report"""
