@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { getApiUrl } from './config';
 import { ExpenditureRequest, PaginatedResponse } from './api';
+import { logout } from './auth';
 
 export const apiClient = axios.create({
   baseURL: getApiUrl(''),
@@ -21,6 +22,46 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+const refreshAuthLogic = async (failedRequest: any) => {
+  const authTokens = localStorage.getItem('auth_tokens');
+  if (authTokens) {
+    const parsedTokens = JSON.parse(authTokens);
+    const refreshToken = parsedTokens.refresh;
+    if (refreshToken) {
+      try {
+        const response = await axios.post(getApiUrl('/token/refresh/'), {
+          refresh: refreshToken,
+        });
+        const newAuthTokens = response.data;
+        localStorage.setItem('auth_tokens', JSON.stringify(newAuthTokens));
+        failedRequest.response.config.headers.Authorization = `Bearer ${newAuthTokens.access}`;
+        return Promise.resolve();
+      } catch (error) {
+        logout();
+        return Promise.reject(error);
+      }
+    }
+  }
+  logout();
+  return Promise.reject(new Error('No refresh token found'));
+};
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        await refreshAuthLogic(error);
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const getProfile = () => apiClient.get('/profile/');
 export const getTasks = (params: any = {}) => apiClient.get('/tasks/', { params });
@@ -57,7 +98,11 @@ export const deleteLocation = (locationId: number) => apiClient.delete(`/locatio
 export const listWorkshopLocations = () => apiClient.get('locations/workshop-locations/');
 export const listWorkshopTechnicians = () => apiClient.get('list/workshop-technicians/');
 
-export const login = (username: any, password: any) => apiClient.post('/login/', { username, password });
+export const login = async (username: any, password: any) => {
+  const response = await apiClient.post('/login/', { username, password });
+  localStorage.setItem('auth_tokens', JSON.stringify(response.data));
+  return response;
+};
 export const registerUser = (userData: any) => apiClient.post('/users/', userData);
 export const listUsers = () => apiClient.get('/users/');
 export const updateProfile = (profileData: any) => apiClient.patch('/profile/update/', profileData);
