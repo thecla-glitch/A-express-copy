@@ -181,8 +181,6 @@ class PredefinedReportGenerator:
             status='Completed',
             date_in__isnull=False,
             date_out__isnull=False
-        ).annotate(
-            turnaround_time=F('date_out') - F('date_in')
         )
         
         if not completed_tasks.exists():
@@ -190,7 +188,13 @@ class PredefinedReportGenerator:
         
         turnaround_data = []
         for task in completed_tasks:
-            days = task.turnaround_time.days
+            total_duration = task.date_out - task.date_in
+            workshop_duration = timedelta(0)
+            if task.workshop_sent_at and task.workshop_returned_at:
+                workshop_duration = task.workshop_returned_at - task.workshop_sent_at
+            
+            turnaround_duration = total_duration - workshop_duration
+            days = turnaround_duration.days
             turnaround_data.append({
                 'task_id': task.title,
                 'customer_name': task.customer.name,
