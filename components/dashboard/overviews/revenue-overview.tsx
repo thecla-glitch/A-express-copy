@@ -40,7 +40,7 @@ export function RevenueOverview({ variant = 'all' }: RevenueOverviewProps) {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(data.this_month_revenue)}</div>
             <p className="text-xs text-muted-foreground">
-              {data.month_over_month_change.toFixed(2)}% from last month
+              {(data.month_over_month_change ?? 0).toFixed(2)}% from last month
             </p>
           </CardContent>
         </Card>

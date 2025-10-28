@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils"
 import { AddExpenditureDialog } from "../financials/add-expenditure-dialog";
 import { ExpenditureRequestsList } from "../financials/expenditure-requests-list";
+import { FinancialSummaryPreview } from "../payments/financial-summary-preview";
 import useSWR from 'swr'
 import { apiClient } from "@/lib/api-client"
 
@@ -41,8 +42,9 @@ export function PaymentsOverview() {
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddExpenditureOpen, setIsAddExpenditureOpen] = useState(false);
+  const [isFinancialSummaryOpen, setIsFinancialSummaryOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const pageSize = 10; // Or a configurable value
+  const pageSize = 10;
 
   const { user } = useAuth();
   const isManager = user?.role === 'Manager';
@@ -138,7 +140,8 @@ export function PaymentsOverview() {
               Add Expenditure
             </Button>
           )}
-          <Button>
+          {/* Update the Export Report button */}
+          <Button onClick={() => setIsFinancialSummaryOpen(true)}>
             <Download className='mr-2 h-4 w-4' />
             Export Report
           </Button>
@@ -253,6 +256,13 @@ export function PaymentsOverview() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Add the Financial Summary Preview Dialog */}
+      <FinancialSummaryPreview
+        isOpen={isFinancialSummaryOpen}
+        onClose={() => setIsFinancialSummaryOpen(false)}
+        openingBalance={revenueData?.opening_balance} // Add this line
+      />
       <AddExpenditureDialog isOpen={isAddExpenditureOpen} onClose={() => setIsAddExpenditureOpen(false)} />
     </div>
   )
