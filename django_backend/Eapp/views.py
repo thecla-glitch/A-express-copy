@@ -160,6 +160,14 @@ class TaskViewSet(viewsets.ModelViewSet):
                 task=task, user=task.created_by, type=TaskActivity.ActivityType.DEVICE_NOTE, message=f"Device Notes: {device_notes}"
             )
 
+        if task.assigned_to:
+            TaskActivity.objects.create(
+                task=task,
+                user=task.created_by,
+                type=TaskActivity.ActivityType.ASSIGNMENT,
+                message=f"Task assigned to {task.assigned_to.get_full_name()} by {task.created_by.get_full_name()}."
+            )
+
         response_data = self.get_serializer(task).data
         response_data['customer_created'] = customer_created
         
