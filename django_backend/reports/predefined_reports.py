@@ -134,43 +134,75 @@ class PredefinedReportGenerator:
     
     @staticmethod
     def generate_technician_performance_report(date_range='last_30_days'):
-        """Generate technician performance report"""
-        date_filter = PredefinedReportGenerator._get_date_filter(date_range, field='created_at')
-        
-        technician_performance = User.objects.filter(
-            role='Technician',
-            is_active=True
-        ).annotate(
-            completed_tasks=Count('tasks', filter=Q(tasks__status='Completed') & date_filter),
-            in_progress_tasks=Count('tasks', filter=Q(tasks__status='In Progress') & date_filter),
-            total_tasks=Count('tasks', filter=date_filter),
-            total_revenue=Sum('tasks__estimated_cost', filter=Q(tasks__status='Completed') & date_filter),
-            avg_completion_time=Avg(
-                F('tasks__date_out') - F('tasks__date_in'),
-                filter=Q(tasks__status='Completed') & date_filter
-            )
-        ).exclude(completed_tasks=0)
-        
-        performance_data = []
-        for tech in technician_performance:
-            efficiency = (tech.completed_tasks / tech.total_tasks * 100) if tech.total_tasks > 0 else 0
-            avg_hours = tech.avg_completion_time.total_seconds() / 3600 if tech.avg_completion_time else 0
-            
-            performance_data.append({
-                'technician_name': tech.get_full_name(),
-                'completed_tasks': tech.completed_tasks,
-                'in_progress_tasks': tech.in_progress_tasks,
-                'total_tasks': tech.total_tasks,
-                'efficiency': round(efficiency, 1),
-                'total_revenue': float(tech.total_revenue or 0),
-                'avg_completion_hours': round(avg_hours, 1),
-                'rating': min(5.0, 3.0 + (efficiency / 25))  # Simulated rating based on efficiency
+        """Generate technician performance report using TaskActivity logs for accuracy."""
+        date_filter_q = PredefinedReportGenerator._get_date_filter(date_range, field='timestamp')
+
+        ready_activities = TaskActivity.objects.filter(
+            type=TaskActivity.ActivityType.READY
+        ).filter(date_filter_q).select_related('task__assigned_to')
+
+        if not ready_activities.exists():
+            return {'technician_performance': [], 'date_range': date_range, 'total_technicians': 0}
+
+        task_performance_list = []
+        for ready_activity in ready_activities:
+            task = ready_activity.task
+            technician = task.assigned_to
+
+            if not technician or not technician.is_active or technician.role != 'Technician':
+                continue
+
+            intake_activity = TaskActivity.objects.filter(
+                task=task, type=TaskActivity.ActivityType.INTAKE
+            ).order_by('timestamp').first()
+
+            if not intake_activity:
+                continue
+
+            completion_duration = ready_activity.timestamp - intake_activity.timestamp
+            task_performance_list.append({
+                'technician_id': technician.id,
+                'technician_name': technician.get_full_name(),
+                'duration': completion_duration,
+                'revenue': task.estimated_cost or Decimal('0.00')
             })
-        
+
+        aggregated_data = {}
+        for perf in task_performance_list:
+            tech_id = perf['technician_id']
+            if tech_id not in aggregated_data:
+                aggregated_data[tech_id] = {
+                    'technician_name': perf['technician_name'],
+                    'completed_tasks': 0,
+                    'total_duration': timedelta(0),
+                    'total_revenue': Decimal('0.00')
+                }
+            
+            aggregated_data[tech_id]['completed_tasks'] += 1
+            aggregated_data[tech_id]['total_duration'] += perf['duration']
+            aggregated_data[tech_id]['total_revenue'] += perf['revenue']
+
+        final_report = []
+        for tech_id, data in aggregated_data.items():
+            avg_duration = data['total_duration'] / data['completed_tasks']
+            avg_hours = avg_duration.total_seconds() / 3600
+            
+            in_progress_tasks = Task.objects.filter(assigned_to_id=tech_id, status='In Progress').count()
+
+            final_report.append({
+                'technician_name': data['technician_name'],
+                'completed_tasks': data['completed_tasks'],
+                'in_progress_tasks': in_progress_tasks,
+                'total_revenue': float(data['total_revenue']),
+                'avg_completion_hours': round(avg_hours, 1),
+            })
+
+        final_report.sort(key=lambda x: x['completed_tasks'], reverse=True)
+
         return {
-            'technician_performance': performance_data,
+            'technician_performance': final_report,
             'date_range': date_range,
-            'total_technicians': len(performance_data)
+            'total_technicians': len(final_report)
         }
     
     @staticmethod
