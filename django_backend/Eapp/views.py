@@ -4,23 +4,20 @@ from rest_framework import status, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
-
 from users.models import User
 from financials.serializers import PaymentSerializer, CostBreakdownSerializer
 from .models import Task, TaskActivity
 from .serializers import (
     TaskListSerializer, TaskDetailSerializer, TaskActivitySerializer
 )
-from financials.models import PaymentCategory
+from financials.models import Payment, PaymentMethod, PaymentCategory
 from django.shortcuts import get_object_or_404
 from users.permissions import IsAdminOrManagerOrAccountant
 from .status_transitions import can_transition
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import TaskFilter
 from .pagination import StandardResultsSetPagination
-from customers.models import Customer
-
-
+from customers.models import Customer, Referrer
 
 
 def generate_task_id():
@@ -124,62 +121,145 @@ class TaskViewSet(viewsets.ModelViewSet):
                         pass  # Customer not found, will be created
 
             if customer:
-                # An existing customer was found, use it
                 data['customer'] = customer.id
             else:
-                # No existing customer found, create a new one
                 customer_serializer = CustomerSerializer(data=customer_data)
                 customer_serializer.is_valid(raise_exception=True)
                 customer = customer_serializer.save()
                 data['customer'] = customer.id
                 customer_created = True
 
+        # --- Business logic moved from serializer ---
+        referred_by_name = data.pop("referred_by", None)
+        is_referred = data.get("is_referred", False)
+
+        if data.get("assigned_to"):
+            data["status"] = "In Progress"
+        else:
+            data["status"] = "Pending"
+
+        if 'estimated_cost' in data:
+            data['total_cost'] = data['estimated_cost']
+        
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(created_by=request.user)
-        
-        response_data = serializer.data
+
+        referrer_obj = None
+        if is_referred and referred_by_name:
+            referrer_obj, _ = Referrer.objects.get_or_create(name=referred_by_name)
+
+        device_notes = serializer.validated_data.get('device_notes')
+        task = serializer.save(created_by=request.user, referred_by=referrer_obj)
+
+        # --- Side effects after saving ---
+        TaskActivity.objects.create(
+            task=task, user=task.created_by, type=TaskActivity.ActivityType.INTAKE, message="Task has been taken in."
+        )
+        if device_notes:
+            TaskActivity.objects.create(
+                task=task, user=task.created_by, type=TaskActivity.ActivityType.DEVICE_NOTE, message=f"Device Notes: {device_notes}"
+            )
+
+        response_data = self.get_serializer(task).data
         response_data['customer_created'] = customer_created
         
-        headers = self.get_success_headers(serializer.data)
+        headers = self.get_success_headers(response_data)
         return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         task = self.get_object()
         user = request.user
+        data = request.data.copy()
 
-        # Handle specific field updates with dedicated methods
-        self._handle_customer_update(request.data.pop('customer', None), task)
-        self._handle_debt_status(request.data, task, user)
-        self._handle_payment_status_update(request.data, task, user)
-        self._handle_workshop_logic(request.data, task, user)
-        self._handle_assignment_update(request.data, task, user)
+        # --- Pop and handle data before validation ---
+        self._handle_customer_update(data.pop('customer', None), task)
+        
+        partial_payment_amount = data.pop("partial_payment_amount", None)
+        if partial_payment_amount is not None:
+            payment_method, _ = PaymentMethod.objects.get_or_create(name="Partial Payment")
+            Payment.objects.create(task=task, amount=partial_payment_amount, method=payment_method)
+
+        referred_by_name = data.pop("referred_by", None)
+        is_referred = data.get("is_referred", task.is_referred)
+
+        # --- Apply business logic before validation ---
+        if "assigned_to" in data:
+            if data["assigned_to"]:
+                data["status"] = "In Progress"
+            else:
+                data["status"] = "Pending"
+        
+        self._handle_payment_status_update(data, task, user)
+        self._handle_workshop_instance_update(data, task, user)
 
         # Handle status transitions
-        if 'status' in request.data:
-            response = self._handle_status_update(request.data, task, user)
+        if 'status' in data:
+            response = self._handle_status_update(data, task, user)
             if response:
                 return response
 
-        serializer = self.get_serializer(task, data=request.data, partial=partial)
+        serializer = self.get_serializer(task, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
 
-        return Response(serializer.data)
+        # --- Save with extra data ---
+        referrer_obj = task.referred_by
+        if is_referred:
+            if referred_by_name:
+                referrer_obj, _ = Referrer.objects.get_or_create(name=referred_by_name)
+        else:
+            referrer_obj = None
+        
+        updated_task = serializer.save(referred_by=referrer_obj)
+
+        # --- Side effects after saving ---
+        self._create_update_activities(updated_task, data, user, original_task=task)
+
+        return Response(self.get_serializer(updated_task).data)
+
+    def _create_update_activities(self, task, data, user, original_task):
+        if data.get('is_debt') is True:
+            TaskActivity.objects.create(
+                task=task, user=user, type=TaskActivity.ActivityType.STATUS_UPDATE, message="Task marked as debt."
+            )
+
+        if 'workshop_location' in data and 'workshop_technician' in data:
+            workshop_technician = get_object_or_404(User, id=data.get('workshop_technician'))
+            workshop_location = get_object_or_404(Location, id=data.get('workshop_location'))
+            TaskActivity.objects.create(
+                task=task, user=user, type=TaskActivity.ActivityType.WORKSHOP, 
+                message=f"Task sent to workshop technician {workshop_technician.get_full_name()} at {workshop_location.name}."
+            )
+
+        if data.get('workshop_status') in ['Solved', 'Not Solved']:
+            TaskActivity.objects.create(
+                task=task, user=user, type=TaskActivity.ActivityType.WORKSHOP,
+                message=f"Task returned from workshop with status: {data['workshop_status']}."
+            )
+
+        if 'assigned_to' in data:
+            new_technician_id = data.get('assigned_to')
+            if new_technician_id:
+                new_technician = get_object_or_404(User, id=new_technician_id)
+                if original_task.assigned_to != new_technician:
+                    old_technician_name = original_task.assigned_to.get_full_name() if original_task.assigned_to else "unassigned"
+                    TaskActivity.objects.create(
+                        task=task, user=user, type=TaskActivity.ActivityType.ASSIGNMENT,
+                        message=f"Task reassigned from {old_technician_name} to {new_technician.get_full_name()} by {user.get_full_name()}."
+                    )
+            else:
+                if original_task.assigned_to:
+                    old_technician_name = original_task.assigned_to.get_full_name()
+                    TaskActivity.objects.create(
+                        task=task, user=user, type=TaskActivity.ActivityType.ASSIGNMENT,
+                        message=f"Task unassigned from {old_technician_name} by {user.get_full_name()}."
+                    )
 
     def _handle_customer_update(self, customer_data, task):
         if customer_data:
             customer_serializer = CustomerSerializer(task.customer, data=customer_data, partial=True)
             customer_serializer.is_valid(raise_exception=True)
             customer_serializer.save()
-
-
-    def _handle_debt_status(self, data, task, user):
-        if data.get('is_debt') is True:
-            TaskActivity.objects.create(
-                task=task, user=user, type=TaskActivity.ActivityType.STATUS_UPDATE, message="Task marked as debt."
-            )
 
     def _handle_payment_status_update(self, data, task, user):
         if user.role == 'Accountant' and 'payment_status' in data:
@@ -188,13 +268,12 @@ class TaskViewSet(viewsets.ModelViewSet):
                 task.paid_date = timezone.now().date()
             task.save()
 
-    def _handle_workshop_logic(self, data, task, user):
+    def _handle_workshop_instance_update(self, data, task, user):
         if 'workshop_location' in data and 'workshop_technician' in data:
             task.original_location = task.current_location
             task.workshop_status = 'In Workshop'
             task.original_technician = user
             task.workshop_sent_at = timezone.now()
-            workshop_technician = get_object_or_404(User, id=data.get('workshop_technician'))
             workshop_location = get_object_or_404(Location, id=data.get('workshop_location'))
             task.current_location = workshop_location.name
 
@@ -207,33 +286,6 @@ class TaskViewSet(viewsets.ModelViewSet):
             task.workshop_technician = None
             task.original_technician = None
             task.workshop_returned_at = timezone.now()
-            TaskActivity.objects.create(
-                task=task, user=user, type=TaskActivity.ActivityType.WORKSHOP,
-                message=f"Task returned from workshop with status: {data['workshop_status']}."
-            )
-
-    def _handle_assignment_update(self, data, task, user):
-        if 'assigned_to' in data:
-            new_technician_id = data.get('assigned_to')
-            if new_technician_id:
-                new_technician = get_object_or_404(User, id=new_technician_id)
-                if task.assigned_to != new_technician:
-                    old_technician_name = task.assigned_to.get_full_name() if task.assigned_to else "unassigned"
-                    TaskActivity.objects.create(
-                        task=task,
-                        user=user,
-                        type=TaskActivity.ActivityType.ASSIGNMENT,
-                        message=f"Task reassigned from {old_technician_name} to {new_technician.get_full_name()} by {user.get_full_name()}."
-                    )
-            else: # This means the task is being unassigned
-                if task.assigned_to:
-                    old_technician_name = task.assigned_to.get_full_name()
-                    TaskActivity.objects.create(
-                        task=task,
-                        user=user,
-                        type=TaskActivity.ActivityType.ASSIGNMENT,
-                        message=f"Task unassigned from {old_technician_name} by {user.get_full_name()}."
-                    )
 
     def _handle_status_update(self, data, task, user):
         new_status = data['status']
