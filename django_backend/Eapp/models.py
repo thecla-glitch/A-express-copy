@@ -163,6 +163,7 @@ class TaskActivity(models.Model):
         INTAKE = 'intake', _('Intake')
         WORKSHOP = 'workshop', _('Workshop')
         REJECTED = 'rejected', _('Rejected')
+        READY = 'ready', _('Ready')
         RETURNED = 'returned', _('Returned')
         PICKED_UP = 'picked_up', _('Picked Up')
         DEVICE_NOTE = 'device_note', _('Device Note')

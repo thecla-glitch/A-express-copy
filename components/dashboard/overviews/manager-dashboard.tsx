@@ -115,21 +115,6 @@ export function ManagerDashboard() {
             </Button>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Performance Analytics
-            </CardTitle>
-            <CardDescription>View team performance and business metrics.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <a href="/dashboard/analytics">View Analytics</a>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

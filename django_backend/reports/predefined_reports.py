@@ -1,11 +1,10 @@
 # Eapp/reports/predefined_reports.py
+from itertools import zip_longest
 from django.db.models import Count, Sum, Avg, Q, F
 from django.utils import timezone
 from datetime import timedelta, datetime
 from decimal import Decimal
-from Eapp.models import Task, User
-from customers.models import Customer
-from customers.models import PhoneNumber
+from Eapp.models import Task, User, TaskActivity
 from financials.models import Payment, CostBreakdown
 
 class PredefinedReportGenerator:
@@ -135,83 +134,159 @@ class PredefinedReportGenerator:
     
     @staticmethod
     def generate_technician_performance_report(date_range='last_30_days'):
-        """Generate technician performance report"""
-        date_filter = PredefinedReportGenerator._get_date_filter(date_range, field='created_at')
-        
-        technician_performance = User.objects.filter(
-            role='Technician',
-            is_active=True
-        ).annotate(
-            completed_tasks=Count('tasks', filter=Q(tasks__status='Completed') & date_filter),
-            in_progress_tasks=Count('tasks', filter=Q(tasks__status='In Progress') & date_filter),
-            total_tasks=Count('tasks', filter=date_filter),
-            total_revenue=Sum('tasks__estimated_cost', filter=Q(tasks__status='Completed') & date_filter),
-            avg_completion_time=Avg(
-                F('tasks__date_out') - F('tasks__date_in'),
-                filter=Q(tasks__status='Completed') & date_filter
-            )
-        ).exclude(completed_tasks=0)
-        
-        performance_data = []
-        for tech in technician_performance:
-            efficiency = (tech.completed_tasks / tech.total_tasks * 100) if tech.total_tasks > 0 else 0
-            avg_hours = tech.avg_completion_time.total_seconds() / 3600 if tech.avg_completion_time else 0
-            
-            performance_data.append({
-                'technician_name': tech.get_full_name(),
-                'completed_tasks': tech.completed_tasks,
-                'in_progress_tasks': tech.in_progress_tasks,
-                'total_tasks': tech.total_tasks,
-                'efficiency': round(efficiency, 1),
-                'total_revenue': float(tech.total_revenue or 0),
-                'avg_completion_hours': round(avg_hours, 1),
-                'rating': min(5.0, 3.0 + (efficiency / 25))  # Simulated rating based on efficiency
+        """Generate technician performance report using TaskActivity logs for accuracy."""
+        date_filter_q = PredefinedReportGenerator._get_date_filter(date_range, field='timestamp')
+
+        ready_activities = TaskActivity.objects.filter(
+            type=TaskActivity.ActivityType.READY
+        ).filter(date_filter_q).select_related('task__assigned_to')
+
+        if not ready_activities.exists():
+            return {'technician_performance': [], 'date_range': date_range, 'total_technicians': 0}
+
+        task_performance_list = []
+        for ready_activity in ready_activities:
+            task = ready_activity.task
+            technician = task.assigned_to
+
+            if not technician or not technician.is_active or technician.role != 'Technician':
+                continue
+
+            intake_activity = TaskActivity.objects.filter(
+                task=task, type=TaskActivity.ActivityType.INTAKE
+            ).order_by('timestamp').first()
+
+            if not intake_activity:
+                continue
+
+            completion_duration = ready_activity.timestamp - intake_activity.timestamp
+            task_performance_list.append({
+                'technician_id': technician.id,
+                'technician_name': technician.get_full_name(),
+                'duration': completion_duration,
+                'revenue': task.estimated_cost or Decimal('0.00')
             })
-        
+
+        aggregated_data = {}
+        for perf in task_performance_list:
+            tech_id = perf['technician_id']
+            if tech_id not in aggregated_data:
+                aggregated_data[tech_id] = {
+                    'technician_name': perf['technician_name'],
+                    'completed_tasks': 0,
+                    'total_duration': timedelta(0),
+                    'total_revenue': Decimal('0.00')
+                }
+            
+            aggregated_data[tech_id]['completed_tasks'] += 1
+            aggregated_data[tech_id]['total_duration'] += perf['duration']
+            aggregated_data[tech_id]['total_revenue'] += perf['revenue']
+
+        final_report = []
+        for tech_id, data in aggregated_data.items():
+            avg_duration = data['total_duration'] / data['completed_tasks']
+            avg_hours = avg_duration.total_seconds() / 3600
+            
+            in_progress_tasks = Task.objects.filter(assigned_to_id=tech_id, status='In Progress').count()
+
+            final_report.append({
+                'technician_name': data['technician_name'],
+                'completed_tasks': data['completed_tasks'],
+                'in_progress_tasks': in_progress_tasks,
+                'total_revenue': float(data['total_revenue']),
+                'avg_completion_hours': round(avg_hours, 1),
+            })
+
+        final_report.sort(key=lambda x: x['completed_tasks'], reverse=True)
+
         return {
-            'technician_performance': performance_data,
+            'technician_performance': final_report,
             'date_range': date_range,
-            'total_technicians': len(performance_data)
+            'total_technicians': len(final_report)
         }
     
     @staticmethod
-    def generate_turnaround_time_report():
-        """Generate average turnaround time report"""
-        completed_tasks = Task.objects.filter(
-            status='Completed',
-            date_in__isnull=False,
-            date_out__isnull=False
-        ).annotate(
-            turnaround_time=F('date_out') - F('date_in')
-        )
-        
-        if not completed_tasks.exists():
-            return {'error': 'No completed tasks with date information'}
-        
-        turnaround_data = []
-        for task in completed_tasks:
-            days = task.turnaround_time.days
-            turnaround_data.append({
-                'task_id': task.title,
-                'customer_name': task.customer.name,
-                'date_in': task.date_in,
-                'date_out': task.date_out,
-                'turnaround_days': days,
-                'technician': task.assigned_to.get_full_name() if task.assigned_to else 'Unassigned'
+    def generate_turnaround_time_report(period_type='weekly'):
+        """Generate average turnaround time report based on the new definition."""
+        tasks = Task.objects.filter(activities__type='picked_up').distinct().prefetch_related('activities')
+
+        if not tasks.exists():
+            return {'periods': [], 'summary': {'overall_average': 0, 'best_period': 'N/A', 'improvement': 0}}
+
+        grouped_tasks = {}
+        for task in tasks:
+            activities = task.activities.order_by('timestamp')
+            
+            try:
+                first_intake = activities.filter(type=TaskActivity.ActivityType.INTAKE).first()
+                last_picked_up = activities.filter(type=TaskActivity.ActivityType.PICKED_UP).last()
+
+                if not first_intake or not last_picked_up:
+                    continue
+
+                gross_duration = last_picked_up.timestamp - first_intake.timestamp
+                
+                total_away_time = timedelta(0)
+                pickup_events = activities.filter(type=TaskActivity.ActivityType.PICKED_UP)
+                return_events = activities.filter(type=TaskActivity.ActivityType.RETURNED)
+
+                for pickup in pickup_events:
+                    next_return = return_events.filter(timestamp__gt=pickup.timestamp).first()
+                    if next_return:
+                        total_away_time += (next_return.timestamp - pickup.timestamp)
+
+                net_turnaround_duration = gross_duration - total_away_time
+                
+                if net_turnaround_duration.total_seconds() < 0:
+                    net_turnaround_duration = timedelta(0)
+
+                turnaround_days = net_turnaround_duration.total_seconds() / (24 * 3600)
+
+                end_time = last_picked_up.timestamp
+                if period_type == 'weekly':
+                    period_key = end_time.strftime('%Y-W%U')
+                elif period_type == 'monthly':
+                    period_key = end_time.strftime('%Y-%m')
+                else:
+                    period_key = 'overall'
+
+                if period_key not in grouped_tasks:
+                    grouped_tasks[period_key] = []
+                grouped_tasks[period_key].append(turnaround_days)
+
+            except (TaskActivity.DoesNotExist, AttributeError):
+                continue
+
+        periods_data = []
+        all_turnaround_days = []
+        for period, days_list in grouped_tasks.items():
+            avg_turnaround = sum(days_list) / len(days_list) if days_list else 0
+            periods_data.append({
+                'period': period,
+                'average_turnaround': round(avg_turnaround, 1),
+                'tasks_completed': len(days_list),
             })
-        
-        avg_turnaround = sum(item['turnaround_days'] for item in turnaround_data) / len(turnaround_data)
-        
+            all_turnaround_days.extend(days_list)
+
+        periods_data.sort(key=lambda x: x['period'])
+
+        overall_average = sum(all_turnaround_days) / len(all_turnaround_days) if all_turnaround_days else 0
+        best_period_data = min(periods_data, key=lambda x: x['average_turnaround']) if periods_data else None
+        best_period = best_period_data['period'] if best_period_data else 'N/A'
+
+        improvement = 0
+        if len(periods_data) > 1 and periods_data[-2]['average_turnaround'] > 0:
+            improvement = ((periods_data[-2]['average_turnaround'] - periods_data[-1]['average_turnaround']) 
+                           / periods_data[-2]['average_turnaround'] * 100)
+
         return {
-            'turnaround_data': turnaround_data,
+            'periods': periods_data,
             'summary': {
-                'average_turnaround_days': round(avg_turnaround, 1),
-                'min_turnaround_days': min(item['turnaround_days'] for item in turnaround_data),
-                'max_turnaround_days': max(item['turnaround_days'] for item in turnaround_data),
-                'total_completed_tasks': len(turnaround_data)
+                'overall_average': round(overall_average, 1),
+                'best_period': best_period,
+                'improvement': round(improvement, 1)
             }
-        }
-    
+        }    
     @staticmethod
     def generate_technician_workload_report():
         """Generate technician workload report"""

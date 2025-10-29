@@ -40,36 +40,13 @@ export function LoginForm() {
     setIsLoading(true)
     setErrors({ username: '', password: '', form: '' })
 
-    try {
-      const success = await login(username, password)
-      if (success) {
-        router.push('/dashboard')
-      } else {
-        setErrors({ ...errors, form: 'Invalid username or password' })
-      }
-    } catch (err: any) {
-      if (err.response && err.response.data && typeof err.response.data === 'object') {
-        const errorData = err.response.data
-        const newErrors = { username: '', password: '', form: '' }
-        if (errorData.username) {
-          newErrors.username = errorData.username.join(' ')
-        }
-        if (errorData.password) {
-          newErrors.password = errorData.password.join(' ')
-        }
-        if (errorData.detail) {
-          newErrors.form = errorData.detail
-        }
-        if (!newErrors.username && !newErrors.password && !newErrors.form) {
-          newErrors.form = 'An unexpected error occurred.'
-        }
-        setErrors(newErrors)
-      } else {
-        setErrors({ ...errors, form: 'An error occurred during login' })
-      }
-    } finally {
-      setIsLoading(false)
+    const success = await login(username, password)
+    if (success) {
+      router.push('/dashboard')
+    } else {
+      setErrors({ ...errors, form: 'Invalid username or password' })
     }
+    setIsLoading(false)
   }
 
   return (

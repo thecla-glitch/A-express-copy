@@ -4,7 +4,6 @@ from decimal import Decimal
 from common.serializers import BrandSerializer, LocationSerializer
 from customers.serializers import CustomerSerializer, ReferrerSerializer, CustomerListSerializer
 from .models import Task, TaskActivity
-from django.utils import timezone
 from users.serializers import UserSerializer, UserListSerializer
 from users.models import User
 from financials.serializers import CostBreakdownSerializer, PaymentSerializer
@@ -60,9 +59,6 @@ class TaskDetailSerializer(serializers.ModelSerializer):
     activities = TaskActivitySerializer(many=True, read_only=True)
     payments = PaymentSerializer(many=True, read_only=True)
     outstanding_balance = serializers.SerializerMethodField()
-    partial_payment_amount = serializers.DecimalField(
-        max_digits=10, decimal_places=2, write_only=True, required=False
-    )
     workshop_location_details = LocationSerializer(
         source="workshop_location", read_only=True
     )
@@ -87,7 +83,6 @@ class TaskDetailSerializer(serializers.ModelSerializer):
             'current_location', 'date_in', 'approved_at', 'approved_by',
             'paid_date', 'next_payment_date', 'date_out', 'negotiated_by', 'negotiated_by_details',
             'activities', 'payments', 'outstanding_balance', 'is_referred', 'is_debt', 'referred_by', 'referred_by_details',
-            'partial_payment_amount',
             'workshop_status', 'workshop_location', 'workshop_technician', 'original_technician',
             'workshop_location_details', 'workshop_technician_details', 'original_technician_details', 'approved_by_details',
             'sent_out_by', 'sent_out_by_details',
@@ -130,106 +125,12 @@ class TaskDetailSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        referred_by_data = validated_data.pop("referred_by", None)
-        is_referred = validated_data.get("is_referred", False)
-
-        if is_referred and referred_by_data:
-            referrer, _ = Referrer.objects.get_or_create(
-                name=referred_by_data.get("name")
-            )
-            validated_data["referred_by"] = referrer
-        else:
-            validated_data["referred_by"] = None
-
-        if validated_data.get("assigned_to"):
-            validated_data["status"] = "In Progress"
-        else:
-            validated_data["status"] = "Pending"
-
-        if 'estimated_cost' in validated_data:
-            validated_data['total_cost'] = validated_data['estimated_cost']
-
-        device_notes = validated_data.get('device_notes', None)
-        task = super().create(validated_data)
-
-        # Log the intake activity
-        TaskActivity.objects.create(
-            task=task,
-            user=task.created_by,
-            type=TaskActivity.ActivityType.INTAKE,
-            message="Task has been taken in.",
-        )
-
-        if device_notes:
-            TaskActivity.objects.create(
-                task=task,
-                user=task.created_by,
-                type=TaskActivity.ActivityType.DEVICE_NOTE,
-                message=f"Device Notes: {device_notes}",
-            )
-        return task
+        # Business logic moved to TaskViewSet.create
+        return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        referred_by_data = validated_data.pop("referred_by", None)
-        is_referred = validated_data.get("is_referred", instance.is_referred)
-
-        if is_referred and referred_by_data:
-            referrer, _ = Referrer.objects.get_or_create(
-                name=referred_by_data.get("name")
-            )
-            validated_data["referred_by"] = referrer
-        elif not is_referred:
-            validated_data["referred_by"] = None
-
-        if "assigned_to" in validated_data:
-            if validated_data["assigned_to"]:
-                validated_data["status"] = "In Progress"
-            else:
-                validated_data["status"] = "Pending"
-
-        partial_payment_amount = validated_data.pop("partial_payment_amount", None)
-
-        if partial_payment_amount is not None:
-            payment_method, _ = PaymentMethod.objects.get_or_create(
-                name="Partial Payment"
-            )
-            Payment.objects.create(
-                task=instance, amount=partial_payment_amount, method=payment_method
-            )
-
-        if (
-            "workshop_location" in validated_data
-            and "workshop_technician" in validated_data
-        ):
-            workshop_technician = validated_data.get("workshop_technician")
-            workshop_location = validated_data.get("workshop_location")
-            TaskActivity.objects.create(
-                task=instance,
-                user=self.context["request"].user,
-                type=TaskActivity.ActivityType.WORKSHOP,
-                message=f"Task sent to workshop technician {workshop_technician.get_full_name()} at {workshop_location.name}.",
-            )
-
-        if "qc_notes" in validated_data:
-            instance.qc_rejected_at = timezone.now()
-            instance.qc_rejected_by = self.context["request"].user
-            TaskActivity.objects.create(
-                task=instance,
-                user=self.context["request"].user,
-                type=TaskActivity.ActivityType.REJECTED,
-                message=f"Task Rejected with notes: {validated_data['qc_notes']}",
-            )
-
+        # Business logic moved to TaskViewSet.update
         return super().update(instance, validated_data)
-
-
-class ReportConfigSerializer(serializers.Serializer):
-    reportName = serializers.CharField(max_length=255)
-    selectedType = serializers.CharField()
-    selectedFields = serializers.ListField(child=serializers.CharField())
-    dateRange = serializers.CharField()
-    customStartDate = serializers.DateField(required=False, allow_null=True)
-    customEndDate = serializers.DateField(required=False, allow_null=True)
 
 
 # class SavedReportSerializer(serializers.ModelSerializer):
