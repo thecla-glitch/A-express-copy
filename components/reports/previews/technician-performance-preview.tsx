@@ -103,9 +103,6 @@ export const TechnicianPerformancePreview = ({ report }: { report: TechnicianPer
             {/* Performance Charts */}
             {technicianPerformance.length > 0 && (
                 <div className="mt-6">
-                    {/* Efficiency Chart */}
-                    
-
                     {/* Revenue Chart */}
                     <Card>
                         <CardHeader>
