@@ -2,8 +2,8 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-import { API_CONFIG, getApiUrl } from "./config"
 import { login as apiLogin, getProfile } from "./api-client"
+import { logout as apiLogout } from "./auth"
 
 interface User {
   id: number
@@ -35,7 +35,6 @@ interface AuthContextType {
   isLoading: boolean
   login: (username: string, password: string) => Promise<boolean>
   logout: () => void
-  refreshAuth: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -60,63 +59,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false)
   }, [])
 
-const refreshAuth = async (): Promise<boolean> => {
-  if (!tokens?.refresh) {
-    console.error("No refresh token available")
-    return false
-  }
-
-  try {
-    const response = await fetch(getApiUrl(API_CONFIG.AUTH_ENDPOINTS.REFRESH), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refresh: tokens.refresh }),
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      const newTokens = {
-        access: data.access,
-        refresh: tokens.refresh // Keep the original refresh token
-      }
-
-      setTokens(newTokens)
-      localStorage.setItem("auth_tokens", JSON.stringify(newTokens))
-      
-      // Also fetch updated user data
-      const userResponse = await getProfile();
-      if (userResponse.data) {
-        const userData: User = userResponse.data as User;
-        setUser(userData);
-        localStorage.setItem("auth_user", JSON.stringify(userData));
-      }
-      
-      return true
-    } else {
-      console.error("Token refresh failed")
-      logout()
-      return false
-    }
-  } catch (error) {
-    console.error("Token refresh error:", error)
-    return false
-  }
-}
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const response = await apiLogin(username, password);
 
       if (response.data) {
-        // Ensure response.data has the expected properties
         const { user: userData, access, refresh } = response.data as { user: User; access: string; refresh: string };
 
         setUser(userData);
         setTokens({ access, refresh });
 
         localStorage.setItem("auth_user", JSON.stringify(userData));
-        localStorage.setItem("auth_tokens", JSON.stringify({ access, refresh }));
 
         return true;
       }
@@ -131,8 +84,7 @@ const refreshAuth = async (): Promise<boolean> => {
     setUser(null)
     setTokens(null)
     localStorage.removeItem("auth_user")
-    localStorage.removeItem("auth_tokens")
-    window.location.href = "/"
+    apiLogout()
   }
 
   const value = {
@@ -143,7 +95,6 @@ const refreshAuth = async (): Promise<boolean> => {
     isLoading,
     login,
     logout,
-    refreshAuth,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
