@@ -102,6 +102,7 @@ class PredefinedReportGenerator:
                 'average_balance': total_outstanding / len(tasks_data) if tasks_data else 0
             }
         }
+   
     @staticmethod
     def generate_task_status_report():
         """Generate task status overview report"""
