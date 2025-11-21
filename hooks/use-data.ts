@@ -57,7 +57,7 @@ export function useInProgressTasks(isWorkshopView: boolean, userId: string | und
         queryFn: async () => {
             if (!userId) return [];
             const params = isWorkshopView
-                ? { workshop_technician: userId, workshop_status: "In Workshop" }
+                ? { workshop_technician: userId, workshop_status: "In Workshop", status: "In Progress" }
                 : { assigned_to: userId, status: "In Progress" };
             const response = await getTasks(params);
             const tasks = response.data.results || [];

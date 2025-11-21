@@ -25,6 +25,7 @@ import {
   Truck,
   Wrench,
   Info,
+  CheckCircle,
 } from "lucide-react"
 
 interface TaskActivityLogProps {
@@ -75,6 +76,8 @@ export function TaskActivityLog({ taskId }: TaskActivityLogProps) {
         return <Plus className={`${iconClass} text-orange-500`} />
       case "rejected":
         return <AlertTriangle className={`${iconClass} text-red-500`} />
+      case "ready":
+        return <CheckCircle className={`${iconClass} text-green-500`} />
       case "returned":
         return <Undo2 className={`${iconClass} text-yellow-500`} />
       case "assignment":
